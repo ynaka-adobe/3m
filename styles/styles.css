@@ -1,3 +1,6 @@
+/* 3M: DM Sans as substitute for 3MCircular */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,700&display=swap');
+
 @font-face {
   font-family: Montserrat;
   font-style: normal;
@@ -159,15 +162,16 @@
   --color-dark-base: 0 0 0;
   --color-light: rgb(255 255 255);
   --color-dark: rgb(0 0 0);
-  --color-text: light-dark(var(--color-dark), var(--color-light));
-  --color-link: light-dark(var(--color-gray-900), var(--color-gray-100));
-  --color-brand: var(--color-purple-500);
-  --color-accent: light-dark(var(--color-magenta-600), var(--color-magenta-500));
-  --color-background: light-dark(var(--color-light), var(--color-dark));
+  --color-text: light-dark(#4b4b4b, var(--color-light));
+  --color-link: light-dark(#03c, var(--color-gray-100));
+  --color-brand: #d10411;
+  --brand-red: #d10411;
+  --color-accent: #d10411;
+  --color-background: light-dark(#fff, var(--color-dark));
   --color-shaded: light-dark(#f9f9f9, #111);
 
   /* fonts */
-  --font-family: montserrat, "Trebuchet MS", sans-serif;
+  --font-family: 'DM Sans', 'Trebuchet MS', sans-serif;
 
   /* headings */
   --heading-font-size-xxl: 32.44px;
@@ -387,4 +391,160 @@ aem-sidekick {
   &[open="true"].is-ready {
     opacity: 1;
   }
+}
+
+/* 3M Brand Overrides — applied via existing :root above */
+
+/* 3M section variants */
+main .section.light {
+  background-color: var(--color-gray-100);
+}
+
+main .section.dark {
+  background-color: #1a1a1a;
+
+  .default-content,
+  .block-content {
+    color: #fff;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #fff;
+  }
+
+  a {
+    color: #fff;
+  }
+}
+
+/* 3M: News cards section (columns.section after hero) */
+main > .columns.section {
+  background-color: var(--color-gray-100);
+  padding: var(--spacing-xxl) 0;
+
+  /* 3-column card grid */
+  .block-content > div > div {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+
+    > div {
+      overflow: hidden;
+      transition: box-shadow 0.2s ease;
+
+      &:hover {
+        box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+      }
+
+      img {
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        display: block;
+      }
+
+      p {
+        font-size: 12px;
+        color: var(--color-gray-600);
+        margin: 8px 0 4px;
+      }
+
+      h3 {
+        font-size: 16px;
+        line-height: 1.3;
+        margin: 0;
+      }
+
+      a {
+        color: var(--color-text);
+        text-decoration: none;
+
+        &:hover {
+          color: var(--color-link);
+        }
+      }
+    }
+  }
+}
+
+/* 3M: Who we are section (second columns section) */
+main > .columns.section ~ .columns.section {
+  background-color: #1a1a1a;
+  padding: var(--spacing-xxl) 0;
+
+  .default-content {
+    color: #fff;
+  }
+
+  h2, h3 {
+    color: #fff;
+  }
+
+  /* Icon grid */
+  .block-content > div > div {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+
+    > div {
+      text-align: center;
+
+      img {
+        width: 64px !important;
+        height: 64px !important;
+        object-fit: contain;
+        margin: 0 auto 8px;
+        display: block;
+      }
+
+      p {
+        margin: 0;
+      }
+
+      a {
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+/* Mobile responsive */
+@media (width < 600px) {
+  main > .columns.section .block-content > div > div {
+    grid-template-columns: 1fr;
+  }
+
+  main > .columns.section ~ .columns.section .block-content > div > div {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (width >= 600px) and (width < 900px) {
+  main > .columns.section .block-content > div > div {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  main > .columns.section ~ .columns.section .block-content > div > div {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Force icon sizing in Who We Are section */
+main > .columns.section ~ .columns.section img {
+  width: 64px !important;
+  height: 64px !important;
+  object-fit: contain;
+}
+
+/* Hide metadata remnant section */
+main > .section:last-child:not(.hero, .columns, .advanced-tabs) {
+  display: none;
 }

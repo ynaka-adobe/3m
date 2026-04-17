@@ -4,6 +4,33 @@
 
     &.is-visible {
       display: block;
+
+      .default-content {
+        img {
+          width: 100%;
+          max-height: 300px;
+          object-fit: cover;
+          display: block;
+          margin-bottom: 16px;
+        }
+
+        p {
+          font-size: var(--body-font-size-m);
+          line-height: 1.5;
+        }
+
+        a {
+          color: var(--color-brand);
+          font-weight: 700;
+          font-size: var(--body-font-size-s);
+          text-decoration: none;
+          margin-right: 16px;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
     }
 
     &[data-status="decorated"] {
@@ -12,26 +39,78 @@
   }
 }
 
+/* Tab list: horizontal scrolling on mobile */
 .tab-list {
   display: flex;
-  justify-content: center;
   list-style: none;
-  gap: 12px;
+  gap: 0;
   margin: 0;
   padding: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 
   button {
     background-color: transparent;
     border: none;
-    font-size: var(--body-font-size-xl);
-    padding: 4px 8px;
+    font-size: var(--body-font-size-m);
+    font-weight: 400;
+    padding: 12px 16px;
     margin: 0;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     box-sizing: border-box;
-    transition: border-bottom 0.2s ease-in-out;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    color: var(--color-text);
+    cursor: pointer;
+
+    &:hover {
+      background-color: var(--color-gray-100);
+    }
 
     &.is-active {
-      border-bottom: 2px solid light-dark(#000, #fff);
+      background-color: var(--color-brand);
+      color: #fff;
+      font-weight: 700;
+      border-bottom: 3px solid var(--color-brand);
+    }
+  }
+}
+
+@media (width >= 900px) {
+  .advanced-tabs {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+
+    .section.is-visible {
+      grid-column: 2;
+      grid-row: 1;
+      padding-left: 32px;
+
+      .default-content {
+        img {
+          max-height: 360px;
+        }
+      }
+    }
+  }
+
+  .tab-list {
+    flex-direction: column;
+    grid-column: 1;
+    grid-row: 1;
+    border-right: 1px solid var(--color-gray-200);
+    overflow-x: visible;
+
+    button {
+      text-align: left;
+      white-space: normal;
+      padding: 14px 20px;
+      border-bottom: none;
+
+      &.is-active {
+        border-bottom: none;
+      }
     }
   }
 }

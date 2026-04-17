@@ -110,9 +110,14 @@ async function decorateAction(header, pattern) {
   if (pattern === '/tools/widgets/toggle') decorateNavToggle(btn);
 }
 
-function decorateMenu() {
-  // TODO: finish single menu support
-  return null;
+function decorateMenu(li) {
+  const subUl = li.querySelector(':scope > ul');
+  if (!subUl) return null;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'menu';
+  wrapper.append(subUl);
+  li.append(wrapper);
+  return wrapper;
 }
 
 function decorateMegaMenu(li) {
@@ -130,7 +135,7 @@ function decorateNavItem(li) {
   const link = li.querySelector(':scope > p > a');
   if (link) link.classList.add('main-nav-link');
   const menu = decorateMegaMenu(li) || decorateMenu(li);
-  if (!(menu || link)) return;
+  if (!menu) return;
   link.addEventListener('click', (e) => {
     e.preventDefault();
     toggleMenu(li);
@@ -145,6 +150,36 @@ function decorateBrandSection(section) {
   span.className = 'brand-text';
   span.append(text);
   brandLink.append(span);
+
+  // Build search bar from .nav-search paragraph
+  const content = section.querySelector('.default-content');
+  if (!content) return;
+  const searchP = content.querySelector('.nav-search, p:nth-of-type(2)');
+  if (searchP && !searchP.querySelector('a')) {
+    const searchWrapper = document.createElement('div');
+    searchWrapper.className = 'nav-search';
+    const input = document.createElement('input');
+    input.type = 'search';
+    input.placeholder = searchP.textContent.trim() || 'Search';
+    input.setAttribute('aria-label', 'Search');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'nav-search-btn';
+    btn.setAttribute('aria-label', 'Search');
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+    searchWrapper.append(input, btn);
+    searchP.replaceWith(searchWrapper);
+  }
+
+  // Build locale selector from .nav-locale paragraph
+  const localeP = content.querySelector('.nav-locale, p:nth-of-type(2)');
+  if (localeP && !localeP.querySelector('a, input')) {
+    localeP.classList.add('nav-locale');
+    const globe = document.createElement('span');
+    globe.className = 'nav-locale-icon';
+    globe.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+    localeP.append(globe);
+  }
 }
 
 function decorateNavSection(section) {
@@ -187,7 +222,34 @@ export default async function init(el) {
   const headerMeta = getMetadata('header');
   const path = headerMeta || HEADER_PATH;
   try {
-    const fragment = await loadFragment(`${locale.prefix}${path}`);
+    // Try local .plain.html first, fall back to fragment loader
+    let fragment;
+    const localResp = await fetch(`${locale.prefix}${path}.plain.html`);
+    if (localResp.ok) {
+      const html = await localResp.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      fragment = document.createElement('div');
+      fragment.classList.add('fragment-content');
+      const sections = doc.body.querySelectorAll(':scope > div');
+      if (sections.length) {
+        fragment.append(...sections);
+      } else {
+        fragment.innerHTML = doc.body.innerHTML;
+      }
+      // Wrap children into sections for decorateHeader
+      const divs = [...fragment.querySelectorAll(':scope > div')];
+      divs.forEach((div) => {
+        const section = document.createElement('div');
+        section.classList.add('section');
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('default-content');
+        while (div.firstChild) wrapper.append(div.firstChild);
+        section.append(wrapper);
+        div.replaceWith(section);
+      });
+    } else {
+      fragment = await loadFragment(`${locale.prefix}${path}`);
+    }
     fragment.classList.add('header-content');
     await decorateHeader(fragment);
     el.append(fragment);
