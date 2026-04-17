@@ -1,0 +1,61 @@
+{
+  "templates": [
+    {
+      "name": "homepage",
+      "urls": ["https://www.3m.com/"],
+      "description": "3M corporate homepage with hero banner, news cards, industry tabs, and icon links",
+      "blocks": [
+        {
+          "name": "hero-corporate",
+          "instances": [".mds-heroBanner"]
+        },
+        {
+          "name": "cards-news",
+          "instances": [".js-newsFeedSection .mds-content-cards"]
+        },
+        {
+          "name": "tabs-industry",
+          "instances": ["#js-homepageVtabs"]
+        },
+        {
+          "name": "cards-icon-links",
+          "instances": [".js-whoWeAreSection .mds-content-cards"]
+        }
+      ],
+      "sections": [
+        {
+          "id": "section-1-hero",
+          "name": "Hero Banner",
+          "selector": ".js-homepage_HeroVideo",
+          "style": null,
+          "blocks": ["hero-corporate"],
+          "defaultContent": []
+        },
+        {
+          "id": "section-2-news",
+          "name": "What's New",
+          "selector": ".js-newsFeedSection",
+          "style": "light",
+          "blocks": ["cards-news"],
+          "defaultContent": [".js-newsFeedSection .mds-content-cards_title"]
+        },
+        {
+          "id": "section-3-industries",
+          "name": "What We Do",
+          "selector": "#js-homepageVtabs",
+          "style": null,
+          "blocks": ["tabs-industry"],
+          "defaultContent": ["#js-homepageVtabs .MMM--hdg_2"]
+        },
+        {
+          "id": "section-4-about",
+          "name": "Who We Are",
+          "selector": ".js-whoWeAreSection",
+          "style": "dark",
+          "blocks": ["cards-icon-links"],
+          "defaultContent": [".js-whoWeAreSection .mds-content-cards_title"]
+        }
+      ]
+    }
+  ]
+}

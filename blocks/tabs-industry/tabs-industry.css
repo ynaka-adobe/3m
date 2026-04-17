@@ -1,0 +1,140 @@
+/* Tabs Industry - 3M "What We Do" Section
+ * Vertical tab layout with industry categories on left, content panel on right
+ * Based on 3M's .MMM--relatedItems-tabs pattern with .MMM--isActive
+ * Active tab: red background (#d10411) with white text
+ */
+
+.tabs-industry .tabs-industry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (width < 900px) {
+  .tabs-industry .tabs-industry-list {
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+.tabs-industry .tabs-industry-list button {
+  flex: 0 0 auto;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  padding: 12px 16px;
+  background-color: transparent;
+  color: var(--heading-color);
+  font-family: var(--body-font-family);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  white-space: nowrap;
+}
+
+.tabs-industry .tabs-industry-list button:hover {
+  background-color: var(--light-color);
+}
+
+.tabs-industry .tabs-industry-list button p {
+  margin: 0;
+}
+
+.tabs-industry .tabs-industry-panel p {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-color);
+  margin: 0 0 16px;
+}
+
+.tabs-industry .tabs-industry-list button[aria-selected='true'] {
+  background-color: var(--brand-red);
+  color: #fff;
+  font-weight: 700;
+  cursor: default;
+}
+
+.tabs-industry .tabs-industry-panel {
+  padding: 24px 0;
+  border: none;
+  overflow: visible;
+}
+
+.tabs-industry .tabs-industry-panel[aria-hidden='true'] {
+  display: none;
+}
+
+.tabs-industry .tabs-industry-panel img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.tabs-industry .tabs-industry-panel h3 {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--heading-color);
+  margin: 0 0 12px;
+}
+
+.tabs-industry .tabs-industry-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.tabs-industry .tabs-industry-panel ul a {
+  color: var(--brand-red);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tabs-industry .tabs-industry-panel ul a:hover {
+  text-decoration: underline;
+}
+
+@media (width >= 900px) {
+  .tabs-industry {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+  }
+
+  .tabs-industry .tabs-industry-list {
+    flex-direction: column;
+    overflow-x: visible;
+    border-right: 1px solid #e0e0e0;
+  }
+
+  .tabs-industry .tabs-industry-list button {
+    white-space: normal;
+    padding: 14px 20px;
+  }
+
+  .tabs-industry .tabs-industry-panel {
+    padding: 0 32px;
+  }
+
+  .tabs-industry .tabs-industry-panel img {
+    max-height: 360px;
+  }
+
+  .tabs-industry .tabs-industry-panel h3 {
+    font-size: 24px;
+  }
+}

@@ -1,0 +1,97 @@
+/* Cards Icon Links - 3M "Who We Are" Section
+ * Two-column layout: left tagline, right icon+link grid
+ * Dark section background with white text
+ * Based on 3M's .js-whoWeAreSection .MMM--columnList pattern
+ */
+
+.cards-icon-links > ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.cards-icon-links > ul > li {
+  border: none;
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.cards-icon-links .cards-icon-links-card-image {
+  line-height: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.cards-icon-links > ul > li img {
+  width: 48px;
+  height: 48px;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.cards-icon-links .cards-icon-links-card-body {
+  margin: 0;
+  padding: 0;
+}
+
+.cards-icon-links .cards-icon-links-card-body a {
+  color: var(--brand-red);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cards-icon-links .cards-icon-links-card-body a:hover {
+  text-decoration: underline;
+}
+
+.cards-icon-links .cards-icon-links-card-body h3 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 16px;
+}
+
+.cards-icon-links .cards-icon-links-card-body p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Dark section context - icon links appear on dark bg */
+.section.dark .cards-icon-links .cards-icon-links-card-body a {
+  color: #fff;
+}
+
+.section.dark .cards-icon-links .cards-icon-links-card-body a:hover {
+  color: #ccc;
+}
+
+@media (width >= 600px) {
+  .cards-icon-links > ul {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (width >= 900px) {
+  .cards-icon-links > ul {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+  }
+
+  .cards-icon-links > ul > li img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .cards-icon-links .cards-icon-links-card-body a {
+    font-size: 16px;
+  }
+}

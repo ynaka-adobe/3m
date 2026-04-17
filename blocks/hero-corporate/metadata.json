@@ -1,0 +1,39 @@
+{
+  "variantName": "hero-corporate",
+  "baseBlock": "hero",
+  "version": "1.0.0",
+  "created": "2026-04-13T20:06:00.000Z",
+  "sourceContext": {
+    "originUrl": "https://www.3m.com/",
+    "originPage": "corporate homepage",
+    "blockPosition": "top"
+  },
+  "visualCharacteristics": {
+    "colorScheme": "dark",
+    "density": "spacious",
+    "purpose": "corporate-hero",
+    "imagePattern": "video"
+  },
+  "contentPattern": {
+    "structure": "video + heading",
+    "buttonCount": 0,
+    "imageCount": 0
+  },
+  "reuseGuidance": {
+    "suitableFor": [
+      "corporate homepage banners",
+      "video hero sections",
+      "brand statement pages"
+    ],
+    "notSuitableFor": [
+      "product detail pages",
+      "blog posts",
+      "pages with CTA buttons in hero"
+    ]
+  },
+  "usage": {
+    "pagesUsing": ["content/index"],
+    "reuseCount": 1,
+    "lastUsed": "2026-04-13T20:06:00.000Z"
+  }
+}

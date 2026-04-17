@@ -1,0 +1,39 @@
+{
+  "variantName": "tabs-industry",
+  "baseBlock": "tabs",
+  "version": "1.0.0",
+  "created": "2026-04-13T20:06:00.000Z",
+  "sourceContext": {
+    "originUrl": "https://www.3m.com/",
+    "originPage": "corporate homepage",
+    "blockPosition": "middle"
+  },
+  "visualCharacteristics": {
+    "colorScheme": "light",
+    "density": "wide",
+    "purpose": "industry-tabs",
+    "imagePattern": "large"
+  },
+  "contentPattern": {
+    "structure": "tab-label + image + heading + description + link-list",
+    "buttonCount": 0,
+    "imageCount": 10
+  },
+  "reuseGuidance": {
+    "suitableFor": [
+      "industry showcase sections",
+      "vertical tab layouts with images",
+      "category browsing with descriptions"
+    ],
+    "notSuitableFor": [
+      "simple text-only tabs",
+      "FAQ accordions",
+      "horizontal tab navigation"
+    ]
+  },
+  "usage": {
+    "pagesUsing": ["content/index"],
+    "reuseCount": 1,
+    "lastUsed": "2026-04-13T20:06:00.000Z"
+  }
+}

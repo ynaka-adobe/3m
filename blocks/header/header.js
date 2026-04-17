@@ -57,7 +57,10 @@ function focusNavSection() {
  * @param {Boolean} expanded Whether the element should be expanded or collapsed
  */
 function toggleAllNavSections(sections, expanded = false) {
-  sections.querySelectorAll('.nav-sections .default-content-wrapper > ul > li').forEach((section) => {
+  let items = sections.querySelectorAll('.nav-sections .default-content-wrapper > ul > li');
+  if (items.length === 0) items = sections.querySelectorAll('.nav-sections > div > div > ul > li');
+  if (items.length === 0) items = sections.querySelectorAll('ul > li.nav-drop');
+  items.forEach((section) => {
     section.setAttribute('aria-expanded', expanded);
   });
 }
@@ -191,15 +194,56 @@ export default async function decorate(block) {
   });
 
   const navBrand = nav.querySelector('.nav-brand');
-  const brandLink = navBrand.querySelector('.button');
-  if (brandLink) {
-    brandLink.className = '';
-    brandLink.closest('.button-container').className = '';
+  // Remove button classes from brand links
+  navBrand.querySelectorAll('.button').forEach((button) => {
+    button.className = '';
+    const bc = button.closest('.button-container');
+    if (bc) bc.className = '';
+  });
+
+  // Build search bar from brand content
+  const searchP = navBrand.querySelector('p:has(input), .nav-search');
+  if (searchP) {
+    const searchWrapper = document.createElement('div');
+    searchWrapper.className = 'nav-search';
+    const input = searchP.querySelector('input') || document.createElement('input');
+    if (!input.type) input.type = 'search';
+    if (!input.placeholder) input.placeholder = 'Search';
+    input.setAttribute('aria-label', 'Search');
+    const searchBtn = document.createElement('button');
+    searchBtn.type = 'button';
+    searchBtn.className = 'nav-search-btn';
+    searchBtn.setAttribute('aria-label', 'Search');
+    searchBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
+    searchWrapper.append(input, searchBtn);
+    searchP.replaceWith(searchWrapper);
+  }
+
+  // Style locale selector
+  const localeP = navBrand.querySelector('p:last-of-type:not(:first-of-type)');
+  if (localeP && !localeP.querySelector('a, img, input')) {
+    localeP.className = 'nav-locale';
+    // Add globe icon
+    const globe = document.createElement('span');
+    globe.className = 'nav-locale-icon';
+    globe.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+    localeP.prepend(globe);
   }
 
   const navSections = nav.querySelector('.nav-sections');
   if (navSections) {
-    navSections.querySelectorAll(':scope .default-content-wrapper > ul > li').forEach((navSection) => {
+    // Remove button classes from section links
+    navSections.querySelectorAll('.button').forEach((button) => {
+      button.className = '';
+      const bc = button.closest('.button-container');
+      if (bc) bc.className = '';
+    });
+
+    // Find top-level nav items (support both default-content-wrapper and plain div structures)
+    const navItems = navSections.querySelectorAll(':scope .default-content-wrapper > ul > li');
+    const navItemsFallback = navItems.length > 0 ? navItems : navSections.querySelectorAll(':scope > div > div > ul > li');
+
+    navItemsFallback.forEach((navSection) => {
       if (navSection.querySelector('ul')) navSection.classList.add('nav-drop');
       navSection.addEventListener('click', () => {
         if (isDesktop.matches) {
@@ -213,10 +257,12 @@ export default async function decorate(block) {
 
   const navTools = nav.querySelector('.nav-tools');
   if (navTools) {
-    const search = navTools.querySelector('a[href*="search"]');
-    if (search && search.textContent === '') {
-      search.setAttribute('aria-label', 'Search');
-    }
+    // Remove button classes from tools links
+    navTools.querySelectorAll('.button').forEach((button) => {
+      button.className = '';
+      const bc = button.closest('.button-container');
+      if (bc) bc.className = '';
+    });
   }
 
   // hamburger for mobile

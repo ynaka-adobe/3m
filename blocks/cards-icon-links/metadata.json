@@ -1,0 +1,39 @@
+{
+  "variantName": "cards-icon-links",
+  "baseBlock": "cards",
+  "version": "1.0.0",
+  "created": "2026-04-13T20:06:00.000Z",
+  "sourceContext": {
+    "originUrl": "https://www.3m.com/",
+    "originPage": "corporate homepage",
+    "blockPosition": "bottom"
+  },
+  "visualCharacteristics": {
+    "colorScheme": "dark",
+    "density": "spacious",
+    "purpose": "about-links",
+    "imagePattern": "icon"
+  },
+  "contentPattern": {
+    "structure": "tagline + icon + link",
+    "buttonCount": 0,
+    "imageCount": 7
+  },
+  "reuseGuidance": {
+    "suitableFor": [
+      "icon-link grid sections",
+      "about/who-we-are sections",
+      "quick navigation with icons on dark backgrounds"
+    ],
+    "notSuitableFor": [
+      "news card grids",
+      "product cards with large images",
+      "feature highlight cards"
+    ]
+  },
+  "usage": {
+    "pagesUsing": ["content/index"],
+    "reuseCount": 1,
+    "lastUsed": "2026-04-13T20:06:00.000Z"
+  }
+}

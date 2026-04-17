@@ -1,0 +1,39 @@
+{
+  "variantName": "cards-news",
+  "baseBlock": "cards",
+  "version": "1.0.0",
+  "created": "2026-04-13T20:06:00.000Z",
+  "sourceContext": {
+    "originUrl": "https://www.3m.com/",
+    "originPage": "corporate homepage",
+    "blockPosition": "middle"
+  },
+  "visualCharacteristics": {
+    "colorScheme": "light",
+    "density": "compact",
+    "purpose": "news-feed",
+    "imagePattern": "large"
+  },
+  "contentPattern": {
+    "structure": "image + date + heading + summary + link",
+    "buttonCount": 0,
+    "imageCount": 6
+  },
+  "reuseGuidance": {
+    "suitableFor": [
+      "news feed sections",
+      "press release listings",
+      "article card grids with dates"
+    ],
+    "notSuitableFor": [
+      "product cards without dates",
+      "icon-based link grids",
+      "feature highlight cards"
+    ]
+  },
+  "usage": {
+    "pagesUsing": ["content/index"],
+    "reuseCount": 1,
+    "lastUsed": "2026-04-13T20:06:00.000Z"
+  }
+}
