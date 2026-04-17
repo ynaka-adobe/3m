@@ -372,16 +372,18 @@ header nav .nav-sections ul > li > ul > li {
     position: relative;
   }
 
-  /* Submenu: visible when expanded */
+  /* Submenu: visible when expanded — full-width 4-column grid */
   header nav .nav-sections .nav-drop[aria-expanded='true'] > ul {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    position: absolute;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0 32px;
+    position: fixed;
     left: 0;
-    top: 100%;
-    min-width: 280px;
-    padding: 8px 0;
+    right: 0;
+    top: auto;
+    padding: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
     background-color: var(--background-color);
     box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
     white-space: initial;
@@ -392,7 +394,6 @@ header nav .nav-sections ul > li > ul > li {
   /* Submenu items */
   header nav .nav-sections .nav-drop > ul > li {
     padding: 0;
-    flex: none;
     font-size: 14px;
   }
 

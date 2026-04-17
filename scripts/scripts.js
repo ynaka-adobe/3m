@@ -125,6 +125,24 @@ function decorateSections(main) {
  * @param {Element} main The main element
  */
 // eslint-disable-next-line import/prefer-default-export
+function decorateHeroVideo(main) {
+  const hero = main.querySelector('.hero');
+  if (!hero) return;
+  const videoLink = hero.querySelector('a[href*=".mp4"]');
+  if (!videoLink) return;
+  const poster = videoLink.querySelector('img');
+  const video = document.createElement('video');
+  video.src = videoLink.href;
+  video.loop = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.autoplay = true;
+  if (poster) video.poster = poster.src;
+  videoLink.replaceWith(video);
+  video.play().catch(() => {});
+}
+
+// eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
   // hopefully forward compatible button decoration
   decorateButtons(main);
@@ -132,6 +150,7 @@ export function decorateMain(main) {
   buildAutoBlocks(main);
   decorateSections(main);
   decorateBlocks(main);
+  decorateHeroVideo(main);
 }
 
 /**
