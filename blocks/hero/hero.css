@@ -202,6 +202,19 @@
   }
 }
 
+/* 3M hero: text positioned at bottom-left, larger heading */
+.hero .hero-heading {
+  font-size: var(--heading-font-size-xxl);
+  font-weight: 700;
+  max-width: 520px;
+}
+
+@media (width >= 900px) {
+  .hero .hero-heading {
+    font-size: 40px;
+  }
+}
+
 @container (width < 400px) {
   .layout-bento .hero .hero-foreground {
     grid-template-columns: 1fr;
