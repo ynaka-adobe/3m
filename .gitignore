@@ -1,11 +1,29 @@
-.hlx/
-coverage/
-logs/
-node_modules/
+.hlx/*
+coverage/*
+logs/*
+node_modules/*
 
 helix-importer-ui
 .DS_Store
 *.bak
 .idea
-.wrangler
-.claude
+
+# secrets + local QA + stardust working artifacts (not part of the EDS site)
+.env
+.env.*
+qa/
+stardust/
+scratchpad/
+/PRODUCT.md
+/DESIGN.md
+/DESIGN.json
+/DESIGN-A.md
+/DESIGN-A.json
+/DESIGN-B.md
+/DESIGN-B.json
+/DESIGN-C.md
+/DESIGN-C.json
+
+# Ensure these files are tracked
+!CLAUDE.md
+!AGENTS.md

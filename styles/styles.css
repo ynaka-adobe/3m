@@ -1,550 +1,301 @@
-/* 3M: DM Sans as substitute for 3MCircular */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,700&display=swap');
+/*
+ * 3M homepage (stardust uplift, variant A-video) — foundation styles.
+ * Vanilla aem-boilerplate runtime. Brand tokens + self-hosted 3MCircular.
+ */
 
+/* ── self-hosted brand font (proprietary — see styles/fonts/LICENSING.md) ── */
 @font-face {
-  font-family: Montserrat;
-  font-style: normal;
-  font-weight: 100 900;
+  font-family: "3MCircular";
+  font-weight: 300;
   font-display: swap;
-  src: url("/styles/fonts/montserrat.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF,
-    U+0131,
-    U+0152-0153,
-    U+02BB-02BC,
-    U+02C6,
-    U+02DA,
-    U+02DC,
-    U+0304,
-    U+0308,
-    U+0329,
-    U+2000-206F,
-    U+20AC,
-    U+2122,
-    U+2191,
-    U+2193,
-    U+2212,
-    U+2215,
-    U+FEFF,
-    U+FFFD;
+  src: url("/styles/fonts/3MCircularWeb-Light.woff") format("woff");
 }
 
 @font-face {
-  font-family: Montserrat;
-  font-style: italic;
-  font-weight: 100 900;
+  font-family: "3MCircular";
+  font-weight: 400;
   font-display: swap;
-  src: url("/styles/fonts/montserrat-italic.woff2") format("woff2");
-  unicode-range:
-    U+0000-00FF,
-    U+0131,
-    U+0152-0153,
-    U+02BB-02BC,
-    U+02C6,
-    U+02DA,
-    U+02DC,
-    U+0304,
-    U+0308,
-    U+0329,
-    U+2000-206F,
-    U+20AC,
-    U+2122,
-    U+2191,
-    U+2193,
-    U+2212,
-    U+2215,
-    U+FEFF,
-    U+FFFD;
+  src: url("/styles/fonts/3MCircularWeb-Book.woff") format("woff");
+}
+
+@font-face {
+  font-family: "3MCircular";
+  font-weight: 700;
+  font-display: swap;
+  src: url("/styles/fonts/3MCircularWeb-Bold.woff") format("woff");
+}
+
+/* metric-matched fallback so the woff swap doesn't shift text */
+@font-face {
+  font-family: "3MCircular-fallback";
+  size-adjust: 100%;
+  ascent-override: 95%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+  src: local("Arial");
 }
 
 :root {
-  /* grid */
-  --grid-container-width: 83.4%;
-  --grid-column-width: calc(var(--grid-container-width) / 12);
-  --grid-gutter-width: 8.3%;
-
-  /* spacing */
-  --spacing-xxl: 48px;
-  --spacing-xl: 32px;
-  --spacing-l: 24px;
-  --spacing-m: 12px;
-  --spacing-s: 8px;
-  --spacing-xs: 4px;
-
-  /* color schemes */
-  color-scheme: light dark;
-
-  /* color tokens */
-  --color-gray-100: #f1f1f1;
-  --color-gray-200: #d3d3d3;
-  --color-gray-300: #b5b5b5;
-  --color-gray-400: #999;
-  --color-gray-500: #7d7d7d;
-  --color-gray-600: #636363;
-  --color-gray-700: #494949;
-  --color-gray-800: #313131;
-  --color-gray-900: #1b1b1b;
-  --color-green-100: #e1f5e3;
-  --color-green-200: #a3e1a8;
-  --color-green-300: #60cb6a;
-  --color-green-400: #24b032;
-  --color-green-500: #1e9029;
-  --color-green-600: #187220;
-  --color-green-700: #115418;
-  --color-green-800: #0c3910;
-  --color-green-900: #072009;
-  --color-teal-100: #e4f3f5;
-  --color-teal-200: #acdbdf;
-  --color-teal-300: #71c1c9;
-  --color-teal-400: #36a7b3;
-  --color-teal-500: #108a96;
-  --color-teal-600: #0d6d77;
-  --color-teal-700: #0a5158;
-  --color-teal-800: #06363b;
-  --color-teal-900: #041e21;
-  --color-blue-100: #eaf2ff;
-  --color-blue-200: #b9d4ff;
-  --color-blue-300: #88b6ff;
-  --color-blue-400: #5898ff;
-  --color-blue-500: #2176ff;
-  --color-blue-600: #0058e4;
-  --color-blue-700: #0041a9;
-  --color-blue-800: #002c74;
-  --color-blue-900: #001942;
-  --color-purple-100: #f4edfb;
-  --color-purple-200: #dfcbf2;
-  --color-purple-300: #c9a7ea;
-  --color-purple-400: #b385e1;
-  --color-purple-500: #9d60d8;
-  --color-purple-600: #843ccb;
-  --color-purple-700: #622c98;
-  --color-purple-800: #421e66;
-  --color-purple-900: #251139;
-  --color-magenta-100: #ffebf9;
-  --color-magenta-200: #ffc0ec;
-  --color-magenta-300: #ff8fde;
-  --color-magenta-400: #ff53cc;
-  --color-magenta-500: #eb00a5;
-  --color-magenta-600: #bd0084;
-  --color-magenta-700: #8e0064;
-  --color-magenta-800: #630045;
-  --color-magenta-900: #3b002a;
-  --color-red-100: #ffecea;
-  --color-red-200: #ffc4be;
-  --color-red-300: #ff9990;
-  --color-red-400: #ff6759;
-  --color-red-500: #f81400;
-  --color-red-600: #c71000;
-  --color-red-700: #950c00;
-  --color-red-800: #670800;
-  --color-red-900: #3c0500;
-  --color-orange-100: #ffeddc;
-  --color-orange-200: #ffc895;
-  --color-orange-300: #ff9e43;
-  --color-orange-400: #f37500;
-  --color-orange-500: #c76000;
-  --color-orange-600: #9e4c00;
-  --color-orange-700: #753800;
-  --color-orange-800: #4f2600;
-  --color-orange-900: #2d1500;
-  --color-yellow-100: #fff48e;
-  --color-yellow-200: #ebd400;
-  --color-yellow-300: #cab600;
-  --color-yellow-400: #ab9a00;
-  --color-yellow-500: #8c7e00;
-  --color-yellow-600: #6e6400;
-  --color-yellow-700: #514a00;
-  --color-yellow-800: #373100;
-  --color-yellow-900: #1e1b00;
-
-  /* named colors */
-  --color-light-base: 255 255 255;
-  --color-dark-base: 0 0 0;
-  --color-light: rgb(255 255 255);
-  --color-dark: rgb(0 0 0);
-  --color-text: light-dark(#4b4b4b, var(--color-light));
-  --color-link: light-dark(#03c, var(--color-gray-100));
-  --color-brand: #d10411;
-  --brand-red: #d10411;
-  --color-accent: #d10411;
-  --color-background: light-dark(#fff, var(--color-dark));
-  --color-shaded: light-dark(#f9f9f9, #111);
+  /* colors (pinned from capture) */
+  --background-color: #fff;
+  --light-color: #f5f5f5;
+  --dark-color: #4b4b4b;
+  --text-color: #4b4b4b;
+  --ink: #202024;
+  --accent: #d10411;
+  --accent-deep: #8a041f;
+  --accent-dark: #b3030f;
+  --link-color: #03c;
+  --link-hover-color: #1d3ecf;
+  --line: #e6e6e6;
+  --muted: #9a9a9a;
 
   /* fonts */
-  --font-family: 'DM Sans', 'Trebuchet MS', sans-serif;
+  --body-font-family: "3MCircular", "3MCircular-fallback", arial, sans-serif;
+  --heading-font-family: "3MCircular", "3MCircular-fallback", arial, sans-serif;
 
-  /* headings */
-  --heading-font-size-xxl: 32.44px;
-  --heading-font-size-xl: 28.83px;
-  --heading-font-size-l: 25.63px;
-  --heading-font-size-m: 22.78px;
-  --heading-font-size-s: 20.25px;
-  --heading-font-size-xs: 18px;
-  --heading-line-height: 1.15;
+  /* body sizes */
+  --body-font-size-m: 18px;
+  --body-font-size-s: 16px;
+  --body-font-size-xs: 14px;
 
-  /* body */
-  --body-font-size-xxxl: 25px;
-  --body-font-size-xxl: 22px;
-  --body-font-size-xl: 20px;
-  --body-font-size-l: 18px;
-  --body-font-size-m: 16px;
-  --body-font-size-s: 14px;
-  --body-font-size-xs: 12px;
-  --body-line-height: 1.6;
+  /* heading sizes (near-modular ~1.25) */
+  --heading-font-size-xxl: 64px;
+  --heading-font-size-xl: 46px;
+  --heading-font-size-l: 34px;
+  --heading-font-size-m: 26px;
+  --heading-font-size-s: 20px;
+  --heading-font-size-xs: 16px;
 
-  /* misc */
-  --header-height: 64px;
-  --breadcrumb-height: 24px;
+  /* layout */
+  --maxw: 1200px;
+  --nav-height: 70px;
+  --radius: 0px;
 }
 
-.light-scheme {
-  color-scheme: light;
-}
-
-.dark-scheme {
-  color-scheme: dark;
-}
-
-html {
-  scroll-padding-top: calc(var(--header-height) + 1rem);
+@media (width >= 900px) {
+  :root {
+    --heading-font-size-xxl: 88px;
+    --heading-font-size-xl: 46px;
+  }
 }
 
 body {
+  display: none;
   margin: 0;
-  background-color: var(--color-background);
-  color: var(--color-text);
-  font-family: "Trebuchet MS", sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: var(--body-font-family);
   font-size: var(--body-font-size-m);
-  line-height: var(--body-line-height);
-  padding: var(--header-height) 0 0;
+  font-weight: 400;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
 
-  &.session {
-    /* only allow font loading if a session */
-    font-family: var(--font-family);
-  }
-
-  &.has-breadcrumb {
-    margin: calc(var(--header-height) + var(--breadcrumb-height)) 0 0;
-  }
-
-  &.no-header {
-    --header-height: 0;
-
-    margin: 0;
-  }
+body.appear {
+  display: block;
 }
 
 header {
-  display: none;
-  height: var(--header-height);
-  position: fixed;
+  min-height: var(--nav-height);
+  background: #fff;
 }
 
-a {
-  color: var(--color-link);
-
-  &.btn {
-    display: inline-block;
-    line-height: 1;
-    font-weight: 500;
-    text-decoration: none;
-    border: 2px solid;
-    padding: 8px 12px;
-    box-sizing: border-box;
-
-    &.btn-outline {
-      background: transparent;
-    }
-  }
-
-  &.btn-accent {
-    color: #fff;
-    background: var(--color-accent);
-    border: 2px solid var(--color-accent);
-
-    &.btn-outline {
-      color: var(--color-accent);
-    }
-  }
-
-  &.btn-primary {
-    color: var(--color-background);
-    background-color: var(--color-text);
-
-    &.btn-outline {
-      color: var(--color-text);
-      background: transparent;
-    }
-  }
-
-  &.btn-secondary {
-    color: var(--color-background);
-    background-color: var(--color-gray-500);
-    border: 2px solid var(--color-gray-500);
-
-    &.btn-outline {
-      color: var(--color-gray-500);
-    }
-  }
-
-  &.btn-negative {
-    color: #fff;
-    background-color: var(--color-red-600);
-    border: 2px solid var(--color-red-600);
-
-    &.btn-outline {
-      color: var(--color-red-600);
-    }
-  }
+header .header,
+footer .footer {
+  visibility: hidden;
 }
 
-/* sections */
-.section {
-  display: block;
-
-  > .default-content {
-    max-width: var(--grid-container-width);
-    margin: 0 auto;
-  }
+header .header[data-block-status="loaded"],
+footer .footer[data-block-status="loaded"] {
+  visibility: visible;
 }
 
-main {
-  ul,
-  ol {
-    padding-inline-start: 24px;
-
-    /* Reduce nested lists even further */
-    ul,
-    ol {
-      padding-inline-start: 12px;
-    }
-  }
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-family: var(--heading-font-family);
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.05;
+  scroll-margin: 40px;
 }
 
-button {
-  cursor: pointer;
+h1 {
+  font-size: var(--heading-font-size-xxl);
 }
 
-li {
-  margin-block: 1em;
+h2 {
+  font-size: var(--heading-font-size-xl);
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
+h3 {
+  font-size: var(--heading-font-size-l);
+}
+
+h4 {
+  font-size: var(--heading-font-size-m);
+}
+
+h5 {
+  font-size: var(--heading-font-size-s);
+}
+
 h6 {
-  font-weight: 600;
-  line-height: var(--heading-line-height);
+  font-size: var(--heading-font-size-xs);
 }
 
-h1 { font-size: var(--heading-font-size-xxl); }
-h2 { font-size: var(--heading-font-size-xl); }
-h3 { font-size: var(--heading-font-size-l); }
-h4 { font-size: var(--heading-font-size-m); }
-h5 { font-size: var(--heading-font-size-s); }
-h6 { font-size: var(--heading-font-size-xs); }
-
-strong {
-  font-weight: 600;
+p, dl, ol, ul, pre, blockquote {
+  margin: 0.8em 0 0.25em;
 }
 
-input,
-textarea,
-select,
-button {
-  font: inherit;
-}
-
-img {
-  width: 100%;
+main img {
+  display: block;
+  max-width: 100%;
   height: auto;
 }
 
-svg {
-  width: 20px;
-  height: 20px;
+a:any-link {
+  color: var(--link-color);
+  text-decoration: none;
+  overflow-wrap: break-word;
 }
 
-/* @media (width >= 600px) {} */
-
-/* @media (width >= 900px) {} */
-
-/* @media (width >= 1200px) {} */
-
-@media (width >= 1440px) {
-  :root {
-    --grid-container-width: 1200px;
-  }
+a:hover {
+  color: var(--link-hover-color);
 }
 
-main > div,
-.has-template,
-div[data-status] {
+/* buttons — rectilinear 3M system (decorateButtons applies .primary/.secondary/.accent) */
+a.button:any-link,
+button.button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  margin: 0;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 13px 26px;
+  font-family: var(--heading-font-family);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+a.button.primary:hover {
+  border-color: var(--accent-dark);
+  background: var(--accent-dark);
+  color: #fff;
+}
+
+a.button.secondary {
+  background: transparent;
+  color: var(--ink);
+}
+
+a.button.secondary:hover {
+  background: var(--ink);
+  color: #fff;
+}
+
+a.button.accent {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+a.button.accent:hover {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.icon {
+  display: inline-block;
+  height: 24px;
+  width: 24px;
+}
+
+.icon img {
+  height: 100%;
+  width: 100%;
+}
+
+/* sections */
+main > .section {
+  margin: 0;
+  padding: 84px 0;
+}
+
+/* a metadata-only section is consumed into <head>, leaving an empty .section;
+   collapse it so it adds no vertical space (e.g. above the hero) */
+main > .section:empty {
   display: none;
 }
 
-aem-sidekick {
-  opacity: 0;
-
-  &[open="true"].is-ready {
-    opacity: 1;
-  }
+main > .section > div {
+  max-width: var(--maxw);
+  margin: auto;
+  padding: 0 24px;
 }
 
-/* 3M Brand Overrides — applied via existing :root above */
+/* full-bleed hero manages its own width + spacing internally */
+main > .section.full {
+  padding: 0;
+}
 
-/* 3M section variants */
+main > .section.full > div {
+  max-width: none;
+  padding: 0;
+}
+
 main .section.light {
-  background-color: var(--color-gray-100);
+  background: var(--light-color);
 }
 
-main .section.dark {
-  background-color: #1a1a1a;
-
-  .default-content,
-  .block-content {
-    color: #fff;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    color: #fff;
-  }
-
-  a {
-    color: #fff;
-  }
+main .section.ink {
+  background: var(--ink);
 }
 
-/* 3M: News cards section (columns.section after hero) */
-main > .columns.section {
-  background-color: var(--color-gray-100);
-  padding: var(--spacing-xxl) 0;
+main .section.black {
+  background: #000;
+}
 
-  /* 3-column card grid */
-  .block-content > div > div {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 16px;
+/* section head authored as default content above a block */
+main > .section > .default-content-wrapper {
+  margin-bottom: 44px;
+}
 
-    > div {
-      overflow: hidden;
-      transition: box-shadow 0.2s ease;
+main > .section > .default-content-wrapper h2 {
+  font-weight: 300;
+  font-size: var(--heading-font-size-xl);
+  letter-spacing: -0.01em;
+}
 
-      &:hover {
-        box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
-      }
+main > .section > .default-content-wrapper h2 strong {
+  font-weight: 700;
+}
 
-      img {
-        aspect-ratio: 16 / 9;
-        object-fit: cover;
-        display: block;
-      }
+@media (width >= 900px) {
+  main > .section > div {
+    padding: 0 32px;
+  }
 
-      p {
-        font-size: 12px;
-        color: var(--color-gray-600);
-        margin: 8px 0 4px;
-      }
-
-      h3 {
-        font-size: 16px;
-        line-height: 1.3;
-        margin: 0;
-      }
-
-      a {
-        color: var(--color-text);
-        text-decoration: none;
-
-        &:hover {
-          color: var(--color-link);
-        }
-      }
-    }
+  main > .section.full > div {
+    padding: 0;
   }
 }
 
-/* 3M: Who we are section (second columns section) */
-main > .columns.section ~ .columns.section {
-  background-color: #1a1a1a;
-  padding: var(--spacing-xxl) 0;
-
-  .default-content {
-    color: #fff;
+@media (width <= 860px) {
+  main > .section {
+    padding: 56px 0;
   }
-
-  h2, h3 {
-    color: #fff;
-  }
-
-  /* Icon grid */
-  .block-content > div > div {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    margin-bottom: 24px;
-
-    > div {
-      text-align: center;
-
-      img {
-        width: 64px !important;
-        height: 64px !important;
-        object-fit: contain;
-        margin: 0 auto 8px;
-        display: block;
-      }
-
-      p {
-        margin: 0;
-      }
-
-      a {
-        color: #fff;
-        font-weight: 700;
-        font-size: 14px;
-        text-decoration: none;
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-  }
-}
-
-/* Mobile responsive */
-@media (width < 600px) {
-  main > .columns.section .block-content > div > div {
-    grid-template-columns: 1fr;
-  }
-
-  main > .columns.section ~ .columns.section .block-content > div > div {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (width >= 600px) and (width < 900px) {
-  main > .columns.section .block-content > div > div {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  main > .columns.section ~ .columns.section .block-content > div > div {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Force icon sizing in Who We Are section */
-main > .columns.section ~ .columns.section img {
-  width: 64px !important;
-  height: 64px !important;
-  object-fit: contain;
-}
-
-/* Hide metadata remnant section */
-main > .section:last-child:not(.hero, .columns, .advanced-tabs) {
-  display: none;
 }
