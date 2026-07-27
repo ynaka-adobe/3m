@@ -1,0 +1,51 @@
+.contact-cta .cc-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+
+.contact-cta .cc-text::before {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 4px;
+  background: var(--accent);
+  margin-bottom: 22px;
+}
+
+.contact-cta .cc-text h2 {
+  font-weight: 300;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+}
+
+.contact-cta .cc-text p {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.contact-cta .cc-text a[href^="tel:"],
+.contact-cta .cc-text strong {
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+@media (width >= 900px) {
+  .contact-cta .cc-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 48px;
+  }
+
+  .contact-cta .cc-actions {
+    flex-shrink: 0;
+  }
+}

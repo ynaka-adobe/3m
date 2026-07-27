@@ -1,259 +1,47 @@
-import { getConfig, getMetadata } from '../../scripts/ak.js';
-import { loadFragment } from '../fragment/fragment.js';
-import { setColorScheme } from '../section-metadata/section-metadata.js';
+/**
+ * header — 3M site chrome (self-contained for this presales build).
+ * Red wordmark + primary nav + utility actions. CSS-driven mobile menu
+ * toggled by a JS click handler (block JS runs, unlike fragment scripts).
+ */
 
-const { locale } = getConfig();
-
-const HEADER_PATH = '/fragments/nav/header';
-const HEADER_ACTIONS = [
-  '/tools/widgets/scheme',
-  '/tools/widgets/language',
-  '/tools/widgets/toggle',
+// Absolute local paths so the nav resolves from every page (not just home).
+const NAV = [
+  { label: 'Products', href: '/3m/en_us/products' },
+  { label: 'Industries', href: '/3m/en_us/industries' },
+  { label: 'About', href: '/3m/en_us/about-3m' },
 ];
 
-function closeAllMenus() {
-  const openMenus = document.body.querySelectorAll('header .is-open');
-  for (const openMenu of openMenus) {
-    openMenu.classList.remove('is-open');
-  }
-}
+const ACTIONS = [
+  { label: 'Careers', href: '/3m/en_us/careers-us' },
+  { label: 'Sign In', href: 'https://www.3m.com/mmm/login' },
+];
 
-function docClose(e) {
-  if (e.target.closest('header')) return;
-  closeAllMenus();
-}
-
-function toggleMenu(menu) {
-  const isOpen = menu.classList.contains('is-open');
-  closeAllMenus();
-  if (isOpen) {
-    document.removeEventListener('click', docClose);
-    return;
-  }
-
-  // Setup the global close event
-  document.addEventListener('click', docClose);
-  menu.classList.add('is-open');
-}
-
-function decorateLanguage(btn) {
-  const section = btn.closest('.section');
-  btn.addEventListener('click', async () => {
-    let menu = section.querySelector('.language.menu');
-    if (!menu) {
-      const content = document.createElement('div');
-      content.classList.add('block-content');
-      const fragment = await loadFragment(`${locale.prefix}${HEADER_PATH}/languages`);
-      menu = document.createElement('div');
-      menu.className = 'language menu';
-      menu.append(fragment);
-      content.append(menu);
-      section.append(content);
-    }
-    toggleMenu(section);
-  });
-}
-
-function decorateScheme(btn) {
-  btn.addEventListener('click', async () => {
-    const { body } = document;
-
-    let currPref = localStorage.getItem('color-scheme');
-    if (!currPref) {
-      currPref = matchMedia('(prefers-color-scheme: dark)')
-        .matches ? 'dark-scheme' : 'light-scheme';
-    }
-
-    const theme = currPref === 'dark-scheme'
-      ? { add: 'light-scheme', remove: 'dark-scheme' }
-      : { add: 'dark-scheme', remove: 'light-scheme' };
-
-    body.classList.remove(theme.remove);
-    body.classList.add(theme.add);
-    localStorage.setItem('color-scheme', theme.add);
-    // Re-calculatie section schemes
-    const sections = document.querySelectorAll('.section');
-    for (const section of sections) {
-      setColorScheme(section);
-    }
-  });
-}
-
-function decorateNavToggle(btn) {
-  btn.addEventListener('click', () => {
-    const header = document.body.querySelector('header');
-    if (header) header.classList.toggle('is-mobile-open');
-  });
-}
-
-async function decorateAction(header, pattern) {
-  const link = header.querySelector(`[href*="${pattern}"]`);
-  if (!link) return;
-
-  const icon = link.querySelector('.icon');
-  const text = link.textContent;
-  const btn = document.createElement('button');
-  if (icon) btn.append(icon);
-  if (text) {
-    const textSpan = document.createElement('span');
-    textSpan.className = 'text';
-    textSpan.textContent = text;
-    btn.append(textSpan);
-  }
-  const wrapper = document.createElement('div');
-  wrapper.className = `action-wrapper ${icon.classList[1].replace('icon-', '')}`;
-  wrapper.append(btn);
-  link.parentElement.parentElement.replaceChild(wrapper, link.parentElement);
-
-  if (pattern === '/tools/widgets/language') decorateLanguage(btn);
-  if (pattern === '/tools/widgets/scheme') decorateScheme(btn);
-  if (pattern === '/tools/widgets/toggle') decorateNavToggle(btn);
-}
-
-function decorateMenu(li) {
-  const subUl = li.querySelector(':scope > ul');
-  if (!subUl) return null;
-  const wrapper = document.createElement('div');
-  wrapper.className = 'menu';
-  wrapper.append(subUl);
-  li.append(wrapper);
-  return wrapper;
-}
-
-function decorateMegaMenu(li) {
-  const menu = li.querySelector('.fragment-content');
-  if (!menu) return null;
-  const wrapper = document.createElement('div');
-  wrapper.className = 'mega-menu';
-  wrapper.append(menu);
-  li.append(wrapper);
-  return wrapper;
-}
-
-function decorateNavItem(li) {
-  li.classList.add('main-nav-item');
-  const link = li.querySelector(':scope > p > a');
-  if (link) link.classList.add('main-nav-link');
-  const menu = decorateMegaMenu(li) || decorateMenu(li);
-  if (!menu) return;
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    toggleMenu(li);
-  });
-}
-
-function decorateBrandSection(section) {
-  section.classList.add('brand-section');
-  const brandLink = section.querySelector('a');
-  const [, text] = brandLink.childNodes;
-  const span = document.createElement('span');
-  span.className = 'brand-text';
-  span.append(text);
-  brandLink.append(span);
-
-  // Build search bar from .nav-search paragraph
-  const content = section.querySelector('.default-content');
-  if (!content) return;
-  const searchP = content.querySelector('.nav-search, p:nth-of-type(2)');
-  if (searchP && !searchP.querySelector('a')) {
-    const searchWrapper = document.createElement('div');
-    searchWrapper.className = 'nav-search';
-    const input = document.createElement('input');
-    input.type = 'search';
-    input.placeholder = searchP.textContent.trim() || 'Search';
-    input.setAttribute('aria-label', 'Search');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'nav-search-btn';
-    btn.setAttribute('aria-label', 'Search');
-    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>';
-    searchWrapper.append(input, btn);
-    searchP.replaceWith(searchWrapper);
-  }
-
-  // Build locale selector from .nav-locale paragraph
-  const localeP = content.querySelector('.nav-locale, p:nth-of-type(2)');
-  if (localeP && !localeP.querySelector('a, input')) {
-    localeP.classList.add('nav-locale');
-    const globe = document.createElement('span');
-    globe.className = 'nav-locale-icon';
-    globe.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
-    localeP.append(globe);
-  }
-}
-
-function decorateNavSection(section) {
-  section.classList.add('main-nav-section');
-  const navContent = section.querySelector('.default-content');
-  const navList = section.querySelector('ul');
-  if (!navList) return;
-  navList.classList.add('main-nav-list');
-
+export default async function decorate(block) {
   const nav = document.createElement('nav');
-  nav.append(navList);
-  navContent.append(nav);
+  nav.id = 'nav';
+  nav.className = 'nav-3m';
 
-  const mainNavItems = section.querySelectorAll('nav > ul > li');
-  for (const navItem of mainNavItems) {
-    decorateNavItem(navItem);
-  }
-}
+  nav.innerHTML = `
+    <a class="nav-logo" href="/" aria-label="3M home">3M</a>
+    <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-panel">
+      <ul class="nav-links">
+        ${NAV.map((n) => `<li><a href="${n.href}">${n.label}</a></li>`).join('')}
+      </ul>
+      <div class="nav-actions">
+        ${ACTIONS.map((a) => `<a href="${a.href}">${a.label}</a>`).join('')}
+        <span class="nav-locale">US&nbsp;·&nbsp;EN</span>
+      </div>
+    </div>`;
 
-async function decorateActionSection(section) {
-  section.classList.add('actions-section');
-}
+  const burger = nav.querySelector('.nav-burger');
+  burger.addEventListener('click', () => {
+    const open = nav.classList.toggle('is-open');
+    burger.setAttribute('aria-expanded', String(open));
+    burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
 
-async function decorateHeader(fragment) {
-  const sections = fragment.querySelectorAll(':scope > .section');
-  if (sections[0]) decorateBrandSection(sections[0]);
-  if (sections[1]) decorateNavSection(sections[1]);
-  if (sections[2]) decorateActionSection(sections[2]);
-
-  for (const pattern of HEADER_ACTIONS) {
-    decorateAction(fragment, pattern);
-  }
-}
-
-/**
- * loads and decorates the header
- * @param {Element} el The header element
- */
-export default async function init(el) {
-  const headerMeta = getMetadata('header');
-  const path = headerMeta || HEADER_PATH;
-  try {
-    // Try local .plain.html first, fall back to fragment loader
-    let fragment;
-    const localResp = await fetch(`${locale.prefix}${path}.plain.html`);
-    if (localResp.ok) {
-      const html = await localResp.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      fragment = document.createElement('div');
-      fragment.classList.add('fragment-content');
-      const sections = doc.body.querySelectorAll(':scope > div');
-      if (sections.length) {
-        fragment.append(...sections);
-      } else {
-        fragment.innerHTML = doc.body.innerHTML;
-      }
-      // Wrap children into sections for decorateHeader
-      const divs = [...fragment.querySelectorAll(':scope > div')];
-      divs.forEach((div) => {
-        const section = document.createElement('div');
-        section.classList.add('section');
-        const wrapper = document.createElement('div');
-        wrapper.classList.add('default-content');
-        while (div.firstChild) wrapper.append(div.firstChild);
-        section.append(wrapper);
-        div.replaceWith(section);
-      });
-    } else {
-      fragment = await loadFragment(`${locale.prefix}${path}`);
-    }
-    fragment.classList.add('header-content');
-    await decorateHeader(fragment);
-    el.append(fragment);
-  } catch (e) {
-    throw Error(e);
-  }
+  block.replaceChildren(nav);
 }

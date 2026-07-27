@@ -1,57 +1,93 @@
 footer {
-  a {
-    text-decoration: none;
-  }
+  background: var(--ink);
+  color: #bdbdbd;
+}
 
-  .footer-content {
-    max-width: var(--grid-container-width);
-    margin: 48px auto;
-    font-size: 14px;
-  }
+footer .footer-3m {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 64px 24px 40px;
+  font-size: 14px;
+}
 
-  .section-legal ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
+footer .footer-top {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(4, 1fr);
+  gap: 32px;
+}
 
-  .section-copyright p {
-    margin: 0;
-  }
+footer .footer-logo {
+  display: inline-flex;
+  font-family: var(--heading-font-family);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+  color: #fff;
+  background: var(--accent);
+  padding: 5px 12px;
+  margin-bottom: 16px;
+}
 
-  .section {
-    .default-content {
-      max-width: initial;
-      margin: initial;
-    }
+footer .footer-brand p {
+  color: var(--muted);
+  max-width: 26ch;
+  margin: 0;
+}
+
+footer .footer-col h4 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  margin: 0 0 14px;
+}
+
+footer .footer-col a {
+  display: block;
+  padding: 6px 0;
+  color: #bdbdbd;
+}
+
+footer .footer-col a:hover {
+  color: #fff;
+}
+
+footer .footer-legal {
+  margin-top: 46px;
+  padding-top: 22px;
+  border-top: 1px solid #34343a;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+footer .footer-legal a {
+  color: var(--muted);
+}
+
+footer .footer-legal a:hover {
+  color: #fff;
+}
+
+footer .footer-social {
+  margin-left: auto;
+  display: flex;
+  gap: 18px;
+  font-weight: 700;
+}
+
+@media (width <= 860px) {
+  footer .footer-top {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (width >= 900px) {
-  footer {
-    margin: 0;
-
-    .section-legal {
-      display: flex;
-      justify-content: end;
-      gap: var(--spacing-xl);
-      margin-bottom: 24px;
-
-      ul {
-        display: flex;
-        justify-content: end;
-        gap: var(--spacing-xl);
-      }
-
-      li {
-        margin: 0;
-      }
-    }
-
-    .section-copyright {
-      display: flex;
-      justify-content: end;
-      gap: var(--spacing-xl);
-    }
+@media (width <= 520px) {
+  footer .footer-top {
+    grid-template-columns: 1fr;
   }
 }

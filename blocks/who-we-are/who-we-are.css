@@ -1,0 +1,61 @@
+.who-we-are.block {
+  padding: 0;
+}
+
+.who-we-are .who-inner {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.who-we-are h2 {
+  font-weight: 300;
+  font-size: clamp(40px, 5.4vw, 72px);
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  margin: 0;
+}
+
+.who-we-are h2 em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.who-we-are .who-links {
+  display: flex;
+  flex-direction: column;
+}
+
+.who-we-are .who-links a {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #2c2c2c;
+  font-weight: 700;
+  font-size: 18px;
+  color: #fff;
+}
+
+.who-we-are .who-links a span {
+  color: #6f6f6f;
+  transition: transform 0.25s, color 0.25s;
+}
+
+.who-we-are .who-links a:hover {
+  color: #fff;
+}
+
+.who-we-are .who-links a:hover span {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+
+@media (width <= 860px) {
+  .who-we-are .who-inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}

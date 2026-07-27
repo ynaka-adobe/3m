@@ -1,0 +1,46 @@
+.industry-navigator.block,
+.breadth.block {
+  padding: 0;
+}
+
+.breadth .breadth-inner {
+  padding: 0;
+}
+
+.breadth .breadth-head {
+  color: #fff;
+  font-weight: 300;
+  font-size: var(--heading-font-size-m);
+  margin: 0;
+}
+
+.breadth .breadth-cols {
+  margin-top: 36px;
+  columns: 4;
+  column-gap: 32px;
+  font-size: 15px;
+}
+
+.breadth .breadth-cols a {
+  display: block;
+  padding: 9px 0;
+  color: #cfcfcf;
+  border-bottom: 1px solid #34343a;
+  font-weight: 400;
+}
+
+.breadth .breadth-cols a:hover {
+  color: #fff;
+}
+
+@media (width <= 900px) {
+  .breadth .breadth-cols {
+    columns: 2;
+  }
+}
+
+@media (width <= 520px) {
+  .breadth .breadth-cols {
+    columns: 1;
+  }
+}
