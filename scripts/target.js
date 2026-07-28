@@ -1,4 +1,19 @@
-import { getMetadata } from './aem.js';
+import { decorateBlock, getMetadata, loadBlock } from './aem.js';
+
+/**
+ * Target offers deliver raw EDS block markup (e.g. a fragment's plain.html)
+ * directly into the DOM, bypassing the page's normal decorateBlocks()/loadBlock()
+ * pass. Run that pipeline on whatever Target just injected so blocks like
+ * `hero` get their CSS/JS decoration instead of rendering as raw markup.
+ * @param {Element} container
+ */
+async function decorateInjectedBlocks(container) {
+  const blocks = container.querySelectorAll('div[class]:not([data-block-status])');
+  await Promise.all([...blocks].map(async (block) => {
+    decorateBlock(block);
+    await loadBlock(block);
+  }));
+}
 
 /** AEM Universal Editor iframe; skip Target so at.js does not fight UE/CSP. */
 export function isUePreviewHost(hostname = window.location.hostname) {
@@ -45,7 +60,10 @@ export async function loadTarget() {
         const { cssSelector, content } = payload;
         if (!cssSelector || content == null) return;
         const el = document.querySelector(cssSelector);
-        if (el) el.outerHTML = content;
+        if (!el) return;
+        const { parentElement } = el;
+        el.outerHTML = content;
+        if (parentElement) decorateInjectedBlocks(parentElement);
       });
     }
   } catch (e) {
@@ -70,6 +88,9 @@ export async function applyTargetHeroMboxIfConfigured() {
   const t = window.adobe?.target;
   if (!t?.getOffer || !t?.applyOffer) return;
 
+  const activity = getMetadata('activity')?.trim();
+  const params = activity ? { activity } : undefined;
+
   const resolveSelector = () => {
     for (let i = 0; i < selectorList.length; i += 1) {
       const el = document.querySelector(selectorList[i]);
@@ -81,12 +102,16 @@ export async function applyTargetHeroMboxIfConfigured() {
   await new Promise((resolve) => {
     t.getOffer({
       mbox,
+      params,
       success(offers) {
         const match = resolveSelector();
         if (!match) {
           resolve();
           return;
         }
+        document.addEventListener('at-content-rendering-succeeded', () => {
+          decorateInjectedBlocks(match.el);
+        }, { once: true });
         t.applyOffer({ mbox, selector: match.selector, offer: offers });
         resolve();
       },

@@ -1,4 +1,18 @@
-import { getMetadata } from '../../scripts/aem.js';
+import { decorateBlock, getMetadata, loadBlock } from '../../scripts/aem.js';
+
+/**
+ * Target offers deliver raw EDS block markup directly into the DOM, bypassing
+ * the page's normal decorateBlocks()/loadBlock() pass. Run that pipeline on
+ * whatever Target just injected so nested blocks get their CSS/JS decoration.
+ * @param {Element} container
+ */
+async function decorateInjectedBlocks(container) {
+  const blocks = container.querySelectorAll('div[class]:not([data-block-status])');
+  await Promise.all([...blocks].map(async (block) => {
+    decorateBlock(block);
+    await loadBlock(block);
+  }));
+}
 
 /**
  * Adobe Target HTML offer slot.
@@ -74,6 +88,7 @@ async function applyMboxContent(slot, mboxName) {
     if (html == null || html === '') return;
 
     slot.innerHTML = typeof html === 'string' ? html : '';
+    await decorateInjectedBlocks(slot);
   } catch (ex) {
     // eslint-disable-next-line no-console
     console.error(ex);
