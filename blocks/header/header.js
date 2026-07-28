@@ -4,35 +4,45 @@
  * toggled by a JS click handler (block JS runs, unlike fragment scripts).
  */
 
-// Absolute local paths so the nav resolves from every page (not just home).
+// Supported locale folders; the active one is derived from the URL so nav
+// links stay within the visitor's language tree (/en, /de, …).
+const LOCALES = ['en', 'de'];
+const LOCALE_LABEL = { en: 'US&nbsp;·&nbsp;EN', de: 'DE&nbsp;·&nbsp;DE' };
+
+// Internal paths are locale-relative and get prefixed with /<locale> at render
+// time; absolute (http) and anchor (#) links are left untouched.
 const NAV = [
-  { label: 'Products', href: '/3m/en_us/products' },
-  { label: 'Industries', href: '/3m/en_us/industries' },
-  { label: 'About', href: '/3m/en_us/about-3m' },
+  { label: 'Products', href: '/products' },
+  { label: 'Industries', href: '/industries' },
+  { label: 'About', href: '/about-3m' },
 ];
 
 const ACTIONS = [
-  { label: 'Careers', href: '/3m/en_us/careers-us' },
+  { label: 'Careers', href: '/careers-us' },
   { label: 'Sign In', href: 'https://www.3m.com/mmm/login' },
 ];
 
 export default async function decorate(block) {
+  const seg = window.location.pathname.split('/')[1];
+  const locale = LOCALES.includes(seg) ? seg : 'en';
+  const localize = (href) => (href.startsWith('/') ? `/${locale}${href}` : href);
+
   const nav = document.createElement('nav');
   nav.id = 'nav';
   nav.className = 'nav-3m';
 
   nav.innerHTML = `
-    <a class="nav-logo" href="/" aria-label="3M home">3M</a>
+    <a class="nav-logo" href="/${locale}/" aria-label="3M home">3M</a>
     <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
     <div class="nav-panel">
       <ul class="nav-links">
-        ${NAV.map((n) => `<li><a href="${n.href}">${n.label}</a></li>`).join('')}
+        ${NAV.map((n) => `<li><a href="${localize(n.href)}">${n.label}</a></li>`).join('')}
       </ul>
       <div class="nav-actions">
-        ${ACTIONS.map((a) => `<a href="${a.href}">${a.label}</a>`).join('')}
-        <span class="nav-locale">US&nbsp;·&nbsp;EN</span>
+        ${ACTIONS.map((a) => `<a href="${localize(a.href)}">${a.label}</a>`).join('')}
+        <span class="nav-locale">${LOCALE_LABEL[locale] || LOCALE_LABEL.en}</span>
       </div>
     </div>`;
 

@@ -3,34 +3,39 @@
  * Multi-column site map + social + legal, on the ink ground.
  */
 
+// Supported locale folders; the active one is derived from the URL so internal
+// site-map links stay within the visitor's language tree (/en, /de, …).
+const LOCALES = ['en', 'de'];
+
 // Links point to delivered local pages where one exists; otherwise an absolute
-// 3m.com bounce (a working source page beats a dead local link).
+// 3m.com bounce (a working source page beats a dead local link). Internal hrefs
+// are locale-relative and get prefixed with /<locale> at render time.
 const SRC = 'https://www.3m.com/3M/en_US';
 const COLUMNS = [
   {
     h: 'Products',
     links: [
-      { t: 'All products', href: '/3m/en_us/products' },
-      { t: 'Adhesives & tapes', href: '/3m/en_us/p/c/adhesives' },
-      { t: 'Personal protective equipment', href: '/3m/en_us/p/c/ppe' },
-      { t: 'Office supplies', href: '/3m/en_us/p/c/office-supplies' },
+      { t: 'All products', href: '/products' },
+      { t: 'Adhesives & tapes', href: '/p/c/adhesives' },
+      { t: 'Personal protective equipment', href: '/p/c/ppe' },
+      { t: 'Office supplies', href: '/p/c/office-supplies' },
     ],
   },
   {
     h: 'Industries',
     links: [
-      { t: 'All industries', href: '/3m/en_us/industries' },
-      { t: 'Building & construction', href: '/3m/en_us/building-construction-us' },
-      { t: 'Transportation', href: '/3m/en_us/transportation-us' },
-      { t: 'Worker health & safety', href: '/3m/en_us/worker-health-safety-us' },
+      { t: 'All industries', href: '/industries' },
+      { t: 'Building & construction', href: '/building-construction-us' },
+      { t: 'Transportation', href: '/transportation-us' },
+      { t: 'Worker health & safety', href: '/worker-health-safety-us' },
     ],
   },
   {
     h: 'Company',
     links: [
-      { t: 'About 3M', href: '/3m/en_us/about-3m' },
-      { t: 'Careers', href: '/3m/en_us/careers-us' },
-      { t: 'Sustainability', href: '/3m/en_us/sustainability-us' },
+      { t: 'About 3M', href: '/about-3m' },
+      { t: 'Careers', href: '/careers-us' },
+      { t: 'Sustainability', href: '/sustainability-us' },
       { t: 'Investors', href: 'https://investors.3m.com/' },
     ],
   },
@@ -58,13 +63,17 @@ const LEGAL = [
 ];
 
 export default async function decorate(block) {
+  const seg = window.location.pathname.split('/')[1];
+  const locale = LOCALES.includes(seg) ? seg : 'en';
+  const localize = (href) => (href.startsWith('/') ? `/${locale}${href}` : href);
+
   const f = document.createElement('div');
   f.className = 'footer-3m';
 
   const cols = COLUMNS.map((c) => `
     <div class="footer-col">
       <h4>${c.h}</h4>
-      ${c.links.map((l) => `<a href="${l.href}">${l.t}</a>`).join('')}
+      ${c.links.map((l) => `<a href="${localize(l.href)}">${l.t}</a>`).join('')}
     </div>`).join('');
 
   f.innerHTML = `
@@ -77,7 +86,7 @@ export default async function decorate(block) {
     </div>
     <div class="footer-legal">
       <span>© 2026 3M. All rights reserved.</span>
-      ${LEGAL.map((l) => `<a href="${l.href}">${l.t}</a>`).join('')}
+      ${LEGAL.map((l) => `<a href="${localize(l.href)}">${l.t}</a>`).join('')}
       <span class="footer-social">${SOCIAL.map((s) => `<a href="${s.href}" target="_blank" rel="noopener">${s.t}</a>`).join('')}</span>
     </div>`;
 
