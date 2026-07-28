@@ -76,6 +76,13 @@ header .nav-actions a {
 
 header .nav-locale {
   color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 8px;
+  background: #fff;
+  cursor: pointer;
 }
 
 header .nav-burger {
