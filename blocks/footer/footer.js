@@ -1,93 +1,84 @@
 /**
- * footer — 3M site footer (self-contained for this presales build).
- * Multi-column site map + social + legal, on the ink ground.
+ * footer — 3M site footer. Multi-column site map + social + legal, sourced from
+ * a per-locale fragment (/{locale}/footer) so all copy is authored/translated
+ * in DA. Fragment structure (one section each):
+ *   1. tagline    a paragraph
+ *   2. columns    repeated <h4> + <ul> of links
+ *   3. social     a <ul> of links
+ *   4. legal      a <ul> of links + a copyright paragraph
  */
+const LOCALES = ['en', 'de', 'jp'];
 
-// Supported locale folders; the active one is derived from the URL so internal
-// site-map links stay within the visitor's language tree (/en, /de, …).
-const LOCALES = ['en', 'de'];
+async function fetchFragment(path) {
+  try {
+    const resp = await fetch(`${path}.plain.html`);
+    if (resp.ok) {
+      const dom = document.createElement('div');
+      dom.innerHTML = await resp.text();
+      return dom;
+    }
+  } catch (e) { /* fall through */ }
+  return null;
+}
 
-// Links point to delivered local pages where one exists; otherwise an absolute
-// 3m.com bounce (a working source page beats a dead local link). Internal hrefs
-// are locale-relative and get prefixed with /<locale> at render time.
-const SRC = 'https://www.3m.com/3M/en_US';
-const COLUMNS = [
-  {
-    h: 'Products',
-    links: [
-      { t: 'All products', href: '/products' },
-      { t: 'Adhesives & tapes', href: '/p/c/adhesives' },
-      { t: 'Personal protective equipment', href: '/p/c/ppe' },
-      { t: 'Office supplies', href: '/p/c/office-supplies' },
-    ],
-  },
-  {
-    h: 'Industries',
-    links: [
-      { t: 'All industries', href: '/industries' },
-      { t: 'Building & construction', href: '/building-construction-us' },
-      { t: 'Transportation', href: '/transportation-us' },
-      { t: 'Worker health & safety', href: '/worker-health-safety-us' },
-    ],
-  },
-  {
-    h: 'Company',
-    links: [
-      { t: 'About 3M', href: '/about-3m' },
-      { t: 'Careers', href: '/careers-us' },
-      { t: 'Sustainability', href: '/sustainability-us' },
-      { t: 'Investors', href: 'https://investors.3m.com/' },
-    ],
-  },
-  {
-    h: 'Support',
-    links: [
-      { t: 'Contact us', href: `${SRC}/company-us/` },
-      { t: 'Site map', href: `${SRC}/company-us/site-map/` },
-      { t: 'SDS / regulatory', href: `${SRC}/company-us/SDS-search/` },
-      { t: 'Where to buy', href: `${SRC}/company-us/where-to-buy/` },
-    ],
-  },
-];
+async function loadFooter(locale) {
+  const frag = await fetchFragment(`/${locale}/footer`);
+  return frag || fetchFragment('/en/footer');
+}
 
-const SOCIAL = [
-  { t: 'LinkedIn', href: 'https://www.linkedin.com/company/3m' },
-  { t: 'YouTube', href: 'https://www.youtube.com/user/3M' },
-  { t: 'Facebook', href: 'https://www.facebook.com/3M' },
-  { t: 'Instagram', href: 'https://www.instagram.com/3m' },
-];
-const LEGAL = [
-  { t: 'Privacy', href: `${SRC}/company-us/privacy-policy/` },
-  { t: 'Terms', href: `${SRC}/company-us/legal-information/` },
-  { t: 'Cookie Preferences', href: '#' },
-];
+const anchors = (el) => (el ? [...el.querySelectorAll('a')] : []);
+const linkHTML = (a) => {
+  const href = a.getAttribute('href') || '#';
+  const ext = href.startsWith('http') ? ' target="_blank" rel="noopener"' : '';
+  return `<a href="${href}"${ext}>${a.textContent.trim()}</a>`;
+};
 
 export default async function decorate(block) {
   const seg = window.location.pathname.split('/')[1];
   const locale = LOCALES.includes(seg) ? seg : 'en';
-  const localize = (href) => (href.startsWith('/') ? `/${locale}${href}` : href);
+
+  const frag = await loadFooter(locale);
+  const secs = frag ? [...frag.children] : [];
+  const tagline = secs[0] ? secs[0].textContent.trim() : '';
+
+  const cols = [];
+  if (secs[1]) {
+    let cur = null;
+    [...secs[1].children].forEach((el) => {
+      if (el.tagName === 'H4') {
+        cur = { h: el.textContent.trim(), links: [] };
+        cols.push(cur);
+      } else if (el.tagName === 'UL' && cur) {
+        cur.links = anchors(el);
+      }
+    });
+  }
+  const social = anchors(secs[2]);
+  const legalLinks = anchors(secs[3] ? secs[3].querySelector('ul') : null);
+  const copyEl = secs[3] ? secs[3].querySelector('p') : null;
+  const copyright = copyEl ? copyEl.textContent.trim() : '';
 
   const f = document.createElement('div');
   f.className = 'footer-3m';
 
-  const cols = COLUMNS.map((c) => `
+  const colsHTML = cols.map((c) => `
     <div class="footer-col">
       <h4>${c.h}</h4>
-      ${c.links.map((l) => `<a href="${localize(l.href)}">${l.t}</a>`).join('')}
+      ${c.links.map((a) => linkHTML(a)).join('')}
     </div>`).join('');
 
   f.innerHTML = `
     <div class="footer-top">
       <div class="footer-brand">
         <div class="footer-logo">3M</div>
-        <p>Science. Applied to Life.</p>
+        <p>${tagline}</p>
       </div>
-      ${cols}
+      ${colsHTML}
     </div>
     <div class="footer-legal">
-      <span>© 2026 3M. All rights reserved.</span>
-      ${LEGAL.map((l) => `<a href="${localize(l.href)}">${l.t}</a>`).join('')}
-      <span class="footer-social">${SOCIAL.map((s) => `<a href="${s.href}" target="_blank" rel="noopener">${s.t}</a>`).join('')}</span>
+      <span>${copyright}</span>
+      ${legalLinks.map((a) => linkHTML(a)).join('')}
+      <span class="footer-social">${social.map((a) => linkHTML(a)).join('')}</span>
     </div>`;
 
   block.replaceChildren(f);
