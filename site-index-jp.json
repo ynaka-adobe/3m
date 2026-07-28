@@ -1,0 +1,155 @@
+{
+  "total": 20,
+  "offset": 0,
+  "limit": 20,
+  "data": [
+    {
+      "path": "/about-3m",
+      "title": "3Mについて",
+      "description": "当社の概要、サイエンスが世界に与える影響、イノベーションの進め方、事業活動、グローバル・社会的な取り組みなどをご紹介します。",
+      "template": "about-editorial",
+      "image": ""
+    },
+    {
+      "path": "/architectural-design-us",
+      "title": "建築デザイン",
+      "description": "3Mのガラス・表面仕上げは、サステナブルな建築デザインの選択肢です。表面フィルムは、インテリアデザインにカスタマイズ可能なソリューションを提供します。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/auto-care-us",
+      "title": "オートケア",
+      "description": "3Mは、レストア愛好家やカーエンスージアストをはじめ、愛車の性能と外観を維持したいすべての方に高品質なオートケア製品を提供します。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/building-construction-us",
+      "title": "建築・建設",
+      "description": "3Mの革新的な建築・建設製品は、時間とコストを削減します。多様な用途向けに設計されたソリューションを、専門家のサポートとともにご利用いただけます。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/careers-us",
+      "title": "採用情報",
+      "description": "米国におけるキャリア、求人、インターンシップ、学生向けの機会についてご紹介します。現在の求人を検索・応募したり、3Mタレントコミュニティにご参加ください。",
+      "template": "company-landing",
+      "image": ""
+    },
+    {
+      "path": "/defense-markets-us",
+      "title": "防衛市場",
+      "description": "3Mの専門家チームは防衛市場と連携し、さまざまな設計上の課題を、多くの場合それが発生する前に克服・回避できるよう支援します。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/electrical-construction-maintenance-us",
+      "title": "電気工事・メンテナンス",
+      "description": "配線・ケーブルの管理・補修、安全・個人保護のための、信頼性が高く革新的な電気工事・メンテナンスソリューションを3Mでご覧ください。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/facility-management-us",
+      "title": "施設管理ソリューション",
+      "description": "空間を清潔・効率的・安全に、そして最新の状態に保つための施設管理ソリューション。3Mの総合的なソリューションをご覧ください。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/home-improvement-us",
+      "title": "ホームインプルーブメント",
+      "description": "研磨材から安全用品まで、3Mのブランド群はDIYをDNAに持っています。作業を終わらせるだけでなく、より速く、より安全に、より賢く仕上げます。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/p/c/adhesives",
+      "title": "3M 接着剤・シーラント・充填材",
+      "description": "液状または粘着状で塗布し、硬化して2つの面を接合する物質です。接着剤は、接合・補修・シール・取付けに使用されます。",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/medical",
+      "title": "3M メディカル",
+      "description": "病院、診療所、長期療養施設など、さまざまな現場で医療従事者が使用する用品・機器です。一般消費者向けのヘルスケア製品も含みます。",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/office-supplies",
+      "title": "3M オフィス用品",
+      "description": "筆記具、紙製品、家具など、オフィス環境で業務を行い、快適なワークスペースをつくるための製品です。",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/ppe",
+      "title": "3M 個人用保護具",
+      "description": "危険な環境条件や物質への曝露による負傷や疾病を防ぎ、人の健康と安全へのリスクを最小限に抑えるために使用・着用するものです。",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/tapes",
+      "title": "3M テープ",
+      "description": "片面または両面に接着剤を塗布し、場合によっては剥離ライナーを備えた、帯状またはロール状の基材です。テープは、材料同士を貼り合わせたり配置したりするために使用されます。",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/road-safety-us",
+      "title": "交通安全",
+      "description": "交通標識から路面標示、標識印刷まで、高性能な材料と革新的なシステム・サービスで、人々が安全に帰宅できるよう支援します。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/semiconductor-us",
+      "title": "半導体",
+      "description": "エッチング・成膜、CMPと表面仕上げ、熱管理、テープ＆リール、ウェハードーピング、イオン注入などの材料ソリューションを含む半導体製造業界向けソリューションは、3Mにお任せください。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/sustainability-us",
+      "title": "グローバルな取り組み – サステナビリティ",
+      "description": "3Mのサステナビリティへの取り組みとイノベーションをご覧ください。世界中の環境と地域社会にどのような良い影響を与えているかをご紹介します。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/transportation-us",
+      "title": "3M 輸送",
+      "description": "より安全で快適、魅力的かつ耐久性に優れ、環境に配慮した輸送手段を実現するための、3Mの輸送市場と製品についてご紹介します。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/woodworking-us",
+      "title": "木工",
+      "description": "3Mは、設計から仕上げまで、製造プロセス全体をカバーする木工製品を提供します。3Mの木工ソリューションが効率向上を支援します。",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/worker-health-safety-us",
+      "title": "労働安全衛生",
+      "description": "3MのPPEで、あなたと作業者に最も必要な保護を。労働安全衛生のための3Mの安全用品ラインアップをご紹介します。",
+      "template": "industry-landing",
+      "image": ""
+    }
+  ],
+  ":type": "sheet",
+  "columns": [
+    "path",
+    "title",
+    "description",
+    "template",
+    "image"
+  ]
+}
