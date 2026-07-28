@@ -4,13 +4,23 @@
  *
  * Authoring (one cell per row, all optional):
  *   1. template   the page template to list (e.g. "industry-landing")
- *   2. index      query-index path (default /3m/en_us/query-index.json)
+ *   2. index      query-index path (default /site-index.json)
  *
  * Reads the section head (heading/lede) authored as default content above it.
  */
 // Static index served from the code bus (the EDS query-index service is not
 // enabled for this site config; this JSON is regenerated when content changes).
 const DEFAULT_INDEX = '/site-index.json';
+
+// Supported locale folders. Index paths are locale-neutral (e.g. /about-3m);
+// each card is re-based onto the active locale so a card on /de/… links to /de/….
+const LOCALES = ['en', 'de'];
+
+function localizePath(p, locale) {
+  const parts = p.split('/');
+  if (LOCALES.includes(parts[1])) parts.splice(1, 1);
+  return `/${locale}${parts.join('/')}`;
+}
 
 const TITLE_OVERRIDE = {
   'building-construction-us': 'Building & Construction',
@@ -34,6 +44,8 @@ function titleFor(row) {
 }
 
 export default async function decorate(block) {
+  const seg = window.location.pathname.split('/')[1];
+  const locale = LOCALES.includes(seg) ? seg : 'en';
   const cells = [...block.querySelectorAll(':scope > div > div')];
   const template = (cells[0]?.textContent || '').trim();
   const indexPath = (cells[1]?.textContent || '').trim() || DEFAULT_INDEX;
@@ -57,7 +69,7 @@ export default async function decorate(block) {
       const li = document.createElement('li');
       const a = document.createElement('a');
       a.className = 'card';
-      a.href = row.path;
+      a.href = localizePath(row.path, locale);
       const body = document.createElement('div');
       body.className = 'card-body';
       const h = document.createElement('h3');
