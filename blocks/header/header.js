@@ -6,8 +6,8 @@
 
 // Supported locale folders; the active one is derived from the URL so nav
 // links stay within the visitor's language tree (/en, /de, …).
-const LOCALES = ['en', 'de'];
-const LOCALE_LABEL = { en: 'US&nbsp;·&nbsp;EN', de: 'DE&nbsp;·&nbsp;DE' };
+const LOCALES = ['en', 'de', 'jp'];
+const LOCALE_LABEL = { en: 'US · EN', de: 'DE · DE', jp: 'JP · JA' };
 
 // Internal paths are locale-relative and get prefixed with /<locale> at render
 // time; absolute (http) and anchor (#) links are left untouched.
@@ -42,9 +42,20 @@ export default async function decorate(block) {
       </ul>
       <div class="nav-actions">
         ${ACTIONS.map((a) => `<a href="${localize(a.href)}">${a.label}</a>`).join('')}
-        <span class="nav-locale">${LOCALE_LABEL[locale] || LOCALE_LABEL.en}</span>
+        <select class="nav-locale" aria-label="Select language">
+          ${LOCALES.map((l) => `<option value="${l}"${l === locale ? ' selected' : ''}>${LOCALE_LABEL[l]}</option>`).join('')}
+        </select>
       </div>
     </div>`;
+
+  // Language switcher: swap the locale segment of the current path and go there.
+  const langSelect = nav.querySelector('.nav-locale');
+  langSelect.addEventListener('change', () => {
+    const parts = window.location.pathname.split('/');
+    if (LOCALES.includes(parts[1])) parts[1] = langSelect.value;
+    else parts.splice(1, 0, langSelect.value);
+    window.location.pathname = parts.join('/') || '/';
+  });
 
   const burger = nav.querySelector('.nav-burger');
   burger.addEventListener('click', () => {
