@@ -5,140 +5,140 @@
   "data": [
     {
       "path": "/about-3m",
-      "title": "Learn About 3M: Innovation, History & Core Values",
+      "title": "",
       "description": "Learn about our company in general, the impact of our science on the world, how we innovate, business practices, global & social initiatives and much more here.",
       "template": "about-editorial",
       "image": ""
     },
     {
       "path": "/architectural-design-us",
-      "title": "Architectural Design - Decorative Films & Finishes | 3M US",
+      "title": "",
       "description": "3M glass and surface finishes are sustainable architectural design choices. Surface films provide customizable solutions for interior design.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/auto-care-us",
-      "title": "Auto Care | 3M",
+      "title": "",
       "description": "3M offers quality auto care products for car restorers, auto enthusiasts - anyone who wants to maintain their vehicle’s performance and appearance.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/building-construction-us",
-      "title": "Building & Construction Products and Applications | 3M",
+      "title": "",
       "description": "Innovative 3M building and construction products save you time and money. Solutions designed for a variety of applications, with expert support available.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/careers-us",
-      "title": "3M Careers & Employment | Where to Start | 3M US",
+      "title": "",
       "description": "Learn about career, job, internship & student opportunities in the United States. Search and apply for current openings or join our 3M talent community. Learn more.",
       "template": "company-landing",
       "image": ""
     },
     {
       "path": "/defense-markets-us",
-      "title": "Defense Markets For Military Uses & Your Design Ally | 3M",
+      "title": "",
       "description": "3M’s team of experts can collaborate with Defense Markets to help overcome or avoid a variety of possible design challenges—often before they ever happen.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/electrical-construction-maintenance-us",
-      "title": "Electrical Construction and Maintenance | 3M US",
+      "title": "",
       "description": "Get reliable, innovative electrical construction & maintenance solutions from 3M for wire/cable management & repair and safety & personal protection.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/facility-management-us",
-      "title": "Facility Management Solutions | 3M - US",
+      "title": "",
       "description": "Facility Management Solutions that help you keep your spaces clean, efficient, protected, and current. Browse comprehensive solutions from 3M.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/home-improvement-us",
-      "title": "Home Improvement | 3M United States",
+      "title": "",
       "description": "From abrasives to safety, the 3M family of brands has DIY in our DNA. We don't just help you get the job done—we get it done faster, safer, and smarter.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/p/c/adhesives",
-      "title": "3M Adhesives, Sealants & Fillers | 3M United States",
+      "title": "",
       "description": "Substances applied in a liquid or tacky state which undergo a curing process to create a hold between two surfaces. Adhesives are used for bonding, repairing, sealing, and attachment. Includes adhesiv",
       "template": "product-category",
       "image": ""
     },
     {
       "path": "/p/c/medical",
-      "title": "3M Medical | 3M United States",
+      "title": "",
       "description": "Supplies and equipment for use by medical professionals in various settings, including hospitals, clinics and long-term care facilities. Also includes general healthcare products for consumers.",
       "template": "product-category",
       "image": ""
     },
     {
       "path": "/p/c/office-supplies",
-      "title": "3M Office Supplies | 3M United States",
+      "title": "",
       "description": "Products used in an office environment to complete tasks or create usable workspace, including writing tools, paper products and furniture.",
       "template": "product-category",
       "image": ""
     },
     {
       "path": "/p/c/ppe",
-      "title": "3M Personal Protective Equipment | 3M United States",
+      "title": "",
       "description": "Anything used or worn by a person that minimizes risk to the person’s health or safety and prevents injury or illness caused by exposure to hazardous environmental conditions and materials. Personal p",
       "template": "product-category",
       "image": ""
     },
     {
       "path": "/p/c/tapes",
-      "title": "3M Tapes | 3M United States",
+      "title": "",
       "description": "Strips or rolls of carrier material coated with single or double-sided adhesive flanked sometimes by removable liners. Tapes are used to attach or arrange materials to each other or in relation to eac",
       "template": "product-category",
       "image": ""
     },
     {
       "path": "/road-safety-us",
-      "title": "Road Safety | Traffic Sign Materials | Pavement Markings | 3M US",
+      "title": "",
       "description": "High-performance materials and innovative systems and services, from traffic signs to road markings to sign printing to help families get home safe.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/semiconductor-us",
-      "title": "Semiconductor Manufacturing Industry Solutions | 3M",
+      "title": "",
       "description": "Partner with 3M for Semiconductor Manufacturing Industry Solutions including material solutions for etching and deposition, CMP and Surface Finishing, thermal management, tape and reel, wafer doping and ion implantation.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/sustainability-us",
-      "title": "Discover 3M's Commitment to Sustainability & Innovation | 3M",
+      "title": "",
       "description": "Explore 3M's sustainability initiatives and innovations. Learn how we're making a positive impact on the environment and communities worldwide.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/transportation-us",
-      "title": "Transportation Markets & Product Expertise Areas | 3M",
+      "title": "",
       "description": "Learn about 3M transportation markets and products for building safer, comfortable, attractive, durable and environmentally responsible modes of transportation.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/woodworking-us",
-      "title": "Woodworking | 3M",
+      "title": "",
       "description": "3M offers woodworking products for the entire manufacturing process - from design through finishing. 3M woodworking solutions can help you improve your efficiency.",
       "template": "industry-landing",
       "image": ""
     },
     {
       "path": "/worker-health-safety-us",
-      "title": "PPE Safety Solutions | Worker Health & Safety | 3M US",
+      "title": "",
       "description": "Get the protection you and your workers need most with 3M PPE. Learn about 3M's full line of safety equipment for worker health and safety.",
       "template": "industry-landing",
       "image": ""

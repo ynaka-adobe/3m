@@ -1,0 +1,155 @@
+{
+  "total": 20,
+  "offset": 0,
+  "limit": 20,
+  "data": [
+    {
+      "path": "/about-3m",
+      "title": "Über 3M",
+      "description": "Erfahren Sie hier mehr über unser Unternehmen im Allgemeinen, die Auswirkungen unserer Wissenschaft auf die Welt, unsere Innovationsprozesse, unsere Geschäftspraktiken, globale und soziale Initiativen und vieles mehr.",
+      "template": "about-editorial",
+      "image": ""
+    },
+    {
+      "path": "/architectural-design-us",
+      "title": "Architekturdesign",
+      "description": "3M-Glas und Oberflächenveredelungen sind nachhaltige architektonische Gestaltungsoptionen. Oberflächenfolien bieten individuell anpassbare Lösungen für die Innenarchitektur.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/auto-care-us",
+      "title": "Autopflege",
+      "description": "3M bietet hochwertige Autopflegeprodukte für Oldtimer-Restauratoren, Auto-Enthusiasten – für alle, die die Leistung und das Aussehen ihres Fahrzeugs erhalten möchten.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/building-construction-us",
+      "title": "Hochbau und Konstruktion",
+      "description": "Innovative Bauprodukte von 3M sparen Ihnen Zeit und Geld. Lösungen für vielfältige Anwendungsbereiche, inklusive kompetenter Unterstützung.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/careers-us",
+      "title": "Karriere bei 3M",
+      "description": "Informieren Sie sich über Karriere-, Job-, Praktikums- und Studentenmöglichkeiten in den USA. Suchen Sie nach aktuellen Stellenangeboten und bewerben Sie sich oder werden Sie Teil unserer 3M-Talent-Community. Mehr erfahren.",
+      "template": "company-landing",
+      "image": ""
+    },
+    {
+      "path": "/defense-markets-us",
+      "title": "Verteidigungsmärkte",
+      "description": "Das Expertenteam von 3M kann mit Defense Markets zusammenarbeiten, um eine Vielzahl möglicher Konstruktionsherausforderungen zu bewältigen oder zu vermeiden – oft bevor sie überhaupt auftreten.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/electrical-construction-maintenance-us",
+      "title": "Elektroinstallation und -wartung",
+      "description": "Erhalten Sie zuverlässige, innovative Lösungen von 3M für Elektroinstallation und -wartung in den Bereichen Kabelmanagement und -reparatur sowie Sicherheit und Personenschutz.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/facility-management-us",
+      "title": "Lösungen für das Facility Management",
+      "description": "Facility-Management-Lösungen, die Ihnen helfen, Ihre Räumlichkeiten sauber, effizient, sicher und modern zu halten. Entdecken Sie die umfassenden Lösungen von 3M.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/home-improvement-us",
+      "title": "Heimwerkerprojekte",
+      "description": "Von Schleifmitteln bis hin zu Arbeitsschutzprodukten – die Marken der 3M-Familie haben Heimwerker im Blut. Wir helfen Ihnen nicht nur, Ihre Arbeit zu erledigen – wir erledigen sie schneller, sicherer und intelligenter.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/p/c/adhesives",
+      "title": "3M Klebstoffe, Dichtstoffe & Füllstoffe",
+      "description": "Substanzen, die in flüssigem oder klebrigem Zustand aufgetragen werden und durch Aushärtung eine Verbindung zwischen zwei Oberflächen herstellen. Klebstoffe werden zum Verbinden, Reparieren, Abdichten und Befestigen verwendet.",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/medical",
+      "title": "3M Medizin",
+      "description": "Verbrauchsmaterialien und Ausrüstung für medizinisches Fachpersonal in verschiedenen Einrichtungen, darunter Krankenhäuser, Kliniken und Langzeitpflegeeinrichtungen. Umfasst auch allgemeine Gesundheitsprodukte für Verbraucher.",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/office-supplies",
+      "title": "3M Bürobedarf",
+      "description": "Produkte, die in einer Büroumgebung zur Erledigung von Aufgaben oder zur Schaffung eines nutzbaren Arbeitsplatzes verwendet werden, einschließlich Schreibgeräte, Papierprodukte und Möbel.",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/ppe",
+      "title": "3M Persönliche Schutzausrüstung",
+      "description": "Alles, was von einer Person verwendet oder getragen wird und das Risiko für deren Gesundheit oder Sicherheit minimiert sowie Verletzungen oder Krankheiten durch den Kontakt mit gefährlichen Umweltbedingungen und -materialien verhindert. Persönliche Schutzausrüstung",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/p/c/tapes",
+      "title": "3M-Klebebänder",
+      "description": "Streifen oder Rollen aus Trägermaterial, die mit ein- oder doppelseitigem Klebstoff beschichtet und teilweise von abziehbaren Schutzfolien flankiert sind. Klebebänder dienen dazu, Materialien miteinander oder zueinander zu verbinden oder anzuordnen.",
+      "template": "product-category",
+      "image": ""
+    },
+    {
+      "path": "/road-safety-us",
+      "title": "Verkehrssicherheit",
+      "description": "Hochleistungsmaterialien und innovative Systeme und Dienstleistungen, von Verkehrsschildern über Straßenmarkierungen bis hin zum Schilderdruck, helfen Familien, sicher nach Hause zu kommen.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/semiconductor-us",
+      "title": "Halbleiter",
+      "description": "Werden Sie Partner von 3M für Industrielösungen in der Halbleiterfertigung, einschließlich Materiallösungen für Ätz- und Abscheidungsprozesse, CMP und Oberflächenveredelung, Wärmemanagement, Gurt- und Rollenverpackung, Wafer-Dotierung und Ionenimplantation.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/sustainability-us",
+      "title": "Unsere globale Wirkung – Nachhaltigkeit",
+      "description": "Entdecken Sie die Nachhaltigkeitsinitiativen und Innovationen von 3M. Erfahren Sie, wie wir weltweit einen positiven Beitrag zum Schutz der Umwelt und zur Unterstützung von Gemeinschaften leisten.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/transportation-us",
+      "title": "3M Transport",
+      "description": "Erfahren Sie mehr über die Transportmärkte und Produkte von 3M für den Bau sichererer, komfortablerer, attraktiverer, langlebigerer und umweltverträglicherer Transportmittel.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/woodworking-us",
+      "title": "Holzbearbeitung",
+      "description": "3M bietet Produkte für die Holzbearbeitung, die den gesamten Fertigungsprozess abdecken – von der Konstruktion bis zur Endbearbeitung. Mit den Holzbearbeitungslösungen von 3M können Sie Ihre Effizienz steigern.",
+      "template": "industry-landing",
+      "image": ""
+    },
+    {
+      "path": "/worker-health-safety-us",
+      "title": "Gesundheit und Sicherheit am Arbeitsplatz",
+      "description": "Mit der persönlichen Schutzausrüstung (PSA) von 3M erhalten Sie den Schutz, den Sie und Ihre Mitarbeiter am dringendsten benötigen. Erfahren Sie mehr über das komplette Sortiment an Sicherheitsausrüstung von 3M für die Gesundheit und Sicherheit am Arbeitsplatz.",
+      "template": "industry-landing",
+      "image": ""
+    }
+  ],
+  ":type": "sheet",
+  "columns": [
+    "path",
+    "title",
+    "description",
+    "template",
+    "image"
+  ]
+}
