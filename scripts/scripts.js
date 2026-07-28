@@ -11,6 +11,7 @@ import {
   loadCSS,
   buildBlock,
 } from './aem.js';
+import { loadTarget, applyTargetHeroMboxIfConfigured } from './target.js';
 
 /**
  * load fonts.css and set a session storage flag
@@ -187,6 +188,8 @@ function loadDelayed() {
 async function loadPage() {
   await loadEager(document);
   await loadLazy(document);
+  await loadTarget();
+  await applyTargetHeroMboxIfConfigured();
   loadDelayed();
 }
 
