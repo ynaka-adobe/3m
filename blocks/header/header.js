@@ -1,36 +1,43 @@
 /**
- * header — 3M site chrome (self-contained for this presales build).
- * Red wordmark + primary nav + utility actions. CSS-driven mobile menu
- * toggled by a JS click handler (block JS runs, unlike fragment scripts).
+ * header — 3M site chrome. Renders the red wordmark, primary nav, utility
+ * actions and an EN/DE/JP language switcher. Nav links come from a per-locale
+ * fragment (/{locale}/nav) so labels and links are authored/translated in DA.
  */
-
-// Supported locale folders; the active one is derived from the URL so nav
-// links stay within the visitor's language tree (/en, /de, …).
 const LOCALES = ['en', 'de', 'jp'];
 const LOCALE_LABEL = { en: 'US · EN', de: 'DE · DE', jp: 'JP · JA' };
 
-// Internal paths are locale-relative and get prefixed with /<locale> at render
-// time; absolute (http) and anchor (#) links are left untouched.
-const NAV = [
-  { label: 'Products', href: '/products' },
-  { label: 'Industries', href: '/industries' },
-  { label: 'About', href: '/about-3m' },
-];
+async function fetchFragment(path) {
+  try {
+    const resp = await fetch(`${path}.plain.html`);
+    if (resp.ok) {
+      const dom = document.createElement('div');
+      dom.innerHTML = await resp.text();
+      return dom;
+    }
+  } catch (e) { /* fall through */ }
+  return null;
+}
 
-const ACTIONS = [
-  { label: 'Careers', href: '/careers-us' },
-  { label: 'Sign In', href: 'https://www.3m.com/mmm/login' },
-];
+// Load the locale's nav fragment, falling back to English.
+async function loadNav(locale) {
+  const frag = await fetchFragment(`/${locale}/nav`);
+  return frag || fetchFragment('/en/nav');
+}
+
+const linkHTML = (a) => `<a href="${a.getAttribute('href')}">${a.textContent.trim()}</a>`;
 
 export default async function decorate(block) {
   const seg = window.location.pathname.split('/')[1];
   const locale = LOCALES.includes(seg) ? seg : 'en';
-  const localize = (href) => (href.startsWith('/') ? `/${locale}${href}` : href);
+
+  const frag = await loadNav(locale);
+  const lists = frag ? [...frag.querySelectorAll('ul')] : [];
+  const navAnchors = lists[0] ? [...lists[0].querySelectorAll('a')] : [];
+  const actionAnchors = lists[1] ? [...lists[1].querySelectorAll('a')] : [];
 
   const nav = document.createElement('nav');
   nav.id = 'nav';
   nav.className = 'nav-3m';
-
   nav.innerHTML = `
     <a class="nav-logo" href="/${locale}/" aria-label="3M home">3M</a>
     <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false">
@@ -38,10 +45,10 @@ export default async function decorate(block) {
     </button>
     <div class="nav-panel">
       <ul class="nav-links">
-        ${NAV.map((n) => `<li><a href="${localize(n.href)}">${n.label}</a></li>`).join('')}
+        ${navAnchors.map((a) => `<li>${linkHTML(a)}</li>`).join('')}
       </ul>
       <div class="nav-actions">
-        ${ACTIONS.map((a) => `<a href="${localize(a.href)}">${a.label}</a>`).join('')}
+        ${actionAnchors.map((a) => linkHTML(a)).join('')}
         <select class="nav-locale" aria-label="Select language">
           ${LOCALES.map((l) => `<option value="${l}"${l === locale ? ' selected' : ''}>${LOCALE_LABEL[l]}</option>`).join('')}
         </select>
@@ -52,8 +59,11 @@ export default async function decorate(block) {
   const langSelect = nav.querySelector('.nav-locale');
   langSelect.addEventListener('change', () => {
     const parts = window.location.pathname.split('/');
-    if (LOCALES.includes(parts[1])) parts[1] = langSelect.value;
-    else parts.splice(1, 0, langSelect.value);
+    if (LOCALES.includes(parts[1])) {
+      parts[1] = langSelect.value;
+    } else {
+      parts.splice(1, 0, langSelect.value);
+    }
     window.location.pathname = parts.join('/') || '/';
   });
 
