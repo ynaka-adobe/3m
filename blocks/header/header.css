@@ -17,18 +17,13 @@ header .nav-3m {
 header .nav-logo {
   display: inline-flex;
   align-items: center;
-  font-family: var(--heading-font-family);
-  font-weight: 700;
-  font-size: 30px;
-  line-height: 1;
-  letter-spacing: -1px;
-  color: #fff;
-  background: var(--accent);
-  padding: 5px 12px;
+  flex-shrink: 0;
 }
 
-header .nav-logo:hover {
-  color: #fff;
+header .nav-logo img {
+  display: block;
+  height: 32px;
+  width: auto;
 }
 
 header .nav-panel {

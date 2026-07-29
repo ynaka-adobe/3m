@@ -39,7 +39,9 @@ export default async function decorate(block) {
   nav.id = 'nav';
   nav.className = 'nav-3m';
   nav.innerHTML = `
-    <a class="nav-logo" href="/${locale}/" aria-label="3M home">3M</a>
+    <a class="nav-logo" href="/${locale}/" aria-label="3M home">
+      <img src="/icons/3m-logo.svg" alt="3M. Science. Applied to Life." width="157" height="28">
+    </a>
     <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
