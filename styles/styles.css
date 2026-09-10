@@ -232,7 +232,7 @@ a.button.accent:hover {
 /* sections */
 main > .section {
   margin: 0;
-  padding: 84px 0;
+  padding: 21px 0;
 }
 
 /* a metadata-only section is consumed into <head>, leaving an empty .section;
