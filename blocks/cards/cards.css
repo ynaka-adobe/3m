@@ -62,6 +62,57 @@ a.card:hover {
   margin: 0;
 }
 
+.cards .card-body ul,
+.cards .card-body ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cards .card-body li {
+  display: list-item;
+}
+
+/* icons variant — line-icon tiles (e.g. film / tint / protection) */
+.cards.icons .card {
+  border: 1px solid var(--line);
+}
+
+.cards.icons .card-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px 8px;
+}
+
+.cards.icons .card-media img {
+  width: auto;
+  height: 96px;
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
+.cards.icons .card-body {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px 22px;
+}
+
+.cards.icons .card-body h3 {
+  font-size: 17px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cards.icons .card-arrow {
+  margin: 0;
+  padding: 0;
+}
+
 .cards .card-arrow {
   margin-top: auto;
   padding-top: 10px;
@@ -87,7 +138,39 @@ a.card:hover .card-arrow {
   }
 
   .cards.products ul,
-  .cards.links ul {
+  .cards.links ul,
+  .cards.icons ul {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .cards.duo ul {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* testimonial variant — single card, portrait beside quote (no border/arrow) */
+.cards.testimonial .card {
+  border: none;
+  background: transparent;
+}
+
+.cards.testimonial .card-media img {
+  aspect-ratio: 1 / 1;
+}
+
+@media (width >= 600px) {
+  .cards.testimonial .card {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 28px;
+  }
+
+  .cards.testimonial .card-media {
+    flex: 0 0 30%;
+    max-width: 220px;
+  }
+
+  .cards.testimonial .card-body {
+    padding: 0;
   }
 }

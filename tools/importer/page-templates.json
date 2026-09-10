@@ -1,0 +1,138 @@
+{
+  "metadata": {
+    "projectType": "doc"
+  },
+  "templates": [
+    {
+      "name": "government-landing",
+      "urls": [
+        "https://www.3m.com/3M/en_US/government-us/"
+      ],
+      "representativeUrl": "https://www.3m.com/3M/en_US/government-us/",
+      "coverageGaps": [],
+      "description": "3M Government market landing page with hero banner, mission intro, help links, icon card grid of government segments, article cards, keep-exploring cards, and customer support section",
+      "blocks": [
+        {
+          "name": "hero",
+          "instances": [
+            "div.MDS > div.MDS-bannerHero"
+          ]
+        },
+        {
+          "name": "cards-links",
+          "instances": [
+            "div.MDS > div.MDS-cardsIconBlock"
+          ]
+        },
+        {
+          "name": "cards-products",
+          "instances": [
+            "div.MDS > div.MDS-cardsContentComplex.product-cards--4"
+          ]
+        },
+        {
+          "name": "cards",
+          "instances": [
+            "div.MDS > div.MDS-cardsArticles",
+            "div.MDS > div.MDS-cardsContentComplex.mds-3cards-container-w"
+          ]
+        },
+        {
+          "name": "contact-cta",
+          "instances": [
+            "div.MDS > div.mds-footer.MDS-mmm-flex-col"
+          ]
+        },
+        {
+          "name": "section-proof-science",
+          "instances": [
+            "div.MDS > div.MDS-cardsArticles"
+          ],
+          "section": "grey"
+        }
+      ],
+      "sections": [
+        {
+          "id": "hero",
+          "name": "Hero Banner",
+          "selector": "div.MDS > div.MDS-bannerHero",
+          "style": null,
+          "blocks": [
+            "hero"
+          ],
+          "defaultContent": []
+        },
+        {
+          "id": "mission-intro",
+          "name": "Mission Intro",
+          "selector": "div.MDS > div.MDS-cardsContentComplex.bb-10",
+          "style": null,
+          "blocks": [],
+          "defaultContent": [
+            "div.MDS-cardsContentComplex_heading > h3",
+            "div.MDS-cardsContentComplex_heading > p"
+          ]
+        },
+        {
+          "id": "here-to-help",
+          "name": "We Are Here To Help",
+          "selector": "div.MDS > div.MDS-cardsIconBlock",
+          "style": null,
+          "blocks": [
+            "cards-links"
+          ],
+          "defaultContent": [
+            "div.MDS-cardsIconBlock > h3"
+          ]
+        },
+        {
+          "id": "government-grid",
+          "name": "Government Segments Grid",
+          "selector": "div.MDS > div.MDS-cardsContentComplex.product-cards--4",
+          "style": null,
+          "blocks": [
+            "cards-products"
+          ],
+          "defaultContent": [
+            "div.MDS-cardsContentComplex.product-cards--4 > div.MDS-cardsContentComplex_heading"
+          ]
+        },
+        {
+          "id": "proof-science",
+          "name": "Proof Is In The Science",
+          "selector": "div.MDS > div.MDS-cardsArticles",
+          "style": "grey",
+          "blocks": [
+            "cards"
+          ],
+          "defaultContent": [
+            "div.MDS-cardsArticles > hr",
+            "div.MDS-cardsArticles > h2"
+          ]
+        },
+        {
+          "id": "keep-exploring",
+          "name": "Keep Exploring",
+          "selector": "div.MDS > div.MDS-cardsContentComplex.mds-3cards-container-w",
+          "style": null,
+          "blocks": [
+            "cards"
+          ],
+          "defaultContent": [
+            "div.MDS-cardsContentComplex.mds-3cards-container-w > div.MDS-cardsContentComplex_heading"
+          ]
+        },
+        {
+          "id": "customer-support",
+          "name": "Customer Support",
+          "selector": "div.MDS > div.mds-footer.MDS-mmm-flex-col",
+          "style": null,
+          "blocks": [
+            "contact-cta"
+          ],
+          "defaultContent": []
+        }
+      ]
+    }
+  ]
+}

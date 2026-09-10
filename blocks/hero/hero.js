@@ -12,6 +12,10 @@
  * A root-relative path is built into an <img> client-side (browser-fetched,
  * not pipeline-ingested) so committed brand imagery never ships as about:error.
  * Mirrors the home hero-video overlay/scrim treatment with a still image.
+ *
+ * Variant "hero banner": the image already carries its own text/CTA (a flat
+ * banner export), so it renders as a clean full-bleed image with no scrim or
+ * overlay. If a CTA link is authored, the whole banner links there.
  */
 const IMG_PATH = /^\/[\w./-]+\.(jpg|jpeg|png|webp|avif)$/i;
 
@@ -28,6 +32,25 @@ export default function decorate(block) {
     img.loading = 'eager';
     pathCell.replaceChildren(img);
     picture = img;
+  }
+
+  // banner variant: flat image (text baked in) rendered clean, optionally linked
+  if (block.classList.contains('banner')) {
+    const href = block.querySelector('a')?.getAttribute('href');
+    const media = picture ? (picture.closest('picture') || picture) : null;
+    let node = media;
+    if (media && href) {
+      const a = document.createElement('a');
+      a.className = 'hero-banner-link';
+      a.href = href;
+      a.append(media);
+      node = a;
+    }
+    const bannerBg = document.createElement('div');
+    bannerBg.className = 'hero-bg';
+    if (node) bannerBg.append(node);
+    block.replaceChildren(bannerBg);
+    return;
   }
   const heading = block.querySelector('h1, h2, h3');
   const ctaCell = cellsAll.find((c) => c.querySelector('a'));

@@ -98,3 +98,23 @@
     padding-bottom: 72px;
   }
 }
+
+/* banner variant — flat image (text baked in): show whole image, no crop/scrim */
+.hero.banner {
+  min-height: 0;
+  display: block;
+}
+
+.hero.banner .hero-bg {
+  position: static;
+}
+
+.hero.banner .hero-bg picture,
+.hero.banner .hero-bg img,
+.hero.banner .hero-banner-link {
+  position: static;
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}

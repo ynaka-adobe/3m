@@ -1,0 +1,47 @@
+{
+  "pageName": "car-personalization",
+  "targetPath": "/consumer/car-personalization",
+  "source": "screen-grab (live Car Personalization page) — supersedes Figma link per user",
+  "imageDirectory": "img/3m/car-personalization",
+  "totalBlocks": 4,
+  "blocks": [
+    {
+      "order": 1,
+      "label": "Get inspired",
+      "blockType": "hero",
+      "variantName": "hero",
+      "note": "Red car + swatch picker, dark band. CTA: See swatches on a vehicle",
+      "image": "hero-get-inspired.jpg",
+      "status": "pending"
+    },
+    {
+      "order": 2,
+      "label": "Answer the call to customize",
+      "blockType": "cards",
+      "variantName": "cards products",
+      "cards": 4,
+      "note": "Line-icon cards: Protection wrap film, Wrap film, Window tint, Paint protection",
+      "images": ["icon-protection-wrap-film.svg", "icon-wrap-film.svg", "icon-window-tint.svg", "icon-paint-protection.svg"],
+      "status": "pending"
+    },
+    {
+      "order": 3,
+      "label": "Find an installer",
+      "blockType": "hero",
+      "variantName": "hero",
+      "note": "Installer wrapping car, dark band. CTA: Find an installer",
+      "image": "hero-find-installer.jpg",
+      "status": "pending"
+    },
+    {
+      "order": 4,
+      "label": "Contact 3M / Installers and Distributors",
+      "blockType": "cards",
+      "variantName": "cards",
+      "cards": 2,
+      "note": "Photo cards with description + arrow link",
+      "images": ["card-contact-3m.jpg", "card-installers-distributors.jpg"],
+      "status": "pending"
+    }
+  ]
+}

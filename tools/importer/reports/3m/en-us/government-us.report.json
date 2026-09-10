@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "url": "https://www.3m.com/3M/en_US/government-us/",
+  "path": "3m/en-us/government-us",
+  "timestamp": "2026-07-29T14:17:14.185Z",
+  "title": "3M Government Market Solutions for Federal, State & Local | 3M United States",
+  "template": "government-landing",
+  "blocks": [
+    "hero",
+    "cards-links",
+    "cards-products",
+    "cards",
+    "cards",
+    "contact-cta"
+  ]
+}
