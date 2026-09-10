@@ -24,6 +24,32 @@ async function loadNav(locale) {
   return frag || fetchFragment('/en/nav');
 }
 
+// Load consumer subnav if on a consumer page/directory
+async function loadConsumerSubnav(locale) {
+  const pathname = window.location.pathname;
+  const segments = pathname.split('/').filter(Boolean);
+
+  // Check if "consumer" is in the pathname
+  if (!segments.includes('consumer')) {
+    return;
+  }
+
+  // Build subnav path with locale
+  const subnavPath = `/${locale}/consumer/subnav`;
+  const frag = await fetchFragment(subnavPath);
+
+  if (frag) {
+    // Find the main element and insert subnav as first section
+    const main = document.querySelector('main');
+    if (main) {
+      const subnavSection = document.createElement('div');
+      subnavSection.className = 'section';
+      subnavSection.innerHTML = `<div class="fragment">${frag.innerHTML}</div>`;
+      main.insertBefore(subnavSection, main.firstChild);
+    }
+  }
+}
+
 const linkHTML = (a) => `<a href="${a.getAttribute('href')}">${a.textContent.trim()}</a>`;
 
 export default async function decorate(block) {
@@ -77,4 +103,7 @@ export default async function decorate(block) {
   });
 
   block.replaceChildren(nav);
+
+  // Load consumer subnav if applicable
+  loadConsumerSubnav(locale);
 }
