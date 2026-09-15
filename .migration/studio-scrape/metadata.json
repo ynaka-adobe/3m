@@ -1,0 +1,53 @@
+{
+  "url": "https://restylingstudio.3m.com/en-US",
+  "source": "bd",
+  "detection": {
+    "isError": false,
+    "isBotProtection": false
+  },
+  "timestamp": "2026-09-11T01:17:19.041Z",
+  "paths": {
+    "documentPath": "/en-us",
+    "htmlFilePath": "/en-us.plain.html",
+    "mdFilePath": "/en-us.md",
+    "dirPath": "",
+    "filename": "en-us"
+  },
+  "screenshot": ".migration/studio-scrape/screenshot.png",
+  "html": {
+    "filePath": ".migration/studio-scrape/cleaned.html",
+    "size": 36378
+  },
+  "rawHtml": {
+    "filePath": "/backups/ynaka-adobe/3m/repo/tools/importer/bd-snapshots/restylingstudio.3m.com/en-US.html",
+    "size": 42325
+  },
+  "metadata": {
+    "title": "3M CSD Visualizer",
+    "viewport": "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+    "DCSext.Business": "Transport & Electronic Bus Group",
+    "DCSext.CDC": "KT",
+    "DCSext.MktExpertise": "Automotive",
+    "SubMarket": "Post Factory Installation",
+    "description": "Preview 3M car wraps on your vehicle.",
+    "WT.z_layout": "Luxury",
+    "canonical": "https://restylingstudio.3m.com/en-US"
+  },
+  "images": {
+    "count": 4,
+    "mapping": {
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/images/unicorn/Logo_mobile.png": "./images/c10e4d353d836ebdd2ed261aaf738605.png",
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/images/unicorn/Logo.svg": "./images/07b70afb61d704ccebb17724e597005b.png",
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/images/unicorn/repeating_meshed_grid.png": "./images/b24e5f2bbe0a315c9631f3ca68c08ec9.png",
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/fonts/3MThemeIconFont/PNG/icn_privacyOptions.png": "./images/af6f0261c66cb7da77781f8e34ecaf4f.png"
+    },
+    "stats": {
+      "total": 5,
+      "converted": 1,
+      "skipped": 3,
+      "failed": 1,
+      "tooLarge": 0,
+      "limitReached": 0
+    }
+  }
+}
