@@ -5,7 +5,8 @@
       "libraryUrl": "https://main--sta-boilerplate--aemdemos.aem.page/tools/sidekick/library.json",
       "previewOrg": "ynaka-adobe",
       "previewSite": "3m",
-      "contentHostUrl": "https://content.da.live/ynaka-adobe/3m/"
+      "contentHostUrl": "https://content.da.live/ynaka-adobe/3m/",
+      "botProtected": true
     }
   }
 }
