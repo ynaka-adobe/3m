@@ -146,6 +146,27 @@ a.card:hover .card-arrow {
   .cards.duo ul {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .cards.features ul {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* features variant — compact text-only value props (no border/media/arrow) */
+.cards.features .card {
+  border: none;
+  background: transparent;
+  align-items: center;
+  text-align: center;
+}
+
+.cards.features .card-body {
+  padding: 12px 8px;
+  align-items: center;
+}
+
+.cards.features .card-body h3 {
+  font-size: 16px;
 }
 
 /* testimonial variant — single card, portrait beside quote (no border/arrow) */

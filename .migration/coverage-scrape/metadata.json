@@ -1,0 +1,81 @@
+{
+  "url": "https://www.3m.com/3M/en_US/car-personalization-us/resources/coverage-options/",
+  "source": "bd",
+  "detection": {
+    "isError": false,
+    "isBotProtection": false
+  },
+  "timestamp": "2026-09-15T20:10:42.074Z",
+  "paths": {
+    "documentPath": "/3m/en-us/car-personalization-us/resources/coverage-options/index",
+    "htmlFilePath": "/3m/en-us/car-personalization-us/resources/coverage-options/index.plain.html",
+    "mdFilePath": "/3m/en-us/car-personalization-us/resources/coverage-options/index.md",
+    "dirPath": "/3m/en-us/car-personalization-us/resources/coverage-options",
+    "filename": "index"
+  },
+  "screenshot": ".migration/coverage-scrape/screenshot.png",
+  "html": {
+    "filePath": ".migration/coverage-scrape/cleaned.html",
+    "size": 157176
+  },
+  "rawHtml": {
+    "filePath": "/backups/ynaka-adobe/3m/repo/tools/importer/bd-snapshots/www.3m.com/3M/en_US/car-personalization-us/resources/coverage-options.html",
+    "size": 86453
+  },
+  "metadata": {
+    "title": "Which 3M Auto Films are Right for Me? | 3M Car Personalization",
+    "viewport": "width=device-width, initial-scale=1.0",
+    "DCSext.Business": "Transport & Electronic Bus Group",
+    "DCSext.CDC": "KT",
+    "DCSext.MktExpertise": "Consumer",
+    "DCSext.SubMarket": "Car Personalization",
+    "DCSext.ewcd_url": "Z6_79L2HO02K8K2E0QVI45SBEDLT1 | Z6_79L2HO02K0VA50QV5TBUNO6LJ2 | Z6_79L2HO02KG0J406LNA463LVHE2",
+    "DCSext.locale": "en_US",
+    "DCSext.page": "TEBG_CarPersonalisation_US_Resources_CoverageOptions",
+    "DCSext.platform": "FUZE",
+    "DCSext.site": "TEBG_CarPersonalisation_US",
+    "application-name": "MMM-ext",
+    "dc_coverage": "US",
+    "description": "Change your car's color or texture, add accents or protection with 3M professionally trained installers and Pro Shop Dealers to bring your unique vision to life.",
+    "format-detection": "telephone=no",
+    "mmmsite": "TEBG_CarPersonalisation_US",
+    "mmm:serp": "https://www.3m.com/3M/en_US/car-personalization-us/resources/coverage-options/",
+    "msapplication-TileColor": "#ffffff",
+    "msapplication-square70x70logo": "/3m_theme_assets/themes/3MTheme/assets/images/unicorn/smalltile.png",
+    "msapplication-square150x150logo": "/3m_theme_assets/themes/3MTheme/assets/images/unicorn/mediumtile.png",
+    "msapplication-wide310x150logo": "/3m_theme_assets/themes/3MTheme/assets/images/unicorn/widetile.png",
+    "msapplication-square310x310logo": "/3m_theme_assets/themes/3MTheme/assets/images/unicorn/largetile.png",
+    "WT.z_layout": "Luxury",
+    "canonical": "https://www.3m.com/3M/en_US/car-personalization-us/resources/coverage-options/"
+  },
+  "images": {
+    "count": 17,
+    "mapping": {
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/images/unicorn/Logo_mobile.png": "./images/c10e4d353d836ebdd2ed261aaf738605.png",
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/images/unicorn/Logo.svg": "./images/07b70afb61d704ccebb17724e597005b.png",
+      "https://www.3m.com/wps/wcm/connect/b8dfec96-45c5-4eb4-84bb-39884980f5b6/cbtd-premium-auto-films-dc2-webpage-coverage-hero-1b-1440x810.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-b8dfec96-45c5-4eb4-84bb-39884980f5b6-ppv73pe": "./images/6bed451ae2ee26993f0d2eadb09631be.jpg",
+      "https://www.3m.com/wps/wcm/connect/4194915e-db87-4b1e-8a71-109ae32e19ee/cbtd-premium-auto-films-dc2-webpage-coverage-450x120-1.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-4194915e-db87-4b1e-8a71-109ae32e19ee-poPodCc": "./images/2730d1215a097c28a20b8be3ce2b58d0.jpg",
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/images/unicorn/repeating_meshed_grid.png": "./images/b24e5f2bbe0a315c9631f3ca68c08ec9.png",
+      "https://www.3m.com/wps/wcm/connect/6e3b264d-d7e4-4468-941c-a17051f7391b/cbtd-premium-auto-films-dc2-webpage-coverage-450x120-2.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-6e3b264d-d7e4-4468-941c-a17051f7391b-poPoe1-": "./images/ee09369a55fadffb8d1b651a58ec9a95.jpg",
+      "https://www.3m.com/wps/wcm/connect/fdf52c42-0e58-4b3e-9901-54d778aa81b9/cbtd-premium-auto-films-dc2-webpage-coverage-450x120-3.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-fdf52c42-0e58-4b3e-9901-54d778aa81b9-poPoeuk": "./images/2ac2a0d48c6b0aca344d919a9890057f.jpg",
+      "https://www.3m.com/wps/wcm/connect/cea47441-503e-44b3-8669-ca1c11399e05/cbtd-premium-auto-films-dc2-webpage-coverage-450x120-5.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-cea47441-503e-44b3-8669-ca1c11399e05-poPofnQ": "./images/bb580c24e5e40e2d3a7be3a532e347e5.jpg",
+      "https://www.3m.com/wps/wcm/connect/b35525a7-c98f-4b4c-b1a2-76c9937cba14/cbtd-premium-auto-films-dc2-webpage-coverage-450x120-4.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-b35525a7-c98f-4b4c-b1a2-76c9937cba14-poPoeXj": "./images/eaa95981f6570b18f23f0069a72e3f78.jpg",
+      "https://www.3m.com/wps/wcm/connect/390ea82d-aefd-467b-935a-60cf5c93bb08/cbtd-premium-auto-films-dc2-webpage-coverage-450x120-6.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-390ea82d-aefd-467b-935a-60cf5c93bb08-poPofQx": "./images/d508d6739ed0b2d8a8e63b91f16e72e6.jpg",
+      "https://www.3m.com/wps/wcm/connect/8adf86c1-f600-4fc0-bd4d-f4a0a194f637/cbtd-premium-auto-films-dc2-webpage-coverage-hero-2-1440x810.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-8adf86c1-f600-4fc0-bd4d-f4a0a194f637-ppv76E7": "./images/2e8e1ca93e90ca37e22eff1f6e5be9a4.jpg",
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/images/compressed/play.png": "./images/842348b09560a029820fb38627829760.png",
+      "https://www.3m.com/wps/wcm/connect/7cb7cbc4-2a80-4ea1-ae2c-9c125b902452/cbtd-premium-auto-films-dc2-webpage-coverage-640x480-2.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-7cb7cbc4-2a80-4ea1-ae2c-9c125b902452-pu8RIoQ": "./images/16ebdc0584e749a21b2b0d396895acae.jpg",
+      "https://www.3m.com/wps/wcm/connect/54873461-4102-417e-a459-62b92f301a18/cbtd-premium-auto-films-dc2-webpage-coverage-640x480-3.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-54873461-4102-417e-a459-62b92f301a18-pu8RIHR": "./images/55999554915d6ccb55b496fb874adda2.jpg",
+      "https://www.3m.com/wps/wcm/connect/53f6a8b4-eb40-4257-9e4d-b5791e225bc4/cbtd-premium-auto-films-dc2-webpage-coverage-640x480-1.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-53f6a8b4-eb40-4257-9e4d-b5791e225bc4-pBprf6s": "./images/65bb45b6b9f0d1cc1fcd1a935c7f96e8.jpg",
+      "https://www.3m.com/wps/wcm/connect/ce8f93b1-fe91-4a1a-b413-14e85c292489/cbtd-premium-auto-films-dc2-webpage-coverage-640x480-4.jpg?MOD=AJPERES&CACHEID=ROOTWORKSPACE-ce8f93b1-fe91-4a1a-b413-14e85c292489-pu8RI-A": "./images/b6013a1e7f1573681d2bcc7805d9caaf.jpg",
+      "https://www.3m.com/3m_theme_assets/themes/3MTheme/assets/fonts/3MThemeIconFont/PNG/icn_privacyOptions.png": "./images/af6f0261c66cb7da77781f8e34ecaf4f.png"
+    },
+    "stats": {
+      "total": 19,
+      "converted": 3,
+      "skipped": 14,
+      "failed": 1,
+      "tooLarge": 0,
+      "limitReached": 0
+    }
+  }
+}
