@@ -16,52 +16,34 @@
 
 /* ---- stage ---- */
 .rs-stagewrap {
-  background: linear-gradient(180deg, #dfe3e8 0%, #b9bfc7 100%);
+  background: linear-gradient(180deg, #eef1f4 0%, #cdd3da 100%);
   border-radius: 10px;
-  padding: 24px 16px 12px;
+  padding: 20px 16px 12px;
 }
 
-.rs-stage .rs-car {
+.rs-stage {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: grab;
+}
+
+.rs-stage:active {
+  cursor: grabbing;
+}
+
+.rs-stage canvas {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 
-.rs-shadow {
-  fill: #000;
-  opacity: 0.18;
-}
-
-.rs-tire {
-  fill: #16181b;
-}
-
-.rs-rim {
-  fill: #c7ccd1;
-}
-
-.rs-panel {
-  transition: fill 0.25s ease;
-}
-
-.rs-finish {
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-}
-
-.rs-glass {
-  transition: fill 0.25s ease, opacity 0.25s ease;
-}
-
-/* rough view changes: skew silhouette to suggest angle */
-.rs-car[data-view="front"] {
-  transform: scaleX(0.5);
-  transform-origin: center;
-}
-
-.rs-car[data-view="rear"] {
-  transform: scaleX(-0.9);
-  transform-origin: center;
+.rs-stage-error {
+  display: grid;
+  place-items: center;
+  background: #e7eaee;
 }
 
 .rs-viewbar {
@@ -144,6 +126,21 @@
   border-color: #111;
   background: #111;
   color: #fff;
+}
+
+.rs-coverage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.rs-coverage-label {
+  margin-right: 4px;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .rs-grid {
