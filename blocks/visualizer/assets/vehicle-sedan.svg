@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420">
+  <defs>
+    <linearGradient id="bodyShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.18" stop-color="#e9edf1"/>
+      <stop offset="0.55" stop-color="#c4ccd4"/>
+      <stop offset="0.82" stop-color="#8f99a4"/>
+      <stop offset="1" stop-color="#5f6771"/>
+    </linearGradient>
+    <linearGradient id="lowerShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9aa3ad"/>
+      <stop offset="1" stop-color="#4a525b"/>
+    </linearGradient>
+    <radialGradient id="hood" cx="0.3" cy="0.2" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4654"/>
+      <stop offset="0.5" stop-color="#20303f"/>
+      <stop offset="1" stop-color="#4a5866"/>
+    </linearGradient>
+    <radialGradient id="tire" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.55" stop-color="#14161a"/>
+      <stop offset="0.72" stop-color="#0c0d10"/>
+      <stop offset="0.74" stop-color="#20242a"/>
+      <stop offset="1" stop-color="#0a0b0d"/>
+    </radialGradient>
+  </defs>
+
+  <ellipse cx="480" cy="372" rx="392" ry="26" fill="#000" opacity="0.22"/>
+
+  <!-- lower body / sills (kept dark, not wrapped) -->
+  <path d="M92 300 L868 300 L852 344 C846 356 832 360 812 360 L148 360 C128 360 114 356 108 344 Z" fill="url(#lowerShade)"/>
+
+  <!-- main paint body -->
+  <path d="M96 296
+           C96 262 118 250 150 244
+           L250 176 C286 150 330 138 386 138
+           L590 138 C664 138 706 158 742 200
+           L820 250 C860 262 872 278 866 300
+           Z" fill="url(#bodyShade)"/>
+  <path d="M250 176 C286 150 330 138 386 138 L560 138 C560 138 470 176 430 208 L150 244 C150 244 214 202 250 176 Z" fill="url(#hood)"/>
+
+  <!-- greenhouse / glass -->
+  <path d="M300 172 L372 120 L556 120 L620 172 Z" fill="url(#glass)"/>
+  <line x1="462" y1="120" x2="462" y2="172" stroke="#7f8a95" stroke-width="4"/>
+  <!-- door seams -->
+  <path d="M470 150 L470 296 M628 176 L628 300" stroke="#8b939c" stroke-width="2" opacity="0.5"/>
+  <!-- handles -->
+  <rect x="400" y="214" width="34" height="8" rx="4" fill="#6b7480"/>
+  <rect x="540" y="214" width="34" height="8" rx="4" fill="#6b7480"/>
+  <!-- headlight / taillight -->
+  <path d="M820 250 L862 264 C868 268 866 280 858 280 L822 274 Z" fill="#e8eef4" opacity="0.85"/>
+  <rect x="104" y="266" width="30" height="18" rx="4" fill="#c0161d" opacity="0.85"/>
+
+  <!-- wheels -->
+  <g>
+    <circle cx="270" cy="330" r="62" fill="url(#tire)"/>
+    <circle cx="270" cy="330" r="30" fill="#cfd6dc"/>
+    <circle cx="270" cy="330" r="30" fill="none" stroke="#9aa3ac" stroke-width="3"/>
+    <circle cx="270" cy="330" r="9" fill="#8a929b"/>
+  </g>
+  <g>
+    <circle cx="690" cy="330" r="62" fill="url(#tire)"/>
+    <circle cx="690" cy="330" r="30" fill="#cfd6dc"/>
+    <circle cx="690" cy="330" r="30" fill="none" stroke="#9aa3ac" stroke-width="3"/>
+    <circle cx="690" cy="330" r="9" fill="#8a929b"/>
+  </g>
+  <!-- wheel arches shadow -->
+  <path d="M208 330 a62 62 0 0 1 124 0" fill="none" stroke="#000" stroke-width="6" opacity="0.25"/>
+  <path d="M628 330 a62 62 0 0 1 124 0" fill="none" stroke="#000" stroke-width="6" opacity="0.25"/>
+</svg>

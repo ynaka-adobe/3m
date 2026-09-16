@@ -1,33 +1,14 @@
 import { readBlockConfig } from '../../scripts/aem.js';
 
-// Side-profile car built from panels so a wrap can be applied per-surface.
-// Swap this SVG for masked vehicle photos later without touching the logic below.
-const CAR_SVG = `
-<svg class="rs-car" viewBox="0 0 640 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vehicle preview">
-  <defs>
-    <linearGradient id="rs-sheen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
-      <stop offset="0.35" stop-color="#ffffff" stop-opacity="0.08"/>
-      <stop offset="0.55" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.28"/>
-    </linearGradient>
-    <pattern id="rs-carbon" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="10" height="10" fill="#000" fill-opacity="0.001"/>
-      <rect width="5" height="5" fill="#000" fill-opacity="0.28"/>
-      <rect x="5" y="5" width="5" height="5" fill="#000" fill-opacity="0.28"/>
-    </pattern>
-  </defs>
-  <ellipse class="rs-shadow" cx="320" cy="232" rx="250" ry="16"/>
-  <!-- windows / glass -->
-  <path class="rs-glass" d="M188 96 L246 58 L392 58 L432 96 Z"/>
-  <!-- main body: this is the panel that takes the wrap -->
-  <path class="rs-panel" d="M40 168 C40 150 60 146 92 144 L150 110 C170 96 196 90 232 90 L404 90 C448 90 476 104 500 132 L560 150 C596 156 604 168 600 186 L596 200 L44 200 Z"/>
-  <!-- finish overlay sits on top of the same silhouette -->
-  <path class="rs-finish" d="M40 168 C40 150 60 146 92 144 L150 110 C170 96 196 90 232 90 L404 90 C448 90 476 104 500 132 L560 150 C596 156 604 168 600 186 L596 200 L44 200 Z"/>
-  <!-- wheels -->
-  <circle class="rs-tire" cx="164" cy="200" r="42"/><circle class="rs-rim" cx="164" cy="200" r="20"/>
-  <circle class="rs-tire" cx="476" cy="200" r="42"/><circle class="rs-rim" cx="476" cy="200" r="20"/>
-</svg>`;
+// Default vehicle assets shipped with the block. Any of these can be overridden
+// per page by authoring `vehicle` / `mask` / `glass` rows in the block table,
+// so a real masked vehicle photo drops in without code changes.
+const BASE = '/blocks/visualizer/assets';
+const DEFAULTS = {
+  vehicle: `${BASE}/vehicle-sedan.svg`,
+  mask: `${BASE}/vehicle-sedan-body.svg`,
+  glass: `${BASE}/vehicle-sedan-glass.svg`,
+};
 
 const FINISH_HINT = {
   Gloss: 'High-shine mirror finish.',
@@ -41,6 +22,19 @@ const FINISH_HINT = {
   Clear: 'Invisible protection with a subtle sheen.',
 };
 
+// Per-finish render tuning: how the colored wrap layer blends over the base
+// photo, and how strong the reflective sheen reads on top.
+const FINISH_RENDER = {
+  Gloss: { blend: 'multiply', wrap: 0.95, sheen: 0.9 },
+  Metallic: { blend: 'multiply', wrap: 0.9, sheen: 0.8 },
+  ColorFlip: { blend: 'multiply', wrap: 0.85, sheen: 0.85 },
+  Satin: { blend: 'multiply', wrap: 0.92, sheen: 0.4 },
+  Brushed: { blend: 'multiply', wrap: 0.85, sheen: 0.5 },
+  Matte: { blend: 'multiply', wrap: 0.98, sheen: 0.08 },
+  Textured: { blend: 'multiply', wrap: 0.9, sheen: 0.5 },
+  Clear: { blend: 'multiply', wrap: 0, sheen: 0.7 },
+};
+
 function el(tag, cls, html) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -48,57 +42,64 @@ function el(tag, cls, html) {
   return n;
 }
 
-function applyFilm(stage, film, view) {
-  const svg = stage.querySelector('.rs-car');
-  const panel = svg.querySelector('.rs-panel');
-  const finish = svg.querySelector('.rs-finish');
-  const glass = svg.querySelector('.rs-glass');
-  svg.dataset.view = view;
+function applyFilm(stage, film) {
+  const wrap = stage.querySelector('.rs-wrap');
+  const sheen = stage.querySelector('.rs-sheen');
+  const glass = stage.querySelector('.rs-glass-layer');
+  const r = FINISH_RENDER[film.finish] || { blend: 'multiply', wrap: 0.9, sheen: 0.5 };
+  stage.classList.toggle('rs-carbon', film.finish === 'Textured');
 
-  // reset
-  finish.setAttribute('fill', 'url(#rs-sheen)');
-  finish.style.opacity = '';
-  glass.setAttribute('fill', '#243447');
-  glass.style.opacity = '0.9';
-
+  // window tint colors the glass, leaves the paint alone
   if (film.product === 'Window Tint') {
-    glass.setAttribute('fill', film.color);
-    glass.style.opacity = '0.92';
-    return;
-  }
-  if (film.product === 'Paint Protection Film') {
-    // PPF keeps the paint; matte PPF knocks back the sheen.
-    finish.style.opacity = film.finish === 'Matte' ? '0.15' : '0.7';
+    wrap.style.opacity = '0';
+    glass.style.background = film.color;
+    glass.style.opacity = '0.8';
+    sheen.style.opacity = '0';
     return;
   }
 
-  panel.setAttribute('fill', film.color);
-  const map = {
-    Gloss: 0.9,
-    Metallic: 0.85,
-    ColorFlip: 0.85,
-    Satin: 0.5,
-    Brushed: 0.4,
-    Matte: 0.18,
-    Textured: 0.6,
-  };
-  finish.style.opacity = String(map[film.finish] ?? 0.6);
-  if (film.finish === 'Textured') finish.setAttribute('fill', 'url(#rs-carbon)');
-  if (film.finish === 'Metallic' || film.finish === 'ColorFlip') {
-    finish.setAttribute('fill', 'url(#rs-sheen)');
+  glass.style.opacity = '0';
+  // paint protection film keeps the paint; matte PPF just knocks back the sheen
+  if (film.product === 'Paint Protection Film') {
+    wrap.style.opacity = '0';
+    sheen.style.opacity = film.finish === 'Matte' ? '0.05' : '0.7';
+    return;
   }
+
+  wrap.style.background = film.color;
+  wrap.style.mixBlendMode = r.blend;
+  wrap.style.opacity = String(r.wrap);
+  sheen.style.opacity = String(r.sheen);
 }
 
 export default async function decorate(block) {
   const cfg = readBlockConfig(block);
   const source = cfg.source || '/films.json';
   const title = cfg.title || '3M Restyling Studio Visualizer';
+  const vehicle = cfg.vehicle || DEFAULTS.vehicle;
+  const mask = cfg.mask || DEFAULTS.mask;
+  const glassMask = cfg.glass || DEFAULTS.glass;
 
   block.textContent = '';
   block.classList.add('rs-visualizer');
 
-  // ---- layout ----
-  const stage = el('div', 'rs-stage', CAR_SVG);
+  // ---- stage: layered masked-photo render ----
+  const stage = el('div', 'rs-stage');
+  const photo = el('img', 'rs-photo');
+  photo.src = vehicle;
+  photo.alt = 'Vehicle preview';
+  photo.loading = 'eager';
+  const wrap = el('div', 'rs-wrap');
+  const glass = el('div', 'rs-glass-layer');
+  const sheen = el('div', 'rs-sheen');
+  wrap.style.webkitMaskImage = `url("${mask}")`;
+  wrap.style.maskImage = `url("${mask}")`;
+  sheen.style.webkitMaskImage = `url("${mask}")`;
+  sheen.style.maskImage = `url("${mask}")`;
+  glass.style.webkitMaskImage = `url("${glassMask}")`;
+  glass.style.maskImage = `url("${glassMask}")`;
+  stage.append(photo, wrap, glass, sheen);
+
   const viewbar = el('div', 'rs-viewbar');
   ['Side', 'Front', 'Rear'].forEach((v, i) => {
     const b = el('button', `rs-view${i === 0 ? ' is-active' : ''}`, v);
@@ -138,7 +139,6 @@ export default async function decorate(block) {
   const products = [...new Set(films.map((f) => f.product))];
   let activeProduct = products[0];
   let activeFinish = 'All';
-  let activeView = 'side';
   let selected = null;
 
   function finishesFor(product) {
@@ -169,7 +169,7 @@ export default async function decorate(block) {
 
   function select(film) {
     selected = film;
-    applyFilm(stage, film, activeView);
+    applyFilm(stage, film);
     caption.textContent = `${film.product} · ${film.series}`;
     detail.innerHTML = `
       <div class="rs-swatch-lg" style="background:${film.color}"></div>
@@ -201,14 +201,17 @@ export default async function decorate(block) {
     if (selected && list.some((f) => f.id === selected.id)) select(selected);
   }
 
-  function renderAll() { renderTabs(); renderGrid(); }
+  function renderAll() {
+    renderTabs();
+    renderGrid();
+  }
 
+  // view toggle just nudges the stage to hint a different angle
   viewbar.querySelectorAll('.rs-view').forEach((b) => {
     b.onclick = () => {
-      activeView = b.dataset.view;
+      stage.dataset.view = b.dataset.view;
       viewbar.querySelectorAll('.rs-view').forEach((x) => x.classList.remove('is-active'));
       b.classList.add('is-active');
-      if (selected) applyFilm(stage, selected, activeView);
     };
   });
 

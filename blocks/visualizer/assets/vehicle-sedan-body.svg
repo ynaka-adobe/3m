@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" width="960" height="420">
+  <!-- Alpha mask: opaque (white) = paintable body panels the wrap covers.
+       The glass rectangle is cut out as a hole via fill-rule evenodd. -->
+  <path fill-rule="evenodd" fill="#ffffff" d="M96 296
+           C96 262 118 250 150 244
+           L250 176 C286 150 330 138 386 138
+           L590 138 C664 138 706 158 742 200
+           L820 250 C860 262 872 278 866 300 Z
+           M300 172 L620 172 L556 120 L372 120 Z"/>
+  <path fill="#ffffff" d="M92 300 L868 300 L852 344 C846 356 832 360 812 360 L148 360 C128 360 114 356 108 344 Z"/>
+</svg>
