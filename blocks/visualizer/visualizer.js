@@ -45,6 +45,47 @@ const VIEWS = {
   rear: [-3.4, 1.4, -3.4],
 };
 
+// Light and dark studio environments (marbled floor fading to a horizon).
+const THEMES = {
+  light: {
+    bg: 0xdfe3e7, floor: 0xcfd4d9, fog: [34, 95], exposure: 1.05, ambient: 0.6,
+  },
+  dark: {
+    bg: 0x16181b, floor: 0x2c3034, fog: [26, 78], exposure: 1.0, ambient: 0.35,
+  },
+};
+
+// Procedural marbled-concrete floor texture so we ship no image asset.
+function makeFloorTexture(THREE) {
+  const size = 512;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#b8bcc1';
+  ctx.fillRect(0, 0, size, size);
+  for (let i = 0; i < 600; i += 1) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const r = 8 + Math.random() * 60;
+    const shade = Math.random() < 0.5 ? 255 : 0;
+    const a = 0.015 + Math.random() * 0.05;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${shade},${shade},${shade},${a})`);
+    g.addColorStop(1, `rgba(${shade},${shade},${shade},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 6);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function el(tag, cls, html) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -73,17 +114,21 @@ async function initStage(stage, modelUrl, ppfUrl) {
     THREE, GLTFLoader, OrbitControls, RoomEnvironment,
   } = await loadThree();
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   stage.append(renderer.domElement);
 
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.fog = new THREE.Fog(THEMES.light.bg, ...THEMES.light.fog);
+  scene.background = new THREE.Color(THEMES.light.bg);
 
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
   camera.position.set(...VIEWS.side);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -91,12 +136,31 @@ async function initStage(stage, modelUrl, ppfUrl) {
   controls.enablePan = false;
   controls.minDistance = 3;
   controls.maxDistance = 9;
-  controls.maxPolarAngle = Math.PI / 1.9;
+  controls.maxPolarAngle = Math.PI / 2.05;
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.6));
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.6);
+  scene.add(hemi);
   const key = new THREE.DirectionalLight(0xffffff, 2.2);
-  key.position.set(5, 8, 5);
+  key.position.set(6, 10, 6);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.near = 1;
+  key.shadow.camera.far = 40;
+  key.shadow.camera.left = -8;
+  key.shadow.camera.right = 8;
+  key.shadow.camera.top = 8;
+  key.shadow.camera.bottom = -8;
+  key.shadow.bias = -0.0004;
   scene.add(key);
+
+  // marbled studio floor
+  const floorMat = new THREE.MeshStandardMaterial({
+    map: makeFloorTexture(THREE), color: THEMES.light.floor, roughness: 0.75, metalness: 0.0,
+  });
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(80, 96), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
 
   const paints = [];
   const glasses = [];
@@ -107,6 +171,7 @@ async function initStage(stage, modelUrl, ppfUrl) {
 
   model.traverse((o) => {
     if (!o.isMesh || !o.material) return;
+    o.castShadow = true;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     mats.forEach((m) => {
       if (m.name === PAINT_MAT) {
@@ -146,11 +211,12 @@ async function initStage(stage, modelUrl, ppfUrl) {
     }
   }
 
-  // center + frame the car
+  // center + frame the car, and drop the floor to the car's base
   const box = new THREE.Box3().setFromObject(model);
   const center = box.getCenter(new THREE.Vector3());
   model.position.sub(center);
   scene.add(model);
+  floor.position.y = box.min.y - center.y;
   const radius = box.getSize(new THREE.Vector3()).length() / 2;
   const dist = radius / Math.sin((camera.fov * Math.PI) / 360);
   camera.position.setLength(dist);
@@ -183,8 +249,21 @@ async function initStage(stage, modelUrl, ppfUrl) {
     });
   }
 
+  function setTheme(mode) {
+    const t = THEMES[mode] || THEMES.light;
+    const [near, far] = t.fog;
+    scene.background.set(t.bg);
+    scene.fog.color.set(t.bg);
+    scene.fog.near = near;
+    scene.fog.far = far;
+    floorMat.color.set(t.floor);
+    hemi.intensity = t.ambient;
+    renderer.toneMappingExposure = t.exposure;
+  }
+
   return {
     hasPPF: Object.keys(ppfMeshes).length > 0,
+    setTheme,
     setFilm(film) {
       if (film.product === 'Window Tint') {
         ppfActive = false;
@@ -243,6 +322,18 @@ export default async function decorate(block) {
   block.classList.add('rs-visualizer');
 
   const stage = el('div', 'rs-stage');
+  let activeTheme = 'light';
+  const themeBar = el('div', 'rs-theme');
+  [['light', 'Light', '☀'], ['dark', 'Dark', '☾']].forEach(([mode, label, icon]) => {
+    const b = el('button', `rs-theme-btn${mode === activeTheme ? ' is-active' : ''}`, icon);
+    b.type = 'button';
+    b.dataset.theme = mode;
+    b.title = `${label} background`;
+    b.setAttribute('aria-label', `${label} background`);
+    themeBar.append(b);
+  });
+  stage.append(themeBar);
+
   const viewbar = el('div', 'rs-viewbar');
   ['Side', 'Front', 'Rear'].forEach((v, i) => {
     const b = el('button', `rs-view${i === 0 ? ' is-active' : ''}`, v);
@@ -378,10 +469,20 @@ export default async function decorate(block) {
     };
   });
 
+  themeBar.querySelectorAll('.rs-theme-btn').forEach((b) => {
+    b.onclick = () => {
+      activeTheme = b.dataset.theme;
+      themeBar.querySelectorAll('.rs-theme-btn').forEach((x) => x.classList.remove('is-active'));
+      b.classList.add('is-active');
+      if (viewer) viewer.setTheme(activeTheme);
+    };
+  });
+
   renderAll();
 
   try {
     viewer = await initStage(stage, modelUrl, ppfUrl);
+    viewer.setTheme(activeTheme);
     caption.textContent = 'Drag to rotate · scroll to zoom';
     renderCoverage();
     select(selected || films[0]);

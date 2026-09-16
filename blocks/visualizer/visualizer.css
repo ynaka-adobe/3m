@@ -46,6 +46,36 @@
   background: #e7eaee;
 }
 
+.rs-theme {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.rs-theme-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgb(0 0 0 / 15%);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 80%);
+  color: #333;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rs-theme-btn.is-active {
+  border-color: #e00;
+  color: #e00;
+}
+
 .rs-viewbar {
   display: flex;
   gap: 8px;
