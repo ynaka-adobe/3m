@@ -358,7 +358,11 @@ export default async function decorate(block) {
       s.onclick = () => select(f);
       grid.append(s);
     });
-    if (selected && list.some((f) => f.id === selected.id)) select(selected);
+    // keep the current film if it belongs to this product, else pick the first
+    if (list.length) {
+      const keep = selected && list.find((f) => f.id === selected.id);
+      select(keep || list[0]);
+    }
   }
 
   function renderAll() {
