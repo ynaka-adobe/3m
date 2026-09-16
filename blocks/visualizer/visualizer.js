@@ -5,11 +5,15 @@ const THREE_VER = '0.160.0';
 const CDN = `https://esm.sh/three@${THREE_VER}`;
 const BASE = '/blocks/visualizer/assets';
 const MODEL = `${BASE}/sportscar.glb`;
+const PPF_MODEL = `${BASE}/sportscar-ppf.glb`;
 
 // Material names inside the model (from the FBX): `carpaint` is the wrap
 // surface, `windowglass` is what window tint colors.
 const PAINT_MAT = 'carpaint';
 const GLASS_MAT = 'windowglass';
+
+// PPF overlay meshes = Scotchgard Pro Series coverage tiers.
+const PPF_MESH = { gold: 'sportscar_ppf_gold', platinum: 'sportscar_ppf_platinum' };
 
 const FINISH_HINT = {
   Gloss: 'High-shine mirror finish.',
@@ -64,7 +68,7 @@ async function loadThree() {
 }
 
 // Build the 3D scene and return a small API the UI drives.
-async function initStage(stage, modelUrl) {
+async function initStage(stage, modelUrl, ppfUrl) {
   const {
     THREE, GLTFLoader, OrbitControls, RoomEnvironment,
   } = await loadThree();
@@ -97,7 +101,8 @@ async function initStage(stage, modelUrl) {
   const paints = [];
   const glasses = [];
 
-  const gltf = await new GLTFLoader().loadAsync(modelUrl);
+  const loader = new GLTFLoader();
+  const gltf = await loader.loadAsync(modelUrl);
   const model = gltf.scene;
 
   model.traverse((o) => {
@@ -118,6 +123,28 @@ async function initStage(stage, modelUrl) {
       }
     });
   });
+
+  // PPF overlay: parented under the car so it inherits the same transform.
+  const ppfMeshes = {};
+  let ppfMat = null;
+  if (ppfUrl) {
+    try {
+      const ppfGltf = await loader.loadAsync(ppfUrl);
+      ppfGltf.scene.traverse((o) => {
+        if (!o.isMesh) return;
+        o.visible = false;
+        if (o.material) {
+          o.material.transparent = true;
+          ppfMat = o.material;
+        }
+        if (o.name === PPF_MESH.gold) ppfMeshes.gold = o;
+        if (o.name === PPF_MESH.platinum) ppfMeshes.platinum = o;
+      });
+      model.add(ppfGltf.scene);
+    } catch (e) {
+      // PPF overlay is optional; fall back to roughness-only PPF below.
+    }
+  }
 
   // center + frame the car
   const box = new THREE.Box3().setFromObject(model);
@@ -147,18 +174,43 @@ async function initStage(stage, modelUrl) {
     renderer.render(scene, camera);
   }());
 
+  let coverage = 'platinum';
+  let ppfActive = false;
+
+  function showPPF() {
+    Object.entries(ppfMeshes).forEach(([tier, mesh]) => {
+      mesh.visible = ppfActive && tier === coverage;
+    });
+  }
+
   return {
+    hasPPF: Object.keys(ppfMeshes).length > 0,
     setFilm(film) {
       if (film.product === 'Window Tint') {
+        ppfActive = false;
+        showPPF();
         glasses.forEach((g) => { g.color.set(film.color); g.opacity = 0.55; });
         return;
       }
       glasses.forEach((g) => { g.color.set(0x0d1a17); g.opacity = 0.35; });
       if (film.product === 'Paint Protection Film') {
         const matte = film.finish === 'Matte';
-        paints.forEach((p) => { p.roughness = matte ? 0.75 : 0.1; p.clearcoat = matte ? 0.2 : 1; });
+        if (ppfMat) {
+          // clear glossy film, or a translucent matte film over the paint
+          ppfMat.color.set(matte ? 0xd7d7d7 : 0xffffff);
+          ppfMat.opacity = matte ? 0.22 : 0.1;
+          ppfMat.roughness = matte ? 0.95 : 0.04;
+          ppfMat.metalness = 0;
+          ppfMat.needsUpdate = true;
+        }
+        // matte PPF also flattens the paint sheen underneath
+        paints.forEach((p) => { p.roughness = matte ? 0.8 : 0.1; p.clearcoat = matte ? 0.15 : 1; });
+        ppfActive = true;
+        showPPF();
         return;
       }
+      ppfActive = false;
+      showPPF();
       const pbr = FINISH_PBR[film.finish] || { metalness: 0.2, roughness: 0.4, clearcoat: 0.5 };
       paints.forEach((p) => {
         p.color.set(film.color);
@@ -167,6 +219,10 @@ async function initStage(stage, modelUrl) {
         p.clearcoat = pbr.clearcoat;
         p.needsUpdate = true;
       });
+    },
+    setCoverage(tier) {
+      if (ppfMeshes[tier]) coverage = tier;
+      showPPF();
     },
     setView(name) {
       const v = VIEWS[name] || VIEWS.side;
@@ -181,6 +237,7 @@ export default async function decorate(block) {
   const source = cfg.source || '/films.json';
   const title = cfg.title || '3M Restyling Studio Visualizer';
   const modelUrl = cfg.model || MODEL;
+  const ppfUrl = cfg.ppf || PPF_MODEL;
 
   block.textContent = '';
   block.classList.add('rs-visualizer');
@@ -199,13 +256,14 @@ export default async function decorate(block) {
   panel.append(el('h2', 'rs-title', title));
   const productTabs = el('div', 'rs-tabs');
   const finishRow = el('div', 'rs-filters');
+  const coverageRow = el('div', 'rs-coverage');
   const grid = el('div', 'rs-grid');
   const detail = el('div', 'rs-detail');
   const cta = el('a', 'rs-cta button', 'Find an installer');
   cta.href = cfg.installer || 'https://www.3m.com/3M/en_US/car-personalization-us/where-to-buy/';
   cta.target = '_blank';
   cta.rel = 'noopener';
-  panel.append(productTabs, finishRow, grid, detail, cta);
+  panel.append(productTabs, finishRow, coverageRow, grid, detail, cta);
 
   const stageWrap = el('div', 'rs-stagewrap');
   stageWrap.append(stage, viewbar, caption);
@@ -225,6 +283,7 @@ export default async function decorate(block) {
   const products = [...new Set(films.map((f) => f.product))];
   let activeProduct = products[0];
   let activeFinish = 'All';
+  let activeCoverage = 'platinum';
   let selected = null;
 
   function finishesFor(product) {
@@ -269,8 +328,23 @@ export default async function decorate(block) {
     });
   }
 
+  function renderCoverage() {
+    coverageRow.textContent = '';
+    const isPPF = activeProduct === 'Paint Protection Film' && viewer && viewer.hasPPF;
+    coverageRow.style.display = isPPF ? '' : 'none';
+    if (!isPPF) return;
+    coverageRow.append(el('span', 'rs-coverage-label', 'Coverage'));
+    [['platinum', 'Platinum (full)'], ['gold', 'Gold (partial)']].forEach(([tier, label]) => {
+      const b = el('button', `rs-chip${tier === activeCoverage ? ' is-active' : ''}`, label);
+      b.type = 'button';
+      b.onclick = () => { activeCoverage = tier; viewer.setCoverage(tier); renderCoverage(); };
+      coverageRow.append(b);
+    });
+  }
+
   function renderGrid() {
     renderFinishes();
+    renderCoverage();
     grid.textContent = '';
     const list = films.filter((f) => f.product === activeProduct
       && (activeFinish === 'All' || f.finish === activeFinish));
@@ -303,8 +377,9 @@ export default async function decorate(block) {
   renderAll();
 
   try {
-    viewer = await initStage(stage, modelUrl);
+    viewer = await initStage(stage, modelUrl, ppfUrl);
     caption.textContent = 'Drag to rotate · scroll to zoom';
+    renderCoverage();
     select(selected || films[0]);
   } catch (e) {
     stage.classList.add('rs-stage-error');

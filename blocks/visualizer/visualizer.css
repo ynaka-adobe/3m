@@ -128,6 +128,21 @@
   color: #fff;
 }
 
+.rs-coverage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.rs-coverage-label {
+  margin-right: 4px;
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .rs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
