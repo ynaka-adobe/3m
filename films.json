@@ -1,0 +1,23 @@
+{
+  "total": 16,
+  "offset": 0,
+  "limit": 16,
+  "data": [
+    { "id": "2080-G12",  "product": "Wrap Film",            "series": "2080",   "name": "Gloss Black",           "finish": "Gloss",    "color": "#111417" },
+    { "id": "2080-G212", "product": "Wrap Film",            "series": "2080",   "name": "Gloss White Aluminium", "finish": "Gloss",    "color": "#e8ebee" },
+    { "id": "2080-G377", "product": "Wrap Film",            "series": "2080",   "name": "Gloss Hotrod Red",      "finish": "Gloss",    "color": "#b11226" },
+    { "id": "2080-G54",  "product": "Wrap Film",            "series": "2080",   "name": "Gloss Blue Metallic",   "finish": "Metallic", "color": "#1f4e8c" },
+    { "id": "2080-M12",  "product": "Wrap Film",            "series": "2080",   "name": "Matte Black",           "finish": "Matte",    "color": "#1a1c1e" },
+    { "id": "2080-M26",  "product": "Wrap Film",            "series": "2080",   "name": "Matte White",           "finish": "Matte",    "color": "#d8dadb" },
+    { "id": "2080-M209", "product": "Wrap Film",            "series": "2080",   "name": "Matte Military Green",  "finish": "Matte",    "color": "#4b5320" },
+    { "id": "2080-S12",  "product": "Wrap Film",            "series": "2080",   "name": "Satin Black",           "finish": "Satin",    "color": "#212327" },
+    { "id": "2080-S347", "product": "Wrap Film",            "series": "2080",   "name": "Satin Smoky Teal",      "finish": "Satin",    "color": "#2e5d5a" },
+    { "id": "2080-SP280","product": "Wrap Film",            "series": "2080",   "name": "Satin Flip Psychedelic","finish": "ColorFlip","color": "#7a3fb0" },
+    { "id": "2080-GP278","product": "Wrap Film",            "series": "2080",   "name": "Gloss Flip Ghost Pearl","finish": "ColorFlip","color": "#c9b8d6" },
+    { "id": "1080-BR201","product": "Wrap Film",            "series": "1080",   "name": "Brushed Titanium",      "finish": "Brushed",  "color": "#8a8d90" },
+    { "id": "1080-CFS12","product": "Wrap Film",            "series": "1080",   "name": "Carbon Fiber Black",    "finish": "Textured", "color": "#15171a" },
+    { "id": "CR-40",     "product": "Window Tint",          "series": "Crystalline", "name": "CR40 Automotive Tint", "finish": "Tint",  "color": "#20242a" },
+    { "id": "PPF-Gloss", "product": "Paint Protection Film","series": "Scotchgard","name": "Pro Series Gloss",   "finish": "Clear",    "color": "#ffffff" },
+    { "id": "PPF-Matte", "product": "Paint Protection Film","series": "Scotchgard","name": "Pro Series Matte",   "finish": "Matte",    "color": "#e6e6e6" }
+  ]
+}
