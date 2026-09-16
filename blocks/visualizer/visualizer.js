@@ -74,8 +74,13 @@ function applyFilm(stage, film, view) {
 
   panel.setAttribute('fill', film.color);
   const map = {
-    Gloss: 0.9, Metallic: 0.85, ColorFlip: 0.85, Satin: 0.5,
-    Brushed: 0.4, Matte: 0.18, Textured: 0.6,
+    Gloss: 0.9,
+    Metallic: 0.85,
+    ColorFlip: 0.85,
+    Satin: 0.5,
+    Brushed: 0.4,
+    Matte: 0.18,
+    Textured: 0.6,
   };
   finish.style.opacity = String(map[film.finish] ?? 0.6);
   if (film.finish === 'Textured') finish.setAttribute('fill', 'url(#rs-carbon)');
@@ -96,7 +101,7 @@ export default async function decorate(block) {
   const stage = el('div', 'rs-stage', CAR_SVG);
   const viewbar = el('div', 'rs-viewbar');
   ['Side', 'Front', 'Rear'].forEach((v, i) => {
-    const b = el('button', 'rs-view' + (i === 0 ? ' is-active' : ''), v);
+    const b = el('button', `rs-view${i === 0 ? ' is-active' : ''}`, v);
     b.type = 'button';
     b.dataset.view = v.toLowerCase();
     viewbar.append(b);
@@ -143,8 +148,9 @@ export default async function decorate(block) {
   function renderTabs() {
     productTabs.textContent = '';
     products.forEach((p) => {
-      const b = el('button', 'rs-tab' + (p === activeProduct ? ' is-active' : ''), p);
+      const b = el('button', `rs-tab${p === activeProduct ? ' is-active' : ''}`, p);
       b.type = 'button';
+      // eslint-disable-next-line no-use-before-define
       b.onclick = () => { activeProduct = p; activeFinish = 'All'; renderAll(); };
       productTabs.append(b);
     });
@@ -153,8 +159,9 @@ export default async function decorate(block) {
   function renderFinishes() {
     finishRow.textContent = '';
     finishesFor(activeProduct).forEach((f) => {
-      const b = el('button', 'rs-chip' + (f === activeFinish ? ' is-active' : ''), f);
+      const b = el('button', `rs-chip${f === activeFinish ? ' is-active' : ''}`, f);
       b.type = 'button';
+      // eslint-disable-next-line no-use-before-define
       b.onclick = () => { activeFinish = f; renderGrid(); };
       finishRow.append(b);
     });
