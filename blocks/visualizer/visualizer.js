@@ -1,14 +1,15 @@
 import { readBlockConfig } from '../../scripts/aem.js';
 
-// Default vehicle assets shipped with the block. Any of these can be overridden
-// per page by authoring `vehicle` / `mask` / `glass` rows in the block table,
-// so a real masked vehicle photo drops in without code changes.
+// three.js is loaded lazily from a CDN so it never weighs down first paint.
+const THREE_VER = '0.160.0';
+const CDN = `https://esm.sh/three@${THREE_VER}`;
 const BASE = '/blocks/visualizer/assets';
-const DEFAULTS = {
-  vehicle: `${BASE}/vehicle-sedan.svg`,
-  mask: `${BASE}/vehicle-sedan-body.svg`,
-  glass: `${BASE}/vehicle-sedan-glass.svg`,
-};
+const MODEL = `${BASE}/sportscar.glb`;
+
+// Material names inside the model (from the FBX): `carpaint` is the wrap
+// surface, `windowglass` is what window tint colors.
+const PAINT_MAT = 'carpaint';
+const GLASS_MAT = 'windowglass';
 
 const FINISH_HINT = {
   Gloss: 'High-shine mirror finish.',
@@ -22,17 +23,22 @@ const FINISH_HINT = {
   Clear: 'Invisible protection with a subtle sheen.',
 };
 
-// Per-finish render tuning: how the colored wrap layer blends over the base
-// photo, and how strong the reflective sheen reads on top.
-const FINISH_RENDER = {
-  Gloss: { blend: 'multiply', wrap: 0.95, sheen: 0.9 },
-  Metallic: { blend: 'multiply', wrap: 0.9, sheen: 0.8 },
-  ColorFlip: { blend: 'multiply', wrap: 0.85, sheen: 0.85 },
-  Satin: { blend: 'multiply', wrap: 0.92, sheen: 0.4 },
-  Brushed: { blend: 'multiply', wrap: 0.85, sheen: 0.5 },
-  Matte: { blend: 'multiply', wrap: 0.98, sheen: 0.08 },
-  Textured: { blend: 'multiply', wrap: 0.9, sheen: 0.5 },
-  Clear: { blend: 'multiply', wrap: 0, sheen: 0.7 },
+// How each finish maps to physically-based material params on the paint.
+const FINISH_PBR = {
+  Gloss: { metalness: 0.0, roughness: 0.08, clearcoat: 1.0 },
+  Metallic: { metalness: 0.9, roughness: 0.25, clearcoat: 0.6 },
+  ColorFlip: { metalness: 0.7, roughness: 0.18, clearcoat: 0.8 },
+  Satin: { metalness: 0.2, roughness: 0.45, clearcoat: 0.2 },
+  Brushed: { metalness: 0.85, roughness: 0.55, clearcoat: 0.1 },
+  Matte: { metalness: 0.0, roughness: 0.9, clearcoat: 0.0 },
+  Textured: { metalness: 0.3, roughness: 0.55, clearcoat: 0.2 },
+  Clear: { metalness: 0.0, roughness: 0.12, clearcoat: 1.0 },
+};
+
+const VIEWS = {
+  side: [4.6, 1.3, 0.1],
+  front: [3.4, 1.4, 3.4],
+  rear: [-3.4, 1.4, -3.4],
 };
 
 function el(tag, cls, html) {
@@ -42,64 +48,144 @@ function el(tag, cls, html) {
   return n;
 }
 
-function applyFilm(stage, film) {
-  const wrap = stage.querySelector('.rs-wrap');
-  const sheen = stage.querySelector('.rs-sheen');
-  const glass = stage.querySelector('.rs-glass-layer');
-  const r = FINISH_RENDER[film.finish] || { blend: 'multiply', wrap: 0.9, sheen: 0.5 };
-  stage.classList.toggle('rs-carbon', film.finish === 'Textured');
+async function loadThree() {
+  const [THREE, gltfMod, ctrlMod, envMod] = await Promise.all([
+    import(/* webpackIgnore: true */ `${CDN}`),
+    import(/* webpackIgnore: true */ `${CDN}/examples/jsm/loaders/GLTFLoader.js`),
+    import(/* webpackIgnore: true */ `${CDN}/examples/jsm/controls/OrbitControls.js`),
+    import(/* webpackIgnore: true */ `${CDN}/examples/jsm/environments/RoomEnvironment.js`),
+  ]);
+  return {
+    THREE,
+    GLTFLoader: gltfMod.GLTFLoader,
+    OrbitControls: ctrlMod.OrbitControls,
+    RoomEnvironment: envMod.RoomEnvironment,
+  };
+}
 
-  // window tint colors the glass, leaves the paint alone
-  if (film.product === 'Window Tint') {
-    wrap.style.opacity = '0';
-    glass.style.background = film.color;
-    glass.style.opacity = '0.8';
-    sheen.style.opacity = '0';
-    return;
+// Build the 3D scene and return a small API the UI drives.
+async function initStage(stage, modelUrl) {
+  const {
+    THREE, GLTFLoader, OrbitControls, RoomEnvironment,
+  } = await loadThree();
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  stage.append(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+  camera.position.set(...VIEWS.side);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.enablePan = false;
+  controls.minDistance = 3;
+  controls.maxDistance = 9;
+  controls.maxPolarAngle = Math.PI / 1.9;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.6));
+  const key = new THREE.DirectionalLight(0xffffff, 2.2);
+  key.position.set(5, 8, 5);
+  scene.add(key);
+
+  const paints = [];
+  const glasses = [];
+
+  const gltf = await new GLTFLoader().loadAsync(modelUrl);
+  const model = gltf.scene;
+
+  model.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach((m) => {
+      if (m.name === PAINT_MAT) {
+        const up = new THREE.MeshPhysicalMaterial({
+          color: m.color, metalness: 0, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.06,
+        });
+        o.material = Array.isArray(o.material)
+          ? o.material.map((x) => (x.name === PAINT_MAT ? up : x)) : up;
+        paints.push(up);
+      } else if (m.name === GLASS_MAT) {
+        m.transparent = true;
+        m.opacity = 0.35;
+        glasses.push(m);
+      }
+    });
+  });
+
+  // center + frame the car
+  const box = new THREE.Box3().setFromObject(model);
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+  scene.add(model);
+  const radius = box.getSize(new THREE.Vector3()).length() / 2;
+  const dist = radius / Math.sin((camera.fov * Math.PI) / 360);
+  camera.position.setLength(dist);
+  controls.target.set(0, 0, 0);
+  controls.update();
+
+  function resize() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight || Math.round(w * 0.6);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
   }
+  resize();
+  new ResizeObserver(resize).observe(stage);
 
-  glass.style.opacity = '0';
-  // paint protection film keeps the paint; matte PPF just knocks back the sheen
-  if (film.product === 'Paint Protection Film') {
-    wrap.style.opacity = '0';
-    sheen.style.opacity = film.finish === 'Matte' ? '0.05' : '0.7';
-    return;
-  }
+  (function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }());
 
-  wrap.style.background = film.color;
-  wrap.style.mixBlendMode = r.blend;
-  wrap.style.opacity = String(r.wrap);
-  sheen.style.opacity = String(r.sheen);
+  return {
+    setFilm(film) {
+      if (film.product === 'Window Tint') {
+        glasses.forEach((g) => { g.color.set(film.color); g.opacity = 0.55; });
+        return;
+      }
+      glasses.forEach((g) => { g.color.set(0x0d1a17); g.opacity = 0.35; });
+      if (film.product === 'Paint Protection Film') {
+        const matte = film.finish === 'Matte';
+        paints.forEach((p) => { p.roughness = matte ? 0.75 : 0.1; p.clearcoat = matte ? 0.2 : 1; });
+        return;
+      }
+      const pbr = FINISH_PBR[film.finish] || { metalness: 0.2, roughness: 0.4, clearcoat: 0.5 };
+      paints.forEach((p) => {
+        p.color.set(film.color);
+        p.metalness = pbr.metalness;
+        p.roughness = pbr.roughness;
+        p.clearcoat = pbr.clearcoat;
+        p.needsUpdate = true;
+      });
+    },
+    setView(name) {
+      const v = VIEWS[name] || VIEWS.side;
+      camera.position.set(...v).setLength(dist);
+      controls.update();
+    },
+  };
 }
 
 export default async function decorate(block) {
   const cfg = readBlockConfig(block);
   const source = cfg.source || '/films.json';
   const title = cfg.title || '3M Restyling Studio Visualizer';
-  const vehicle = cfg.vehicle || DEFAULTS.vehicle;
-  const mask = cfg.mask || DEFAULTS.mask;
-  const glassMask = cfg.glass || DEFAULTS.glass;
+  const modelUrl = cfg.model || MODEL;
 
   block.textContent = '';
   block.classList.add('rs-visualizer');
 
-  // ---- stage: layered masked-photo render ----
   const stage = el('div', 'rs-stage');
-  const photo = el('img', 'rs-photo');
-  photo.src = vehicle;
-  photo.alt = 'Vehicle preview';
-  photo.loading = 'eager';
-  const wrap = el('div', 'rs-wrap');
-  const glass = el('div', 'rs-glass-layer');
-  const sheen = el('div', 'rs-sheen');
-  wrap.style.webkitMaskImage = `url("${mask}")`;
-  wrap.style.maskImage = `url("${mask}")`;
-  sheen.style.webkitMaskImage = `url("${mask}")`;
-  sheen.style.maskImage = `url("${mask}")`;
-  glass.style.webkitMaskImage = `url("${glassMask}")`;
-  glass.style.maskImage = `url("${glassMask}")`;
-  stage.append(photo, wrap, glass, sheen);
-
   const viewbar = el('div', 'rs-viewbar');
   ['Side', 'Front', 'Rear'].forEach((v, i) => {
     const b = el('button', `rs-view${i === 0 ? ' is-active' : ''}`, v);
@@ -107,7 +193,7 @@ export default async function decorate(block) {
     b.dataset.view = v.toLowerCase();
     viewbar.append(b);
   });
-  const caption = el('div', 'rs-caption', 'Select a film to preview');
+  const caption = el('div', 'rs-caption', 'Loading 3D model…');
 
   const panel = el('aside', 'rs-panel-ui');
   panel.append(el('h2', 'rs-title', title));
@@ -125,7 +211,6 @@ export default async function decorate(block) {
   stageWrap.append(stage, viewbar, caption);
   block.append(stageWrap, panel);
 
-  // ---- data ----
   let films = [];
   try {
     const res = await fetch(source);
@@ -136,6 +221,7 @@ export default async function decorate(block) {
     return;
   }
 
+  let viewer = null;
   const products = [...new Set(films.map((f) => f.product))];
   let activeProduct = products[0];
   let activeFinish = 'All';
@@ -169,7 +255,7 @@ export default async function decorate(block) {
 
   function select(film) {
     selected = film;
-    applyFilm(stage, film);
+    if (viewer) viewer.setFilm(film);
     caption.textContent = `${film.product} · ${film.series}`;
     detail.innerHTML = `
       <div class="rs-swatch-lg" style="background:${film.color}"></div>
@@ -206,15 +292,22 @@ export default async function decorate(block) {
     renderGrid();
   }
 
-  // view toggle just nudges the stage to hint a different angle
   viewbar.querySelectorAll('.rs-view').forEach((b) => {
     b.onclick = () => {
-      stage.dataset.view = b.dataset.view;
       viewbar.querySelectorAll('.rs-view').forEach((x) => x.classList.remove('is-active'));
       b.classList.add('is-active');
+      if (viewer) viewer.setView(b.dataset.view);
     };
   });
 
   renderAll();
-  select(films[0]);
+
+  try {
+    viewer = await initStage(stage, modelUrl);
+    caption.textContent = 'Drag to rotate · scroll to zoom';
+    select(selected || films[0]);
+  } catch (e) {
+    stage.classList.add('rs-stage-error');
+    caption.textContent = 'Could not load the 3D model.';
+  }
 }
