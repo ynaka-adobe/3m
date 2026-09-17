@@ -27,6 +27,21 @@ const FINISH_HINT = {
   Clear: 'Invisible protection with a subtle sheen.',
 };
 
+// Known content languages (DA folder names). The block picks the film sheet
+// for the page's language and localizes its own chrome strings below.
+const LANGS = ['en', 'de', 'jp', 'fr', 'ko', 'zh'];
+const I18N = {
+  en: {
+    all: 'All', coverage: 'Coverage', platinum: 'Platinum (full)', gold: 'Gold (partial)', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.',
+  },
+  de: {
+    all: 'Alle', coverage: 'Abdeckung', platinum: 'Platin (voll)', gold: 'Gold (teilweise)', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.',
+  },
+  jp: {
+    all: 'すべて', coverage: 'カバー範囲', platinum: 'プラチナ（全体）', gold: 'ゴールド（部分）', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。',
+  },
+};
+
 // How each finish maps to physically-based material params on the paint.
 const FINISH_PBR = {
   Gloss: { metalness: 0.0, roughness: 0.08, clearcoat: 1.0 },
@@ -313,7 +328,10 @@ async function initStage(stage, modelUrl, ppfUrl) {
 
 export default async function decorate(block) {
   const cfg = readBlockConfig(block);
-  const source = cfg.source || '/films.json';
+  const seg = (window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
+  const lang = LANGS.includes(seg) ? seg : 'en';
+  const t = I18N[lang] || I18N.en;
+  const source = cfg.source || `/${lang}/consumer/films.json`;
   const title = cfg.title || '3M Restyling Studio Visualizer';
   const modelUrl = cfg.model || MODEL;
   const ppfUrl = cfg.ppf || PPF_MODEL;
@@ -341,7 +359,7 @@ export default async function decorate(block) {
     b.dataset.view = v.toLowerCase();
     viewbar.append(b);
   });
-  const caption = el('div', 'rs-caption', 'Loading 3D model…');
+  const caption = el('div', 'rs-caption', t.loading);
 
   const panel = el('aside', 'rs-panel-ui');
   panel.append(el('h2', 'rs-title', title));
@@ -360,14 +378,23 @@ export default async function decorate(block) {
   stageWrap.append(stage, viewbar, caption);
   block.append(stageWrap, panel);
 
+  // load the language sheet; fall back to the root editing master
+  async function loadFilms(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const json = await res.json();
+    return json.data || json;
+  }
   let films = [];
   try {
-    const res = await fetch(source);
-    const json = await res.json();
-    films = json.data || json;
+    films = await loadFilms(source);
   } catch (e) {
-    grid.textContent = 'Could not load the film catalog.';
-    return;
+    try {
+      films = await loadFilms('/films.json');
+    } catch (e2) {
+      grid.textContent = 'Could not load the film catalog.';
+      return;
+    }
   }
 
   let viewer = null;
@@ -381,10 +408,21 @@ export default async function decorate(block) {
     return ['All', ...new Set(films.filter((f) => f.product === product).map((f) => f.finish))];
   }
 
+  // Display labels come from the (translatable) sheet; logic uses stable keys.
+  function productLabel(product) {
+    const f = films.find((x) => x.product === product);
+    return (f && f.productLabel) || product;
+  }
+  function finishLabel(finish) {
+    if (finish === 'All') return t.all;
+    const f = films.find((x) => x.finish === finish);
+    return (f && f.finishLabel) || finish;
+  }
+
   function renderTabs() {
     productTabs.textContent = '';
     products.forEach((p) => {
-      const b = el('button', `rs-tab${p === activeProduct ? ' is-active' : ''}`, p);
+      const b = el('button', `rs-tab${p === activeProduct ? ' is-active' : ''}`, productLabel(p));
       b.type = 'button';
       // eslint-disable-next-line no-use-before-define
       b.onclick = () => { activeProduct = p; activeFinish = 'All'; renderAll(); };
@@ -395,7 +433,7 @@ export default async function decorate(block) {
   function renderFinishes() {
     finishRow.textContent = '';
     finishesFor(activeProduct).forEach((f) => {
-      const b = el('button', `rs-chip${f === activeFinish ? ' is-active' : ''}`, f);
+      const b = el('button', `rs-chip${f === activeFinish ? ' is-active' : ''}`, finishLabel(f));
       b.type = 'button';
       // eslint-disable-next-line no-use-before-define
       b.onclick = () => { activeFinish = f; renderGrid(); };
@@ -406,13 +444,13 @@ export default async function decorate(block) {
   function select(film) {
     selected = film;
     if (viewer) viewer.setFilm(film);
-    caption.textContent = `${film.product} · ${film.series}`;
+    caption.textContent = `${productLabel(film.product)} · ${film.series}`;
     detail.innerHTML = `
       <div class="rs-swatch-lg" style="background:${film.color}"></div>
       <div>
         <strong>${film.name}</strong>
         <span class="rs-sku">${film.id}</span>
-        <p>${FINISH_HINT[film.finish] || ''}</p>
+        <p>${film.hint || FINISH_HINT[film.finish] || ''}</p>
       </div>`;
     grid.querySelectorAll('.rs-swatch').forEach((s) => {
       s.classList.toggle('is-active', s.dataset.id === film.id);
@@ -424,8 +462,8 @@ export default async function decorate(block) {
     const isPPF = activeProduct === 'Paint Protection Film' && viewer && viewer.hasPPF;
     coverageRow.style.display = isPPF ? '' : 'none';
     if (!isPPF) return;
-    coverageRow.append(el('span', 'rs-coverage-label', 'Coverage'));
-    [['platinum', 'Platinum (full)'], ['gold', 'Gold (partial)']].forEach(([tier, label]) => {
+    coverageRow.append(el('span', 'rs-coverage-label', t.coverage));
+    [['platinum', t.platinum], ['gold', t.gold]].forEach(([tier, label]) => {
       const b = el('button', `rs-chip${tier === activeCoverage ? ' is-active' : ''}`, label);
       b.type = 'button';
       b.onclick = () => { activeCoverage = tier; viewer.setCoverage(tier); renderCoverage(); };
@@ -483,11 +521,11 @@ export default async function decorate(block) {
   try {
     viewer = await initStage(stage, modelUrl, ppfUrl);
     viewer.setTheme(activeTheme);
-    caption.textContent = 'Drag to rotate · scroll to zoom';
+    caption.textContent = t.drag;
     renderCoverage();
     select(selected || films[0]);
   } catch (e) {
     stage.classList.add('rs-stage-error');
-    caption.textContent = 'Could not load the 3D model.';
+    caption.textContent = t.notLoaded;
   }
 }
