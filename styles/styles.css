@@ -269,6 +269,28 @@ main .section.black {
   background: #000;
 }
 
+/* gradient — 3M "unicorn" gradient rule; use on an (often empty) section as a
+   branded divider, or above a section's content. Recreated in CSS so it needs
+   no theme asset. */
+main .section.gradient::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 2px;
+  margin: 25px 0;
+  background: linear-gradient(
+    90deg,
+    #e2231a 0%,
+    #ff6b00 18%,
+    #ffcd00 36%,
+    #00a651 55%,
+    #0098db 74%,
+    #6a2c91 100%
+  );
+  transform: scaleY(1.1);
+  transform-origin: 0 0;
+}
+
 /* section head authored as default content above a block */
 main > .section > .default-content-wrapper {
   margin-bottom: 44px;
