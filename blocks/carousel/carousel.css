@@ -1,7 +1,7 @@
 .carousel {
   position: relative;
   width: 100vw;
-  min-height: 88vh;
+  min-height: 80vh;
   margin-left: calc(50% - 50vw);
   overflow: hidden;
   background: #0b0d0f;
@@ -52,7 +52,7 @@
   align-items: flex-start;
   justify-content: center;
   width: min(1200px, 88%);
-  min-height: 88vh;
+  min-height: 80vh;
   margin: 0 auto;
   padding: 0 8px;
 }
@@ -69,6 +69,7 @@
 .carousel-heading {
   max-width: 15ch;
   margin: 0;
+  color: #fff;
   font-size: clamp(38px, 6vw, 76px);
   font-weight: 800;
   line-height: 1.02;
@@ -78,8 +79,10 @@
 .carousel-text {
   max-width: 46ch;
   margin: 0;
+  color: #fff;
   font-size: clamp(16px, 1.6vw, 20px);
   line-height: 1.5;
+  text-shadow: 0 1px 12px rgb(0 0 0 / 45%);
 }
 
 .carousel-actions {
@@ -107,13 +110,16 @@
   border-color: #c00;
 }
 
+/* keep the secondary CTA a solid red button (white text) so it stays legible
+   over bright video; a white ring distinguishes it from the primary */
 .carousel-actions .button.secondary {
-  background: rgb(255 255 255 / 0%);
-  border-color: rgb(255 255 255 / 70%);
+  border-color: #fff;
+  background: #e00;
+  color: #fff;
 }
 
 .carousel-actions .button.secondary:hover {
-  background: rgb(255 255 255 / 15%);
+  background: #c00;
   border-color: #fff;
 }
 
@@ -188,11 +194,11 @@
 
 @media (width <= 700px) {
   .carousel {
-    min-height: 78vh;
+    min-height: 72vh;
   }
 
   .carousel-content {
-    min-height: 78vh;
+    min-height: 72vh;
   }
 
   .carousel-indicator.is-active {
