@@ -160,6 +160,8 @@ async function loadEager(doc) {
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
+  import('../tools/sidekick/aem-genai-variations.js');
+
   loadHeader(doc.querySelector('header'));
 
   const main = doc.querySelector('main');
