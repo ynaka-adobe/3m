@@ -1,10 +1,19 @@
-import { readBlockConfig } from '../../scripts/aem.js';
+import { readBlockConfig, loadCSS } from '../../scripts/aem.js';
+
+const LANGS = ['en', 'de', 'jp', 'fr', 'ko', 'zh'];
 
 function el(tag, cls, html) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (html !== undefined) n.innerHTML = html;
   return n;
+}
+
+function langSource(cfgSource) {
+  if (cfgSource) return cfgSource;
+  const seg = (window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
+  const lang = LANGS.includes(seg) ? seg : 'en';
+  return `/${lang}/consumer/installers.json`;
 }
 
 function matches(inst, query, service) {
@@ -15,20 +24,29 @@ function matches(inst, query, service) {
   return hitQ && hitS;
 }
 
-export default async function decorate(block) {
-  const cfg = readBlockConfig(block);
-  const source = cfg.source || '/installers.json';
-  const title = cfg.title || 'Find an installer';
+/**
+ * Build the locator UI into `root`. Shared by the block and the modal.
+ * @param {Element} root container to render into
+ * @param {object} opts { source, title, showExpand, onClose }
+ */
+async function buildLocator(root, opts) {
+  const {
+    source, title, showExpand, onClose,
+  } = opts;
+  root.textContent = '';
+  root.classList.add('rs-locator');
 
-  block.textContent = '';
-  block.classList.add('rs-locator');
-
-  // ---- chrome ----
   const header = el('div', 'rs-loc-header');
   header.append(el('h2', 'rs-loc-title', title));
-  const expand = el('button', 'rs-loc-expand', '⤢ Full screen');
-  expand.type = 'button';
-  header.append(expand);
+  if (showExpand) {
+    const expand = el('button', 'rs-loc-expand', '⤢ Full screen');
+    expand.type = 'button';
+    expand.onclick = () => {
+      root.classList.add('rs-locator-takeover');
+      document.body.classList.add('rs-locator-lock');
+    };
+    header.append(expand);
+  }
 
   const toolbar = el('div', 'rs-loc-toolbar');
   const search = el('input', 'rs-loc-search');
@@ -46,13 +64,20 @@ export default async function decorate(block) {
   const close = el('button', 'rs-loc-close', '✕');
   close.type = 'button';
   close.setAttribute('aria-label', 'Close full screen');
+  close.onclick = () => {
+    if (onClose) onClose();
+    else {
+      root.classList.remove('rs-locator-takeover');
+      document.body.classList.remove('rs-locator-lock');
+    }
+  };
 
-  block.append(close, header, toolbar, body);
+  root.append(close, header, toolbar, body);
 
-  // ---- data ----
   let installers = [];
   try {
-    const res = await fetch(source);
+    let res = await fetch(source);
+    if (!res.ok) res = await fetch('/installers.json');
     const json = await res.json();
     installers = (json.data || json).map((d, i) => ({ ...d, id: i }));
   } catch (e) {
@@ -131,21 +156,50 @@ export default async function decorate(block) {
 
   search.addEventListener('input', () => { query = search.value; render(); });
 
-  // ---- takeover modal ----
-  function closeTakeover() {
-    block.classList.remove('rs-locator-takeover');
-    document.body.classList.remove('rs-locator-lock');
+  // Esc closes the takeover (block-inline path; the modal wires its own too)
+  if (showExpand) {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && root.classList.contains('rs-locator-takeover')) close.click();
+    });
   }
-  function openTakeover() {
-    block.classList.add('rs-locator-takeover');
-    document.body.classList.add('rs-locator-lock');
-    close.focus();
-  }
-  expand.onclick = openTakeover;
-  close.onclick = closeTakeover;
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && block.classList.contains('rs-locator-takeover')) closeTakeover();
-  });
 
   render();
+}
+
+/**
+ * Open the locator as a full-screen takeover modal, created on demand.
+ * Usable from any block (e.g. the visualizer's "Find an installer" CTA).
+ */
+export async function openLocatorModal({ source, title } = {}) {
+  await loadCSS(`${window.hlx?.codeBasePath || ''}/blocks/locator/locator.css`);
+  const overlay = el('div', 'rs-locator rs-locator-takeover');
+  document.body.append(overlay);
+  document.body.classList.add('rs-locator-lock');
+
+  function close() {
+    overlay.remove();
+    document.body.classList.remove('rs-locator-lock');
+    // eslint-disable-next-line no-use-before-define
+    document.removeEventListener('keydown', onKey);
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+  document.addEventListener('keydown', onKey);
+
+  await buildLocator(overlay, {
+    source: langSource(source),
+    title: title || 'Find an installer',
+    showExpand: false,
+    onClose: close,
+  });
+}
+
+export default async function decorate(block) {
+  const cfg = readBlockConfig(block);
+  await buildLocator(block, {
+    source: langSource(cfg.source),
+    title: cfg.title || 'Find an installer',
+    showExpand: true,
+  });
 }
