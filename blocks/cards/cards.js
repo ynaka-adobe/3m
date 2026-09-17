@@ -1,6 +1,6 @@
 /**
  * cards — responsive grid of content cards. Variants via block class:
- *   cards applications | cards products | cards values | cards links | cards icons
+ *   cards duo | cards features | cards icons | cards links | cards products | cards testimonial
  *
  * Authoring (one row per card; cells in order, all optional):
  *   1. media             an authored <img>/<picture>, OR a root-relative path
