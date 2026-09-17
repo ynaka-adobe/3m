@@ -185,12 +185,38 @@ function loadDelayed() {
   // load anything that can be postponed to the latest here
 }
 
+function bindCustomSidekickEvents() {
+  const handleGenerateWithAi = (event) => {
+    const detail = event?.detail || {};
+    const location = detail.location || {};
+    const sourceUrl = location.sourceUrl || location.url || window.location.href;
+    const targetUrl = new URL('https://experience.adobe.com/aem/generate-variations');
+    targetUrl.searchParams.set('sourceUrl', sourceUrl);
+    targetUrl.searchParams.set('referrer', window.location.href);
+    targetUrl.searchParams.set('project', '3M');
+    window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
+  };
+
+  const sidekick = document.querySelector('aem-sidekick');
+  if (sidekick) {
+    sidekick.addEventListener('custom:aem-genai-variations-sidekick', handleGenerateWithAi);
+  } else {
+    document.addEventListener('sidekick-ready', () => {
+      const readySidekick = document.querySelector('aem-sidekick');
+      if (readySidekick) {
+        readySidekick.addEventListener('custom:aem-genai-variations-sidekick', handleGenerateWithAi);
+      }
+    }, { once: true });
+  }
+}
+
 async function loadPage() {
   await loadEager(document);
   await loadLazy(document);
   await loadTarget();
   await applyTargetHeroMboxIfConfigured();
   loadDelayed();
+  bindCustomSidekickEvents();
 }
 
 loadPage();
