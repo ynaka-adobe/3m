@@ -117,67 +117,73 @@
   border-color: #fff;
 }
 
-/* arrows */
-.carousel-arrow {
-  position: absolute;
-  top: 50%;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border: 1px solid rgb(255 255 255 / 40%);
-  border-radius: 50%;
-  background: rgb(0 0 0 / 25%);
-  color: #fff;
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-  transform: translateY(-50%);
-  transition: background 0.2s ease;
-}
-
-.carousel-arrow:hover {
-  background: rgb(0 0 0 / 55%);
-}
-
-.carousel-arrow.prev {
-  left: 24px;
-}
-
-.carousel-arrow.next {
-  right: 24px;
-}
-
-/* dots */
+/* bottom-left indicators: active = play-duration bar w/ leading dot, others = dots */
 .carousel-nav {
   position: absolute;
-  bottom: 28px;
-  left: 0;
+  bottom: 34px;
+  left: 50%;
   z-index: 3;
   display: flex;
-  justify-content: center;
-  width: 100%;
+  gap: 16px;
+  align-items: center;
+  justify-content: flex-start;
+  width: min(1200px, 88%);
+  padding: 0 8px;
+  transform: translateX(-50%);
 }
 
-.carousel-dots {
-  display: flex;
-  gap: 12px;
-}
-
-.carousel-dot {
-  width: 40px;
-  height: 4px;
+.carousel-indicator {
+  position: relative;
+  width: 12px;
+  height: 12px;
   padding: 0;
   border: 0;
-  border-radius: 2px;
-  background: rgb(255 255 255 / 40%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 45%);
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: width 0.35s ease, height 0.35s ease, background 0.35s ease;
 }
 
-.carousel-dot.is-active {
+.carousel-indicator:hover {
+  background: rgb(255 255 255 / 75%);
+}
+
+.carousel-indicator.is-active {
+  width: 120px;
+  height: 6px;
+  background: rgb(255 255 255 / 30%);
+}
+
+/* leading dot on the active bar */
+.carousel-indicator.is-active::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   background: #fff;
+  transform: translate(-3px, -50%);
+}
+
+.carousel-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: #fff;
+}
+
+@keyframes carousel-fill {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-indicator.is-active .carousel-fill {
+    width: 100%;
+  }
 }
 
 @media (width <= 700px) {
@@ -189,7 +195,7 @@
     min-height: 78vh;
   }
 
-  .carousel-arrow {
-    display: none;
+  .carousel-indicator.is-active {
+    width: 84px;
   }
 }

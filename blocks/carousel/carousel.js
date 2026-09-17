@@ -147,37 +147,27 @@ export default function decorate(block) {
   const slides = [...track.children];
   if (slides.length <= 1) return;
 
-  // ---- controls ----
+  // ---- controls: bottom-left indicators ----
+  // active slide = a play-duration bar with a leading dot; others = dots.
   const nav = document.createElement('div');
   nav.className = 'carousel-nav';
-  const prev = document.createElement('button');
-  prev.type = 'button';
-  prev.className = 'carousel-arrow prev';
-  prev.setAttribute('aria-label', 'Previous slide');
-  prev.innerHTML = '‹';
-  const next = document.createElement('button');
-  next.type = 'button';
-  next.className = 'carousel-arrow next';
-  next.setAttribute('aria-label', 'Next slide');
-  next.innerHTML = '›';
-
-  const dots = document.createElement('div');
-  dots.className = 'carousel-dots';
-  slides.forEach((s, i) => {
-    const d = document.createElement('button');
-    d.type = 'button';
-    d.className = `carousel-dot${i === 0 ? ' is-active' : ''}`;
-    d.setAttribute('aria-label', `Go to slide ${i + 1}`);
+  const indicators = slides.map((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `carousel-indicator${i === 0 ? ' is-active' : ''}`;
+    b.setAttribute('aria-label', `Go to slide ${i + 1}`);
+    const fill = document.createElement('span');
+    fill.className = 'carousel-fill';
+    b.append(fill);
     // eslint-disable-next-line no-use-before-define
-    d.onclick = () => goTo(i);
-    dots.append(d);
+    b.onclick = () => { goTo(i); };
+    nav.append(b);
+    return b;
   });
-
-  block.append(prev, next, nav);
-  nav.append(dots);
+  block.append(nav);
 
   let current = 0;
-  let timer = null;
+  let paused = false;
 
   function playActive() {
     slides.forEach((s, i) => {
@@ -187,33 +177,50 @@ export default function decorate(block) {
     });
   }
 
+  // restart the fill animation on the active indicator (duration = interval)
+  function restartFill() {
+    const fill = indicators[current].querySelector('.carousel-fill');
+    fill.style.animation = 'none';
+    if (reduce || interval <= 0) return;
+    // force reflow so the animation restarts from 0
+    fill.getBoundingClientRect();
+    fill.style.animation = `carousel-fill ${interval}ms linear forwards`;
+    fill.style.animationPlayState = paused ? 'paused' : 'running';
+  }
+
   function goTo(i) {
     current = (i + slides.length) % slides.length;
     slides.forEach((s, n) => s.classList.toggle('is-active', n === current));
-    [...dots.children].forEach((d, n) => d.classList.toggle('is-active', n === current));
+    indicators.forEach((b, n) => b.classList.toggle('is-active', n === current));
     playActive();
+    restartFill();
   }
 
-  function stop() { if (timer) { clearInterval(timer); timer = null; } }
-  function start() {
-    stop();
-    if (!reduce && interval > 0) timer = setInterval(() => goTo(current + 1), interval);
+  // auto-advance is driven by the fill animation finishing (keeps bar in sync)
+  indicators.forEach((b) => {
+    b.querySelector('.carousel-fill').addEventListener('animationend', () => {
+      if (!paused) goTo(current + 1);
+    });
+  });
+
+  function setPaused(p) {
+    paused = p;
+    const fill = indicators[current].querySelector('.carousel-fill');
+    if (fill.style.animationName === 'carousel-fill' || fill.style.animation.includes('carousel-fill')) {
+      fill.style.animationPlayState = p ? 'paused' : 'running';
+    }
   }
 
-  prev.onclick = () => { goTo(current - 1); start(); };
-  next.onclick = () => { goTo(current + 1); start(); };
-  block.addEventListener('mouseenter', stop);
-  block.addEventListener('mouseleave', start);
-  block.addEventListener('focusin', stop);
-  block.addEventListener('focusout', start);
+  block.addEventListener('mouseenter', () => setPaused(true));
+  block.addEventListener('mouseleave', () => setPaused(false));
+  block.addEventListener('focusin', () => setPaused(true));
+  block.addEventListener('focusout', () => setPaused(false));
   block.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') { goTo(current - 1); start(); }
-    if (e.key === 'ArrowRight') { goTo(current + 1); start(); }
+    if (e.key === 'ArrowLeft') goTo(current - 1);
+    if (e.key === 'ArrowRight') goTo(current + 1);
   });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stop(); else start();
-  });
+  document.addEventListener('visibilitychange', () => setPaused(document.hidden));
 
   playActive();
-  start();
+  restartFill();
 }
