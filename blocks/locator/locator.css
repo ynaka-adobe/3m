@@ -1,0 +1,231 @@
+.rs-locator {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  background: #f4f5f7;
+  border-radius: 12px;
+}
+
+.rs-loc-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rs-loc-title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.rs-loc-expand {
+  padding: 8px 14px;
+  border: 1px solid #cfd3d8;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rs-loc-expand:hover {
+  border-color: #111;
+}
+
+.rs-loc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.rs-loc-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  padding: 10px 14px;
+  border: 1px solid #cfd3d8;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.rs-loc-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rs-loc-chip {
+  padding: 6px 12px;
+  border: 1px solid #cfd3d8;
+  border-radius: 16px;
+  background: #fff;
+  color: #444;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.rs-loc-chip.is-active {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.rs-loc-body {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  min-height: 420px;
+}
+
+@media (width <= 700px) {
+  .rs-loc-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- stylized map ---- */
+.rs-loc-map {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 70% 30%, rgb(120 170 200 / 25%) 0 12%, rgb(0 0 0 / 0%) 13%),
+    radial-gradient(circle at 25% 70%, rgb(150 190 140 / 30%) 0 16%, rgb(0 0 0 / 0%) 17%),
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 5%) 0 1px, rgb(0 0 0 / 0%) 1px 40px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 5%) 0 1px, rgb(0 0 0 / 0%) 1px 40px),
+    #e9ecef;
+  min-height: 320px;
+}
+
+.rs-loc-pin {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: #e00;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 30%);
+  transform: rotate(-45deg);
+  cursor: pointer;
+}
+
+.rs-loc-pin.is-active {
+  z-index: 3;
+  background: #111;
+  transform: rotate(-45deg) scale(1.4);
+}
+
+/* ---- list ---- */
+.rs-loc-list {
+  max-height: 460px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.rs-loc-card {
+  padding: 12px 14px;
+  border: 1px solid #e2e5e9;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.rs-loc-card.is-active {
+  border-color: #e00;
+  box-shadow: 0 0 0 2px rgb(238 0 0 / 25%);
+}
+
+.rs-loc-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rs-loc-card-head strong {
+  font-size: 15px;
+}
+
+.rs-loc-dist {
+  flex: none;
+  color: #e00;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rs-loc-addr {
+  margin: 4px 0 2px;
+  color: #555;
+  font-size: 13px;
+}
+
+.rs-loc-svc {
+  margin: 0 0 6px;
+  color: #888;
+  font-size: 12px;
+}
+
+.rs-loc-phone {
+  color: #0a5;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.rs-loc-empty {
+  padding: 16px;
+  color: #888;
+}
+
+/* ---- takeover modal ---- */
+.rs-loc-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  display: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #cfd3d8;
+  border-radius: 50%;
+  background: #fff;
+  color: #333;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rs-locator-takeover {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  padding: 24px 24px 32px;
+  border-radius: 0;
+  overflow: auto;
+}
+
+.rs-locator-takeover .rs-loc-close {
+  display: block;
+}
+
+.rs-locator-takeover .rs-loc-expand {
+  display: none;
+}
+
+.rs-locator-takeover .rs-loc-body {
+  min-height: calc(100vh - 200px);
+}
+
+.rs-locator-takeover .rs-loc-list {
+  max-height: calc(100vh - 220px);
+}
+
+body.rs-locator-lock {
+  overflow: hidden;
+}

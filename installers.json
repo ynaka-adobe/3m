@@ -1,0 +1,15 @@
+{
+  "total": 8,
+  "offset": 0,
+  "limit": 8,
+  "data": [
+    { "name": "Apex Auto Styling",        "address": "1204 Industrial Pkwy", "city": "Minneapolis", "state": "MN", "zip": "55401", "phone": "(612) 555-0142", "distance": 2.4,  "services": "Wrap Film, Window Tint, PPF", "x": 44, "y": 38 },
+    { "name": "Northloop Wraps",           "address": "88 Washington Ave N",   "city": "Minneapolis", "state": "MN", "zip": "55401", "phone": "(612) 555-0188", "distance": 3.1,  "services": "Wrap Film, PPF",             "x": 51, "y": 33 },
+    { "name": "Precision Tint & Detail",   "address": "760 Snelling Ave",      "city": "St. Paul",    "state": "MN", "zip": "55104", "phone": "(651) 555-0110", "distance": 6.8,  "services": "Window Tint, PPF",           "x": 63, "y": 46 },
+    { "name": "Lakeside Vehicle Graphics", "address": "300 Lake St E",         "city": "Wayzata",     "state": "MN", "zip": "55391", "phone": "(952) 555-0177", "distance": 12.5, "services": "Wrap Film, Window Tint",     "x": 26, "y": 55 },
+    { "name": "Iron Range Customs",        "address": "45 Central Ave",        "city": "Bloomington", "state": "MN", "zip": "55420", "phone": "(952) 555-0133", "distance": 9.2,  "services": "Wrap Film, PPF",             "x": 48, "y": 64 },
+    { "name": "Twin Cities Auto Film",     "address": "915 University Ave",    "city": "St. Paul",    "state": "MN", "zip": "55104", "phone": "(651) 555-0166", "distance": 7.4,  "services": "Wrap Film, Window Tint, PPF", "x": 68, "y": 40 },
+    { "name": "Summit Restyle Studio",     "address": "22 Grand Ave",          "city": "St. Paul",    "state": "MN", "zip": "55102", "phone": "(651) 555-0154", "distance": 8.1,  "services": "PPF",                        "x": 60, "y": 54 },
+    { "name": "Meridian Wrap Works",       "address": "5150 France Ave S",     "city": "Edina",       "state": "MN", "zip": "55410", "phone": "(952) 555-0199", "distance": 10.7, "services": "Wrap Film, Window Tint, PPF", "x": 38, "y": 60 }
+  ]
+}
