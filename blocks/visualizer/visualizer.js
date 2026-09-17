@@ -32,13 +32,13 @@ const FINISH_HINT = {
 const LANGS = ['en', 'de', 'jp', 'fr', 'ko', 'zh'];
 const I18N = {
   en: {
-    all: 'All', coverage: 'Coverage', platinum: 'Platinum (full)', gold: 'Gold (partial)', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.',
+    all: 'All', coverage: 'Coverage', platinum: 'Platinum (full)', gold: 'Gold (partial)', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.', findInstaller: 'Find an installer',
   },
   de: {
-    all: 'Alle', coverage: 'Abdeckung', platinum: 'Platin (voll)', gold: 'Gold (teilweise)', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.',
+    all: 'Alle', coverage: 'Abdeckung', platinum: 'Platin (voll)', gold: 'Gold (teilweise)', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.', findInstaller: 'Installateur finden',
   },
   jp: {
-    all: 'すべて', coverage: 'カバー範囲', platinum: 'プラチナ（全体）', gold: 'ゴールド（部分）', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。',
+    all: 'すべて', coverage: 'カバー範囲', platinum: 'プラチナ（全体）', gold: 'ゴールド（部分）', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。', findInstaller: '施工店を探す',
   },
 };
 
@@ -368,10 +368,13 @@ export default async function decorate(block) {
   const coverageRow = el('div', 'rs-coverage');
   const grid = el('div', 'rs-grid');
   const detail = el('div', 'rs-detail');
-  const cta = el('a', 'rs-cta button', 'Find an installer');
-  cta.href = cfg.installer || 'https://www.3m.com/3M/en_US/car-personalization-us/where-to-buy/';
-  cta.target = '_blank';
-  cta.rel = 'noopener';
+  // opens the locator as a full-screen takeover (shared with the locator block)
+  const cta = el('button', 'rs-cta button', t.findInstaller);
+  cta.type = 'button';
+  cta.onclick = async () => {
+    const { openLocatorModal } = await import('../locator/locator.js');
+    openLocatorModal({ source: cfg.installers, title: t.findInstaller });
+  };
   panel.append(productTabs, finishRow, coverageRow, grid, detail, cta);
 
   const stageWrap = el('div', 'rs-stagewrap');

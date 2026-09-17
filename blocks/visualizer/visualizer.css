@@ -227,12 +227,16 @@
 
 .rs-cta.button {
   display: inline-block;
+  align-self: start;
   padding: 12px 24px;
+  border: 0;
   border-radius: 6px;
   background: #e00;
   color: #fff;
+  font-size: 15px;
   font-weight: 700;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .rs-cta.button:hover {
