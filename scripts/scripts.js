@@ -10,6 +10,9 @@ import {
   loadSections,
   loadCSS,
   buildBlock,
+  readBlockConfig,
+  toClassName,
+  toCamelCase,
 } from './aem.js';
 import { loadTarget, applyTargetHeroMboxIfConfigured } from './target.js';
 
@@ -122,11 +125,38 @@ function decorateButtons(main) {
  * Decorates the main element.
  * @param {Element} main The main element
  */
+/**
+ * Applies a `section-metadata` block's rows to its section (this repo's aem.js
+ * decorateSections omits the boilerplate's section-metadata handling, so a
+ * `Style` value would otherwise render as visible content instead of a class).
+ * @param {Element} main
+ */
+function decorateSectionMetadata(main) {
+  main.querySelectorAll(':scope > div.section').forEach((section) => {
+    const sm = section.querySelector('div.section-metadata');
+    if (!sm) return;
+    const meta = readBlockConfig(sm);
+    Object.keys(meta).forEach((key) => {
+      if (key === 'style') {
+        meta.style.split(',').forEach((s) => {
+          const cls = toClassName(s.trim());
+          if (cls) section.classList.add(cls);
+        });
+      } else {
+        section.dataset[toCamelCase(key)] = meta[key];
+      }
+    });
+    // drop the block (and its wrapper) so it isn't rendered as content
+    (sm.parentElement !== section ? sm.parentElement : sm).remove();
+  });
+}
+
 // eslint-disable-next-line import/prefer-default-export
 export function decorateMain(main) {
   decorateIcons(main);
   buildAutoBlocks(main);
   decorateSections(main);
+  decorateSectionMetadata(main);
   decorateBlocks(main);
   decorateButtons(main);
 }
