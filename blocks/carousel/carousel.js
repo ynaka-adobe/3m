@@ -14,32 +14,46 @@
  *   interval  seconds between auto-advances (default 6; 0 disables autoplay)
  */
 
-// accept a committed root-relative path or a full http(s) URL (with query)
-const VIDEO_PATH = /^(https?:\/\/\S+|\/[\w./-]+)\.(mp4|webm)(\?\S*)?$/i;
-const IMG_PATH = /^(https?:\/\/\S+|\/[\w./-]+)\.(jpg|jpeg|png|webp|avif|svg)(\?\S*)?$/i;
+// match a video/image anywhere in a URL, tolerating query strings and the
+// relative "./media_xxx.mp4" form DA emits for uploaded assets
+const IS_VIDEO = /\.(mp4|webm|m4v|mov)(\?|$)/i;
+const IS_IMG = /\.(jpg|jpeg|png|webp|avif|svg)(\?|$)/i;
+
+function makeVideo(src, poster) {
+  const v = document.createElement('video');
+  v.src = src;
+  v.muted = true;
+  v.loop = true;
+  v.autoplay = true;
+  v.playsInline = true;
+  v.setAttribute('playsinline', '');
+  if (poster) v.poster = poster;
+  return v;
+}
 
 function buildMedia(cell) {
   if (!cell) return null;
-  const existing = cell.querySelector('video, picture, img');
-  if (existing) return existing.closest('picture') || existing;
+  // an already-authored <video> wins outright
+  const video = cell.querySelector('video');
+  if (video) return video;
 
-  const paths = cell.textContent.split(/\s+/).map((s) => s.trim()).filter(Boolean);
-  const videoPath = paths.find((p) => VIDEO_PATH.test(p));
-  const imgPath = paths.find((p) => IMG_PATH.test(p));
-  if (videoPath) {
-    const v = document.createElement('video');
-    v.src = videoPath;
-    v.muted = true;
-    v.loop = true;
-    v.autoplay = true;
-    v.playsInline = true;
-    v.setAttribute('playsinline', '');
-    if (imgPath) v.poster = imgPath;
-    return v;
-  }
-  if (imgPath) {
+  // collect every candidate URL: links, img/source, and bare text tokens
+  const urls = [];
+  cell.querySelectorAll('a[href]').forEach((a) => urls.push(a.getAttribute('href')));
+  cell.querySelectorAll('img[src]').forEach((i) => urls.push(i.getAttribute('src')));
+  cell.querySelectorAll('source[srcset]').forEach((s) => urls.push(s.getAttribute('srcset')));
+  cell.textContent.split(/\s+/).forEach((tk) => { if (tk.trim()) urls.push(tk.trim()); });
+
+  const videoUrl = urls.find((u) => IS_VIDEO.test(u));
+  const imgUrl = urls.find((u) => IS_IMG.test(u));
+  if (videoUrl) return makeVideo(videoUrl, imgUrl);
+
+  // no video: prefer an authored <picture>/<img>, else build one from a path
+  const pic = cell.querySelector('picture, img');
+  if (pic) return pic.closest('picture') || pic;
+  if (imgUrl) {
     const img = document.createElement('img');
-    img.src = imgPath;
+    img.src = imgUrl;
     img.alt = '';
     img.loading = 'lazy';
     return img;
