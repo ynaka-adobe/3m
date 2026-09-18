@@ -18,16 +18,55 @@
 // relative "./media_xxx.mp4" form DA emits for uploaded assets
 const IS_VIDEO = /\.(mp4|webm|m4v|mov)(\?|$)/i;
 const IS_IMG = /\.(jpg|jpeg|png|webp|avif|svg)(\?|$)/i;
+const IS_HLS = /\.m3u8(\?|$)/i;
+// Adobe Dynamic Media (AEM Assets) delivery URL
+const IS_DM = /\/adobe\/assets\/[^\s]+/i;
+const HLS_CDN = 'https://esm.sh/hls.js@1';
 
-function makeVideo(src, poster) {
+// Resolve an authored URL to a playable video source. Dynamic Media `/play`
+// (or a bare asset URL) becomes its HLS manifest.
+function resolveVideoSrc(src) {
+  if (IS_VIDEO.test(src) || IS_HLS.test(src)) return src;
+  if (IS_DM.test(src)) {
+    let u = src.replace(/\/play(\?.*)?$/i, '');
+    if (!/manifest\.(m3u8|mpd)(\?|$)/i.test(u)) u = `${u.replace(/\/$/, '')}/manifest.m3u8`;
+    return u;
+  }
+  return src;
+}
+
+function makeVideo(rawSrc, poster) {
   const v = document.createElement('video');
-  v.src = src;
   v.muted = true;
   v.loop = true;
   v.autoplay = true;
   v.playsInline = true;
   v.setAttribute('playsinline', '');
   if (poster) v.poster = poster;
+
+  const src = resolveVideoSrc(rawSrc);
+  if (IS_HLS.test(src)) {
+    // Prefer hls.js (MSE) wherever supported — some Chromium builds falsely
+    // report native HLS via canPlayType then stall. Native is the fallback
+    // for Safari/iOS where hls.js isn't supported.
+    import(/* webpackIgnore: true */ HLS_CDN)
+      .then(({ default: Hls }) => {
+        if (Hls.isSupported()) {
+          const hls = new Hls({ startLevel: -1 });
+          hls.loadSource(src);
+          hls.attachMedia(v);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            const p = v.play();
+            if (p) p.catch(() => {});
+          });
+        } else {
+          v.src = src;
+        }
+      })
+      .catch(() => { v.src = src; });
+  } else {
+    v.src = src;
+  }
   return v;
 }
 
@@ -44,7 +83,7 @@ function buildMedia(cell) {
   cell.querySelectorAll('source[srcset]').forEach((s) => urls.push(s.getAttribute('srcset')));
   cell.textContent.split(/\s+/).forEach((tk) => { if (tk.trim()) urls.push(tk.trim()); });
 
-  const videoUrl = urls.find((u) => IS_VIDEO.test(u));
+  const videoUrl = urls.find((u) => IS_VIDEO.test(u) || IS_HLS.test(u) || IS_DM.test(u));
   const imgUrl = urls.find((u) => IS_IMG.test(u));
   if (videoUrl) return makeVideo(videoUrl, imgUrl);
 
