@@ -1,6 +1,9 @@
 import { readBlockConfig, loadCSS } from '../../scripts/aem.js';
 
 const LANGS = ['en', 'de', 'jp', 'fr', 'ko', 'zh'];
+// default Marketo form design URL for the "Get a quote" modal (override per
+// page with a `quote` config row on the block)
+const DEFAULT_QUOTE = 'https://engage-ab.marketo.com/?munchkinId=860-YON-741#/ds/mktform/3';
 
 function el(tag, cls, html) {
   const n = document.createElement(tag);
@@ -31,7 +34,7 @@ function matches(inst, query, service) {
  */
 async function buildLocator(root, opts) {
   const {
-    source, title, showExpand, onClose,
+    source, title, showExpand, onClose, quote,
   } = opts;
   root.textContent = '';
   root.classList.add('rs-locator');
@@ -102,6 +105,41 @@ async function buildLocator(root, opts) {
     if (card) card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
+  // open a modal with the Marketo "get a quote" form for the chosen installer
+  async function openQuote(inst) {
+    await loadCSS(`${window.hlx?.codeBasePath || ''}/blocks/marketo/marketo.css`);
+    const overlay = el('div', 'rs-quote-overlay');
+    const dialog = el('div', 'rs-quote-dialog');
+    const closeBtn = el('button', 'rs-quote-close', '✕');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close');
+    const heading = el('h3', 'rs-quote-title', inst ? `Get a quote — ${inst.name}` : 'Get a quote');
+    const mkto = el('div', 'marketo');
+    mkto.textContent = quote || DEFAULT_QUOTE;
+    dialog.append(closeBtn, heading, mkto);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    document.body.classList.add('rs-quote-lock');
+
+    function shut() {
+      overlay.remove();
+      document.body.classList.remove('rs-quote-lock');
+      // eslint-disable-next-line no-use-before-define
+      document.removeEventListener('keydown', onKey);
+    }
+    function onKey(e) { if (e.key === 'Escape') shut(); }
+    closeBtn.onclick = shut;
+    overlay.onclick = (e) => { if (e.target === overlay) shut(); };
+    document.addEventListener('keydown', onKey);
+
+    try {
+      const { default: decorateMarketo } = await import('../marketo/marketo.js');
+      await decorateMarketo(mkto);
+    } catch (e) {
+      mkto.textContent = 'Could not load the form.';
+    }
+  }
+
   function render() {
     const shown = installers.filter((inst) => matches(inst, query, activeService));
 
@@ -132,8 +170,15 @@ async function buildLocator(root, opts) {
         </div>
         <p class="rs-loc-addr">${inst.address}, ${inst.city}, ${inst.state} ${inst.zip}</p>
         <p class="rs-loc-svc">${inst.services}</p>
-        <a class="rs-loc-phone" href="tel:${inst.phone.replace(/[^0-9]/g, '')}">${inst.phone}</a>`;
+        <a class="rs-loc-phone" href="tel:${inst.phone.replace(/[^0-9]/g, '')}">${inst.phone}</a>
+        <button class="rs-loc-quote" type="button">Get a quote</button>`;
       card.onclick = () => selectInstaller(inst.id);
+      const quoteBtn = card.querySelector('.rs-loc-quote');
+      quoteBtn.onclick = (e) => {
+        e.stopPropagation();
+        // eslint-disable-next-line no-use-before-define
+        openQuote(inst);
+      };
       list.append(card);
     });
 
@@ -170,7 +215,7 @@ async function buildLocator(root, opts) {
  * Open the locator as a full-screen takeover modal, created on demand.
  * Usable from any block (e.g. the visualizer's "Find an installer" CTA).
  */
-export async function openLocatorModal({ source, title } = {}) {
+export async function openLocatorModal({ source, title, quote } = {}) {
   await loadCSS(`${window.hlx?.codeBasePath || ''}/blocks/locator/locator.css`);
   const overlay = el('div', 'rs-locator rs-locator-takeover');
   document.body.append(overlay);
@@ -192,6 +237,7 @@ export async function openLocatorModal({ source, title } = {}) {
     title: title || 'Find an installer',
     showExpand: false,
     onClose: close,
+    quote,
   });
 }
 
@@ -201,5 +247,6 @@ export default async function decorate(block) {
     source: langSource(cfg.source),
     title: cfg.title || 'Find an installer',
     showExpand: true,
+    quote: cfg.quote,
   });
 }
