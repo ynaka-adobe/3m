@@ -242,3 +242,26 @@
 .rs-cta.button:hover {
   background: #c00;
 }
+
+.rs-share.button {
+  display: block;
+  align-self: start;
+  margin-top: 10px;
+  padding: 12px 24px;
+  border: 1px solid #999;
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rs-share.button:hover {
+  background: #eee;
+}
+
+.rs-share.button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
