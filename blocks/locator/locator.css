@@ -229,3 +229,71 @@
 body.rs-locator-lock {
   overflow: hidden;
 }
+
+/* ---- get a quote ---- */
+.rs-loc-quote {
+  display: none;
+  margin-top: 10px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #e00;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rs-loc-quote:hover {
+  background: #c00;
+}
+
+.rs-loc-card.is-active .rs-loc-quote {
+  display: inline-block;
+}
+
+.rs-quote-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 55%);
+}
+
+.rs-quote-dialog {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: 90vh;
+  padding: 28px 28px 8px;
+  overflow: auto;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.rs-quote-title {
+  margin: 0 40px 8px 0;
+  font-size: 20px;
+}
+
+.rs-quote-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #cfd3d8;
+  border-radius: 50%;
+  background: #fff;
+  color: #333;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+body.rs-quote-lock {
+  overflow: hidden;
+}
