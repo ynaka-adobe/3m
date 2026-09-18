@@ -121,6 +121,65 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([bytes], { type: mime });
 }
 
+// Small modal shown after a successful share: displays the returned download
+// link with actions to copy it or open it in a new tab.
+function showSharePopup(link) {
+  const overlay = el('div', 'rs-share-popup');
+  const dialog = el('div', 'rs-share-dialog');
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('aria-label', 'Your shareable link');
+
+  const closeBtn = el('button', 'rs-share-close', '×');
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Close');
+
+  const heading = el('h3', 'rs-share-heading', 'Your shareable link');
+
+  const field = el('input', 'rs-share-link');
+  field.type = 'text';
+  field.readOnly = true;
+  field.value = link;
+
+  const actions = el('div', 'rs-share-actions');
+  const copyBtn = el('button', 'rs-share-copy button', 'Copy Link');
+  copyBtn.type = 'button';
+  const downloadBtn = el('button', 'rs-share-download button', 'Download');
+  downloadBtn.type = 'button';
+  actions.append(copyBtn, downloadBtn);
+
+  dialog.append(closeBtn, heading, field, actions);
+  overlay.append(dialog);
+  document.body.append(overlay);
+
+  function close() {
+    overlay.remove();
+    // eslint-disable-next-line no-use-before-define
+    document.removeEventListener('keydown', onKey);
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+  document.addEventListener('keydown', onKey);
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
+  closeBtn.onclick = close;
+
+  copyBtn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      copyBtn.textContent = 'Copied ✓';
+    } catch (e) {
+      field.select();
+      copyBtn.textContent = 'Press Ctrl+C';
+    }
+    setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
+  };
+  downloadBtn.onclick = () => { window.open(link, '_blank', 'noopener'); };
+
+  field.focus();
+  field.select();
+}
+
 async function loadThree() {
   const [THREE, gltfMod, ctrlMod, envMod] = await Promise.all([
     import(/* webpackIgnore: true */ `${CDN}`),
@@ -558,7 +617,9 @@ export default async function decorate(block) {
       form.append('fileblob', blob, filename);
       const res = await fetch(SHARE_ENDPOINT, { method: 'POST', body: form });
       if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
       share.textContent = 'Shared ✓';
+      if (data && data.downloadlink) showSharePopup(data.downloadlink);
     } catch (e) {
       share.textContent = 'Try again';
     } finally {
