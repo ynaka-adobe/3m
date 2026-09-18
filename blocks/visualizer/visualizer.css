@@ -242,3 +242,110 @@
 .rs-cta.button:hover {
   background: #c00;
 }
+
+.rs-share.button {
+  display: block;
+  align-self: start;
+  margin-top: 10px;
+  padding: 12px 24px;
+  border: 1px solid #999;
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rs-share.button:hover {
+  background: #eee;
+}
+
+.rs-share.button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* ---- share popup ---- */
+.rs-share-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 55%);
+}
+
+.rs-share-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 24px 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 30%);
+}
+
+.rs-share-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  color: #666;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.rs-share-heading {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.rs-share-link {
+  width: 90%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f7f7f7;
+  color: #222;
+  font-size: 14px;
+}
+
+.rs-share-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.rs-share-actions .button {
+  flex: 1;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rs-share-copy.button {
+  border: 1px solid #999;
+  background: #fff;
+  color: #222;
+}
+
+.rs-share-copy.button:hover {
+  background: #eee;
+}
+
+.rs-share-download.button {
+  background: #e00;
+  color: #fff;
+}
+
+.rs-share-download.button:hover {
+  background: #c00;
+}

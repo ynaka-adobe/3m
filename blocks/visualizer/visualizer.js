@@ -4,6 +4,8 @@ import { readBlockConfig } from '../../scripts/aem.js';
 const THREE_VER = '0.160.0';
 const CDN = `https://esm.sh/three@${THREE_VER}`;
 const BASE = '/blocks/visualizer/assets';
+// Fusion webhook that receives a shared snapshot as multipart/form-data.
+const SHARE_ENDPOINT = 'https://hook.fusion.adobe.com/dntcs3kickjm3pnjq1rkcha10co8qjp5';
 const MODEL = `${BASE}/sportscar.glb`;
 const PPF_MODEL = `${BASE}/sportscar-ppf.glb`;
 
@@ -106,6 +108,76 @@ function el(tag, cls, html) {
   if (cls) n.className = cls;
   if (html !== undefined) n.innerHTML = html;
   return n;
+}
+
+// Decode a base64 data URL ("data:image/png;base64,…") into a binary Blob so it
+// can be sent as a file in multipart/form-data.
+function dataUrlToBlob(dataUrl) {
+  const [head, b64] = dataUrl.split(',');
+  const mime = (head.match(/data:(.*?);base64/) || [])[1] || 'image/png';
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+// Small modal shown after a successful share: displays the returned download
+// link with actions to copy it or open it in a new tab.
+function showSharePopup(link) {
+  const overlay = el('div', 'rs-share-popup');
+  const dialog = el('div', 'rs-share-dialog');
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('aria-label', 'Your shareable link');
+
+  const closeBtn = el('button', 'rs-share-close', '×');
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Close');
+
+  const heading = el('h3', 'rs-share-heading', 'Your shareable link');
+
+  const field = el('input', 'rs-share-link');
+  field.type = 'text';
+  field.readOnly = true;
+  field.value = link;
+
+  const actions = el('div', 'rs-share-actions');
+  const copyBtn = el('button', 'rs-share-copy button', 'Copy Link');
+  copyBtn.type = 'button';
+  const downloadBtn = el('button', 'rs-share-download button', 'Download');
+  downloadBtn.type = 'button';
+  actions.append(copyBtn, downloadBtn);
+
+  dialog.append(closeBtn, heading, field, actions);
+  overlay.append(dialog);
+  document.body.append(overlay);
+
+  function close() {
+    overlay.remove();
+    // eslint-disable-next-line no-use-before-define
+    document.removeEventListener('keydown', onKey);
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+  document.addEventListener('keydown', onKey);
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
+  closeBtn.onclick = close;
+
+  copyBtn.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      copyBtn.textContent = 'Copied ✓';
+    } catch (e) {
+      field.select();
+      copyBtn.textContent = 'Press Ctrl+C';
+    }
+    setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
+  };
+  downloadBtn.onclick = () => { window.open(link, '_blank', 'noopener'); };
+
+  field.focus();
+  field.select();
 }
 
 async function loadThree() {
@@ -278,6 +350,13 @@ async function initStage(stage, modelUrl, ppfUrl) {
 
   return {
     hasPPF: Object.keys(ppfMeshes).length > 0,
+    // Capture the current view as a base64 data URL. WebGL clears the drawing
+    // buffer after each frame, so force a fresh render and read it back in the
+    // same call stack (no preserveDrawingBuffer needed).
+    capture(type = 'image/png', quality = 0.92) {
+      renderer.render(scene, camera);
+      return renderer.domElement.toDataURL(type, quality);
+    },
     setTheme,
     setFilm(film) {
       if (film.product === 'Window Tint') {
@@ -375,7 +454,10 @@ export default async function decorate(block) {
     const { openLocatorModal } = await import('../locator/locator.js');
     openLocatorModal({ source: cfg.installers, title: t.findInstaller });
   };
-  panel.append(productTabs, finishRow, coverageRow, grid, detail, cta);
+  // captures the current 3D view and posts it to the Fusion share webhook
+  const share = el('button', 'rs-share button', 'Share');
+  share.type = 'button';
+  panel.append(productTabs, finishRow, coverageRow, grid, detail, cta, share);
 
   const stageWrap = el('div', 'rs-stagewrap');
   stageWrap.append(stage, viewbar, caption);
@@ -518,6 +600,33 @@ export default async function decorate(block) {
       if (viewer) viewer.setTheme(activeTheme);
     };
   });
+
+  share.onclick = async () => {
+    if (!viewer) return;
+    const label = share.textContent;
+    share.disabled = true;
+    share.textContent = 'Sharing…';
+    try {
+      const dataUrl = viewer.capture('image/png');
+      const blob = dataUrlToBlob(dataUrl);
+      const mimetype = blob.type || 'image/png';
+      const form = new FormData();
+      const filename = `A${Date.now()}`;
+      form.append('filename', filename);
+      form.append('mimetype', mimetype);
+      form.append('fileblob', blob, filename);
+      const res = await fetch(SHARE_ENDPOINT, { method: 'POST', body: form });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      share.textContent = 'Shared ✓';
+      if (data && data.downloadlink) showSharePopup(data.downloadlink);
+    } catch (e) {
+      share.textContent = 'Try again';
+    } finally {
+      share.disabled = false;
+      setTimeout(() => { share.textContent = label; }, 2500);
+    }
+  };
 
   renderAll();
 
