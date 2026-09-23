@@ -24,18 +24,22 @@ async function loadNav(locale) {
   return frag || fetchFragment('/en/nav');
 }
 
-// Load consumer subnav if on a consumer page/directory
-async function loadConsumerSubnav(locale) {
-  const pathname = window.location.pathname;
-  const segments = pathname.split('/').filter(Boolean);
+// Resolve the car-personalization subnav fragment path, preserving the current locale prefix.
+function getCarPersonalizationSubnavPath() {
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  const idx = segments.indexOf('car-personalization');
+  if (idx === -1) return null;
+  const langPrefix = segments.slice(0, idx).join('/');
+  return `/${langPrefix ? `${langPrefix}/` : ''}car-personalization/subnav`;
+}
 
-  // Check if "consumer" is in the pathname
-  if (!segments.includes('consumer')) {
+// Load car-personalization subnav if on a car-personalization page/directory
+async function loadCarPersonalizationSubnav() {
+  const subnavPath = getCarPersonalizationSubnavPath();
+  if (!subnavPath) {
     return;
   }
 
-  // Build subnav path with locale
-  const subnavPath = `/${locale}/consumer/subnav`;
   const frag = await fetchFragment(subnavPath);
 
   if (frag) {
@@ -104,6 +108,6 @@ export default async function decorate(block) {
 
   block.replaceChildren(nav);
 
-  // Load consumer subnav if applicable
-  loadConsumerSubnav(locale);
+  // Load car-personalization subnav if applicable
+  loadCarPersonalizationSubnav();
 }
