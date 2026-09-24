@@ -97,6 +97,12 @@
   border-top: 1px solid var(--line);
 }
 
+/* `display: grid` above would otherwise beat the `hidden` attribute, leaving
+   the category toggles visible in the compact banner. */
+.consent-categories[hidden] {
+  display: none;
+}
+
 .consent-category {
   padding: 14px 2px;
   border-bottom: 1px solid var(--line);
@@ -151,9 +157,12 @@
   transform: translateX(20px);
 }
 
+/* "Strictly necessary" is checked and disabled. Keep it visibly ON — tinted
+   with the brand accent rather than plain grey — so it never reads as "off",
+   but muted enough to signal it cannot be changed. */
 .consent-switch input:disabled + .consent-switch-track {
-  background: var(--dark-color);
-  opacity: 0.45;
+  background: var(--accent);
+  opacity: 0.55;
 }
 
 .consent-switch input:disabled ~ .consent-category-title {

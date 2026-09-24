@@ -40,6 +40,8 @@ let started = false;
 let pageContext = null;
 let blockSequence = 0;
 let transport = null;
+let layerWrapped = false;
+const subscribers = new Set();
 
 /* ─────────────────────────────── helpers ───────────────────────────────── */
 
@@ -249,7 +251,9 @@ function classifyLink(el) {
 function observeClicks() {
   document.addEventListener('click', (e) => {
     const el = e.target.closest('a[href], button');
-    if (!el || el.closest('.consent')) return;
+    // Consent UI is privacy plumbing, not content — never track clicks on the
+    // banner itself or on the footer control that reopens it.
+    if (!el || el.closest('.consent') || el.closest('[data-consent-reopen]')) return;
 
     const link = classifyLink(el);
     let region = 'main';
@@ -380,13 +384,50 @@ function observeForms() {
  * by hand keeps us dependency-free.
  * @param {object} config
  */
+/* ───────────────────────── data layer subscription ─────────────────────── */
+
+/**
+ * Single source of truth for consumers. `window.adobeDataLayer` stays a plain
+ * array (Adobe Client Data Layer convention), so we wrap `push` exactly once
+ * and fan out to every subscriber. The transport adapters and the insights
+ * panel are both just subscribers — there is no second instrumentation path.
+ * @param {(entry: object) => void} fn called for every event, past and future
+ * @returns {() => void} unsubscribe
+ */
+export function subscribe(fn) {
+  const layer = window.adobeDataLayer;
+  if (!layerWrapped) {
+    layerWrapped = true;
+    const nativePush = layer.push.bind(layer);
+    layer.push = (...entries) => {
+      const result = nativePush(...entries);
+      entries.forEach((entry) => {
+        if (!entry?.event) return;
+        subscribers.forEach((sub) => {
+          try {
+            sub(entry);
+          } catch (e) {
+            // a consumer must never be able to break the page
+            // eslint-disable-next-line no-console
+            console.error('[analytics] subscriber failed', e);
+          }
+        });
+      });
+      return result;
+    };
+  }
+
+  subscribers.add(fn);
+  // replay anything already collected, so a late subscriber is never behind
+  layer.filter((entry) => entry?.event).forEach((entry) => fn(entry));
+  return () => subscribers.delete(fn);
+}
+
 async function startTransport(config) {
   if (transport) return;
   transport = await createTransport(config);
 
-  const layer = window.adobeDataLayer;
-  const send = (entry) => {
-    if (!entry?.event) return;
+  subscribe((entry) => {
     try {
       transport.send(entry);
     } catch (e) {
@@ -394,15 +435,7 @@ async function startTransport(config) {
       // eslint-disable-next-line no-console
       console.error('[analytics] transport send failed', e);
     }
-  };
-
-  layer.filter((entry) => entry?.event).forEach(send);
-  const nativePush = layer.push.bind(layer);
-  layer.push = (...entries) => {
-    const result = nativePush(...entries);
-    entries.forEach(send);
-    return result;
-  };
+  });
 }
 
 /* ───────────────────────────────── boot ────────────────────────────────── */
