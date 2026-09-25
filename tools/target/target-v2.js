@@ -24,7 +24,9 @@ async function fetchAudiences() {
   return audiences ?? [];
 }
 
-async function createXtActivity({ name, mbox, offerId, audienceId }) {
+async function createXtActivity({
+  name, mbox, offerId, audienceId,
+}) {
   return runtimeFetch({
     resource: 'create-xt',
     name,
@@ -145,7 +147,9 @@ async function showCreateXtModal(onCreated) {
       errEl.textContent = '';
 
       try {
-        const result = await createXtActivity({ name, mbox, offerId, audienceId });
+        const result = await createXtActivity({
+          name, mbox, offerId, audienceId,
+        });
         if (result.httpStatus >= 400 || result.error) {
           throw new Error(result.errors?.[0]?.message || result.error || 'Create failed');
         }
@@ -422,7 +426,9 @@ function renderActivities(activities, onActivityCreated) {
 (async function init() {
   const daContext = await Promise.race([
     DA_SDK,
-    new Promise((resolve) => setTimeout(() => resolve(null), 1500)),
+    new Promise((resolve) => {
+      setTimeout(() => resolve(null), 1500);
+    }),
   ]);
   if (daContext) {
     const { org, repo, path } = daContext.context;
@@ -435,13 +441,14 @@ function renderActivities(activities, onActivityCreated) {
     let activities = await fetchActivities();
     document.body.innerHTML = '';
 
-    function onActivityCreated(newActivity) {
+    // arrow function: a declaration here is not at the function body root
+    const onActivityCreated = (newActivity) => {
       // Prepend newly created activity to the list and re-render
       activities = [newActivity, ...activities];
       document.body.innerHTML = '';
       const { container } = renderActivities(activities, onActivityCreated);
       document.body.append(container);
-    }
+    };
 
     const { container } = renderActivities(activities, onActivityCreated);
     document.body.append(container);

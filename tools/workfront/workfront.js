@@ -20,13 +20,19 @@ function storedToken() {
   return token || null;
 }
 function storedRefresh() { return localStorage.getItem('wf_refresh_token'); }
-function saveTokens({ access_token, refresh_token, expires_in }) {
-  if (access_token) {
-    localStorage.setItem('wf_access_token', access_token);
-    const ttl = (Number(expires_in) || 36000) * 1000;
+// The OAuth response is snake_case; rename at this boundary so the rest of the
+// module deals in camelCase.
+function saveTokens({
+  access_token: accessToken,
+  refresh_token: refreshToken,
+  expires_in: expiresIn,
+}) {
+  if (accessToken) {
+    localStorage.setItem('wf_access_token', accessToken);
+    const ttl = (Number(expiresIn) || 36000) * 1000;
     localStorage.setItem('wf_token_expiry', String(Date.now() + ttl));
   }
-  if (refresh_token) localStorage.setItem('wf_refresh_token', refresh_token);
+  if (refreshToken) localStorage.setItem('wf_refresh_token', refreshToken);
 }
 
 async function runtimeCall(params) {
@@ -38,11 +44,11 @@ async function runtimeCall(params) {
 function buildAuthUrl() {
   return `https://${WF_DOMAIN}/integrations/oauth2/authorize?`
     + `client_id=${WF_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(RUNTIME_URL)}`
-    + `&state=${encodeURIComponent(location.origin)}`;
+    + `&state=${encodeURIComponent(window.location.origin)}`;
 }
 
 async function ensureToken() {
-  let token = storedToken();
+  const token = storedToken();
   if (token) return token;
 
   const refresh = storedRefresh();
@@ -69,7 +75,11 @@ function showConnectScreen() {
   btn.addEventListener('click', async () => {
     // Request first-party storage access (user gesture required)
     if (document.requestStorageAccess) {
-      try { await document.requestStorageAccess(); } catch {}
+      try {
+        await document.requestStorageAccess();
+      } catch {
+        // Storage access is optional; the OAuth popup flow works without it.
+      }
     }
     window.open(buildAuthUrl(), '_blank', 'width=620,height=720');
     btn.textContent = 'Authorize in the new tab, then return here…';
@@ -81,7 +91,7 @@ function showConnectScreen() {
       if (e.origin === RUNTIME_ORIGIN && e.data?.type === 'wf_tokens') {
         window.removeEventListener('message', onMessage);
         saveTokens(e.data);
-        location.reload();
+        window.location.reload();
       }
     };
     window.addEventListener('message', onMessage);
@@ -106,27 +116,19 @@ async function api(params) {
 // ── Status helpers ────────────────────────────────────────────────────────────
 
 const PROJECT_STATUS = {
-  CUR: { label: 'Current',   color: '#2d9d78' },
-  PLN: { label: 'Planning',  color: '#1473e6' },
-  CPL: { label: 'Complete',  color: '#888' },
-  DED: { label: 'Dead',      color: '#c00' },
-  ONH: { label: 'On Hold',   color: '#e68619' },
+  CUR: { label: 'Current', color: '#2d9d78' },
+  PLN: { label: 'Planning', color: '#1473e6' },
+  CPL: { label: 'Complete', color: '#888' },
+  DED: { label: 'Dead', color: '#c00' },
+  ONH: { label: 'On Hold', color: '#e68619' },
 };
 
 const APPROVAL_STATUS = {
-  AA:  { label: 'Approved',  color: '#2d9d78' },
-  RJ:  { label: 'Rejected',  color: '#d7373f' },
-  AD:  { label: 'Pending',   color: '#e68619' },
-  AU:  { label: 'Recalled',  color: '#888' },
+  AA: { label: 'Approved', color: '#2d9d78' },
+  RJ: { label: 'Rejected', color: '#d7373f' },
+  AD: { label: 'Pending', color: '#e68619' },
+  AU: { label: 'Recalled', color: '#888' },
 };
-
-function badge(text, color) {
-  const el = document.createElement('span');
-  el.className = 'badge';
-  el.style.cssText = `background:${color}22;color:${color};border:1px solid ${color}44`;
-  el.textContent = text;
-  return el;
-}
 
 function formatDate(iso) {
   if (!iso) return '—';
@@ -140,7 +142,8 @@ function formatDate(iso) {
 function esc(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function spinner() {
@@ -162,6 +165,11 @@ function emptyState(msg) {
 
 // ── App ───────────────────────────────────────────────────────────────────────
 
+/* eslint-disable no-use-before-define */
+// The render/load helpers below are mutually recursive (render → reload →
+// render), so some call sites necessarily precede the declaration. These are
+// hoisted function declarations, so this is safe at runtime; reordering the
+// closure would be a large, risky edit for no behavioural gain.
 async function buildApp() {
   const shell = document.createElement('div');
   shell.className = 'app-shell';
@@ -570,7 +578,6 @@ async function buildApp() {
   let allDocs = [];
   let allTasks = [];
   let allIssues = [];
-  let currentProjectId = null;
   let currentProject = null;
   let activeFilter = 'member';
   let activeTab = 'tasks';
@@ -663,7 +670,6 @@ async function buildApp() {
 
   // ── Select project → always reset to Tasks tab
   async function selectProject(p) {
-    currentProjectId = p.ID;
     currentProject = p;
     allDocs = [];
     allTasks = [];
@@ -674,8 +680,7 @@ async function buildApp() {
     newTaskBtn.style.display = activeTab === 'tasks' ? '' : 'none';
     newIssueBtn.style.display = activeTab === 'issues' ? '' : 'none';
 
-    document.querySelectorAll('.rt-item').forEach((el) =>
-      el.classList.toggle('active', el.id === `proj-${p.ID}`));
+    document.querySelectorAll('.rt-item').forEach((el) => el.classList.toggle('active', el.id === `proj-${p.ID}`));
 
     toolbarTitle.textContent = p.name;
     toolbarCount.textContent = '';
@@ -785,10 +790,10 @@ async function buildApp() {
 
   // ── Render tasks table
   const TASK_STATUS = {
-    NEW:  { label: 'New',         color: '#1473e6' },
-    INP:  { label: 'In Progress', color: '#e68619' },
-    CPL:  { label: 'Complete',    color: '#2d9d78' },
-    ON_HOLD: { label: 'On Hold',  color: '#888' },
+    NEW: { label: 'New', color: '#1473e6' },
+    INP: { label: 'In Progress', color: '#e68619' },
+    CPL: { label: 'Complete', color: '#2d9d78' },
+    ON_HOLD: { label: 'On Hold', color: '#888' },
   };
 
   function renderTasks(tasks, q) {
@@ -845,16 +850,20 @@ async function buildApp() {
 
   // ── Render issues table
   const ISSUE_STATUS = {
-    NEW:  { label: 'New',         color: '#1473e6' },
-    INP:  { label: 'In Progress', color: '#e68619' },
-    CPL:  { label: 'Complete',    color: '#2d9d78' },
-    RES:  { label: 'Resolved',    color: '#2d9d78' },
-    ONH:  { label: 'On Hold',     color: '#888' },
-    CLO:  { label: 'Closed',      color: '#888' },
-    WFM:  { label: 'Won\'t Fix',  color: '#c00' },
+    NEW: { label: 'New', color: '#1473e6' },
+    INP: { label: 'In Progress', color: '#e68619' },
+    CPL: { label: 'Complete', color: '#2d9d78' },
+    RES: { label: 'Resolved', color: '#2d9d78' },
+    ONH: { label: 'On Hold', color: '#888' },
+    CLO: { label: 'Closed', color: '#888' },
+    WFM: { label: 'Won\'t Fix', color: '#c00' },
   };
-  const ISSUE_PRIORITY = { 0: '—', 1: 'Urgent', 2: 'High', 3: 'Normal', 4: 'Low' };
-  const PRIORITY_COLOR = { 1: '#d7373f', 2: '#e68619', 3: '#1473e6', 4: '#888' };
+  const ISSUE_PRIORITY = {
+    0: '—', 1: 'Urgent', 2: 'High', 3: 'Normal', 4: 'Low',
+  };
+  const PRIORITY_COLOR = {
+    1: '#d7373f', 2: '#e68619', 3: '#1473e6', 4: '#888',
+  };
 
   function renderIssues(issues, q) {
     const filtered = q
@@ -1017,14 +1026,18 @@ function buildDetailPanel() {
 function buildIssuePanel(apiFn) {
   // Colors for well-known equatesWith system statuses
   const STATUS_COLORS = {
-    NEW: '#1473e6', INP: '#e68619', CPL: '#2d9d78',
-    RES: '#2d9d78', CLO: '#888', ONH: '#888',
+    NEW: '#1473e6',
+    INP: '#e68619',
+    CPL: '#2d9d78',
+    RES: '#2d9d78',
+    CLO: '#888',
+    ONH: '#888',
   };
   const FALLBACK_STATUS_OPTIONS = [
-    { value: 'NEW', label: 'New',         color: '#1473e6' },
+    { value: 'NEW', label: 'New', color: '#1473e6' },
     { value: 'INP', label: 'In Progress', color: '#e68619' },
-    { value: 'ONH', label: 'On Hold',     color: '#888' },
-    { value: 'CPL', label: 'Complete',    color: '#2d9d78' },
+    { value: 'ONH', label: 'On Hold', color: '#888' },
+    { value: 'CPL', label: 'Complete', color: '#2d9d78' },
   ];
   let cachedStatusOptions = null;
 
@@ -1090,13 +1103,13 @@ function buildIssuePanel(apiFn) {
       btn.className = 'issue-status-btn';
       btn.dataset.value = value;
       btn.textContent = label;
-      btn.style.cssText = `border:1px solid ${color}44;background:${selectedStatus === value ? color : color + '11'};color:${selectedStatus === value ? '#fff' : color};border-radius:12px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .1s,color .1s`;
+      btn.style.cssText = `border:1px solid ${color}44;background:${selectedStatus === value ? color : `${color}11`};color:${selectedStatus === value ? '#fff' : color};border-radius:12px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .1s,color .1s`;
       btn.addEventListener('click', () => {
         selectedStatus = value;
         statusBtns.querySelectorAll('.issue-status-btn').forEach((b) => {
           const opt = statusOptions.find((o) => o.value === b.dataset.value);
           const active = b.dataset.value === selectedStatus;
-          b.style.background = active ? opt.color : opt.color + '11';
+          b.style.background = active ? opt.color : `${opt.color}11`;
           b.style.color = active ? '#fff' : opt.color;
         });
       });
@@ -1198,7 +1211,9 @@ function buildIssuePanel(apiFn) {
       try {
         const updateParams = { resource: 'update_issue', issueId: issue.ID };
         if (selectedStatus !== issue.status) updateParams.status = selectedStatus;
-        if (selectedUserId && selectedUserId !== issue.assignedTo?.ID) updateParams.assignedToID = selectedUserId;
+        if (selectedUserId && selectedUserId !== issue.assignedTo?.ID) {
+          updateParams.assignedToID = selectedUserId;
+        }
         await apiFn(updateParams);
         panel.classList.remove('open');
         if (onSaved) onSaved();
@@ -1210,7 +1225,16 @@ function buildIssuePanel(apiFn) {
       }
     });
 
-    body.append(statusLabel, statusBtns, assignLabel, currentAssignee, userSearchInput, userResults, errorEl, footer);
+    body.append(
+      statusLabel,
+      statusBtns,
+      assignLabel,
+      currentAssignee,
+      userSearchInput,
+      userResults,
+      errorEl,
+      footer,
+    );
   };
 
   return panel;
@@ -1276,8 +1300,12 @@ document.head.append(style);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
+/* eslint-enable no-use-before-define */
+
 (async function init() {
-  await Promise.race([DA_SDK, new Promise((r) => setTimeout(r, 1500))]);
+  await Promise.race([DA_SDK, new Promise((r) => {
+    setTimeout(r, 1500);
+  })]);
 
   const token = await ensureToken();
   if (!token) { showConnectScreen(); return; }
