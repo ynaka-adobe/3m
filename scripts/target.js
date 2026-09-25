@@ -177,16 +177,25 @@ export async function applyTargetHeroMboxIfConfigured() {
           resolve();
           return;
         }
-        // at.js applies the offer to EVERY element matching the selector, and
-        // replaces them outright — so capture the parents now, while the
-        // original elements are still attached, and decorate those afterwards.
-        const containers = [...new Set(
-          match.els.map((el) => el.parentElement).filter(Boolean),
-        )];
+        // at.js re-queries the selector string at apply time and replaces EVERY
+        // match. Both are hazards here: this page has three `.hero.block`s, and
+        // `blocks/header/header.js` asynchronously prepends a subnav section as
+        // `main.firstChild` on car-personalization pages — so any ordinal
+        // selector (`:first-child`, `:nth-child(2)`) silently changes meaning
+        // depending on whether that fetch has landed yet.
+        //
+        // Pin the resolved element instead: stamp a unique attribute on it now
+        // and hand at.js a selector that can only ever match that one node.
+        const [targetEl] = match.els;
+        targetEl.setAttribute('data-target-offer-slot', '');
+        const pinned = '[data-target-offer-slot]';
+        // Capture the parent while the original element is still attached;
+        // applyOffer replaces it outright.
+        const container = targetEl.parentElement;
         document.addEventListener('at-content-rendering-succeeded', () => {
-          containers.forEach((el) => decorateInjectedBlocks(el));
+          if (container) decorateInjectedBlocks(container);
         }, { once: true });
-        t.applyOffer({ mbox, selector: match.selector, offer: offers });
+        t.applyOffer({ mbox, selector: pinned, offer: offers });
         resolve();
       },
       error: resolve,
