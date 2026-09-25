@@ -1,2 +1,7 @@
 helix-importer-ui
 *.min.js
+
+# Third-party vendor bundles — shipped as published by their vendor.
+# Never lint or auto-fix these: reformatting Adobe's at.js would produce a
+# meaningless 20k-line diff and risk breaking the working Target integration.
+deps/at/vendor-at.js
