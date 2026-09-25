@@ -23,6 +23,10 @@
  */
 
 import { subscribe } from './analytics.js';
+import {
+  OPT_IN_BENCHMARK, OPT_IN_ENTERPRISE_RANGE, INVISIBLE_TRAFFIC_SHARE,
+  observeSignals, assessBot, consentPosture,
+} from './signals.js';
 
 const STORAGE_KEY = '3m-insights';
 const FEED_LIMIT = 60;
@@ -50,10 +54,14 @@ const state = {
   scroll: 0,
   categories: new Map(),
   consented: false,
+  consentCategories: null,
+  // `<details>` open state must survive the panel's full re-render on each event
+  open: { signals: true, benchmark: false },
 };
 
 let refs = null;
 let renderQueued = false;
+let signalsTimer = 0;
 
 /* ───────────────────────────── enablement ──────────────────────────────── */
 
@@ -87,6 +95,7 @@ function record(entry) {
 
   if (event === 'consent-update') {
     state.consented = entry.consent?.status === 'granted';
+    state.consentCategories = entry.consent || null;
   }
 
   state.events.unshift({
@@ -222,10 +231,121 @@ function renderEmpty(message) {
   return el('p', 'insights-empty', message);
 }
 
+/* ───────────────────────── roadmap preview: signals ────────────────────── */
+
+/**
+ * Builds a provenance chip. Every roadmap figure gets one so a presenter can
+ * always point at whether a number is really being measured here or is a
+ * reference figure standing in for a capability that is not yet GA.
+ * @param {'measured'|'illustrative'} kind
+ */
+function provenance(kind) {
+  const measured = kind === 'measured';
+  const chip = el('span', `insights-prov insights-prov-${kind}`);
+  chip.textContent = measured ? 'Measured in this browser' : 'Illustrative — not measured';
+  return chip;
+}
+
+function renderSignals() {
+  const section = el('details', 'insights-section insights-signals');
+  section.open = state.open.signals;
+  section.addEventListener('toggle', () => { state.open.signals = section.open; });
+
+  const summary = el('summary', 'insights-heading insights-signals-summary');
+  summary.append(el('span', null, 'Signals'));
+  summary.append(el('span', 'insights-badge', 'Roadmap preview'));
+  section.append(summary);
+
+  section.append(el(
+    'p',
+    'insights-disclaimer',
+    'Illustrates two Adobe Customer Journey Analytics capabilities that are not '
+    + 'generally available: Enhanced Bot Detection (beta, GA Q1 2027) and CDN Log '
+    + 'Ingestion (CJA only, GA Q1 2027). This panel is a simplified stand-in — it '
+    + 'calls no Adobe service and is not Adobe\u2019s scoring model.',
+  ));
+
+  // ── bot assessment (genuinely computed here)
+  const bot = assessBot();
+  const head = el('div', 'insights-signal-head');
+  const gauge = el('div', `insights-gauge insights-gauge-${bot.verdict === 'Human' ? 'ok' : 'warn'}`);
+  gauge.append(el('span', 'insights-gauge-value', String(bot.score)));
+  gauge.append(el('span', 'insights-gauge-scale', '/ 100'));
+  head.append(gauge);
+  const headText = el('div', 'insights-signal-headtext');
+  headText.append(el('strong', null, bot.verdict));
+  headText.append(el('span', 'insights-note', `Confidence: ${bot.confidence} · ${bot.checked} checks evaluated`));
+  headText.append(provenance('measured'));
+  head.append(headText);
+  section.append(head);
+
+  const reasons = el('ul', 'insights-reasons');
+  if (bot.reasons.length) {
+    bot.reasons.forEach((r) => reasons.append(el('li', null, r)));
+  } else {
+    reasons.append(el('li', 'insights-reason-clear', 'No automation indicators triggered'));
+  }
+  section.append(reasons);
+
+  // ── invisible traffic (reference figure)
+  const invisible = el('div', 'insights-roadmap-stat');
+  invisible.append(el('span', 'insights-stat-value', `${INVISIBLE_TRAFFIC_SHARE}%`));
+  invisible.append(el('span', 'insights-stat-label', 'Invisible traffic estimate'));
+  invisible.append(el(
+    'span',
+    'insights-note',
+    'Bots, AI agents and non-consented visits that never reach Web SDK. CDN Log '
+    + 'Ingestion surfaces these by ingesting Akamai/Cloudflare logs and '
+    + 'de-duplicating against Web SDK data.',
+  ));
+  invisible.append(provenance('illustrative'));
+  section.append(invisible);
+
+  return section;
+}
+
+function renderBenchmark() {
+  const section = el('details', 'insights-section insights-signals');
+  section.open = state.open.benchmark;
+  section.addEventListener('toggle', () => { state.open.benchmark = section.open; });
+
+  const summary = el('summary', 'insights-heading insights-signals-summary');
+  summary.append(el('span', null, 'Opt-in benchmark'));
+  summary.append(el('span', 'insights-badge', 'Reference data'));
+  section.append(summary);
+
+  const posture = consentPosture(state.consentCategories);
+  const mine = el('div', 'insights-roadmap-stat');
+  mine.append(el('span', 'insights-stat-value', `${posture.granted}/${posture.total}`));
+  mine.append(el('span', 'insights-stat-label', 'This session’s optional categories'));
+  mine.append(el('span', 'insights-note', posture.label));
+  mine.append(provenance('measured'));
+  section.append(mine);
+
+  section.append(renderBars(
+    OPT_IN_BENCHMARK,
+    (r) => r.share,
+    (r) => r.band,
+    (r) => `${r.share}% of organisations`,
+  ));
+  section.append(el(
+    'p',
+    'insights-disclaimer',
+    'Distribution of analytics opt-in rates across organisations, from Adobe\u2019s POV '
+    + 'on modern privacy regulation. Large enterprises cluster in the '
+    + `${OPT_IN_ENTERPRISE_RANGE} band. Reference data for comparison only — not `
+    + 'aggregated from this site or any live 3M traffic.',
+  ));
+
+  return section;
+}
+
 function render() {
   renderQueued = false;
   if (!refs) return;
 
+  // the panel re-renders wholesale, so keep the reader where they were
+  const { scrollTop } = refs.body;
   const total = state.events.filter((e) => e.event !== 'consent-update').length;
   refs.count.textContent = String(total);
 
@@ -265,6 +385,10 @@ function render() {
   });
   insightSection.append(dl);
   body.append(insightSection);
+
+  // ── roadmap preview: bot signals + opt-in benchmark
+  body.append(renderSignals());
+  body.append(renderBenchmark());
 
   // ── components
   const blockRows = [...state.blocks.entries()]
@@ -317,6 +441,7 @@ function render() {
   body.append(feedSection);
 
   refs.body.replaceChildren(body);
+  refs.body.scrollTop = scrollTop;
 }
 
 function scheduleRender() {
@@ -331,7 +456,14 @@ function setOpen(open) {
   refs.panel.classList.toggle('insights-open', open);
   refs.panel.setAttribute('aria-hidden', String(!open));
   refs.toggle.setAttribute('aria-expanded', String(open));
-  if (open) render();
+  // The bot assessment is time-sensitive (it watches for pointer movement and
+  // interaction cadence), but the panel otherwise only redraws when an event
+  // arrives — so it would sit frozen on a quiet page. Tick while open only.
+  window.clearInterval(signalsTimer);
+  if (open) {
+    render();
+    signalsTimer = window.setInterval(scheduleRender, 2000);
+  }
 }
 
 function build() {
@@ -395,6 +527,9 @@ export default async function initInsights() {
   const { loadCSS } = await import('./aem.js');
   await loadCSS(`${window.hlx.codeBasePath}/styles/insights.css`);
 
+  // start passive signal observation as early as the panel exists, so the bot
+  // assessment has real interaction history by the time it is first opened
+  observeSignals();
   build();
   subscribe((entry) => {
     record(entry);

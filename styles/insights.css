@@ -381,3 +381,202 @@
     animation: none;
   }
 }
+
+/* ──────────────────── roadmap preview: signals & benchmark ─────────────── */
+
+/*
+ * Visually distinct from the measured sections above, on purpose. Everything
+ * in here illustrates capability that is not yet generally available, so it
+ * must never be mistaken for the live event stream.
+ */
+
+.insights-signals {
+  padding: 12px 14px;
+  background: var(--light-color);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.insights-signals-summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.insights-signals-summary::-webkit-details-marker {
+  display: none;
+}
+
+.insights-signals-summary::after {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+  content: '\25bc';
+  transition: transform 0.2s ease;
+}
+
+.insights-signals[open] .insights-signals-summary::after {
+  transform: rotate(180deg);
+}
+
+.insights-signals-summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.insights-badge {
+  padding: 2px 7px;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+.insights-disclaimer {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+  background: #fff;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+}
+
+/* provenance chips — the honesty control */
+
+.insights-prov {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 3px;
+}
+
+.insights-prov-measured {
+  color: #1c6b3f;
+  background: #e2f3e8;
+}
+
+.insights-prov-illustrative {
+  color: #8a5a00;
+  background: #fdf0d5;
+}
+
+/* bot assessment */
+
+.insights-signal-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.insights-gauge {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 1px;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  background: #fff;
+  border: 2px solid;
+  border-radius: 50%;
+}
+
+.insights-gauge-ok {
+  color: #1c6b3f;
+  border-color: #1c6b3f;
+}
+
+.insights-gauge-warn {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.insights-gauge-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.insights-gauge-scale {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.insights-signal-headtext {
+  min-width: 0;
+}
+
+.insights-signal-headtext strong {
+  display: block;
+  font-size: var(--body-font-size-s);
+}
+
+.insights-reasons {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insights-reasons li {
+  position: relative;
+  margin-bottom: 4px;
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.insights-reasons li::before {
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  content: '\25b8';
+}
+
+.insights-reasons .insights-reason-clear::before {
+  color: #1c6b3f;
+  content: '\2713';
+}
+
+/* reference-figure stat block */
+
+.insights-roadmap-stat {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.insights-roadmap-stat .insights-stat-value {
+  color: var(--ink);
+  font-size: 26px;
+}
+
+.insights-roadmap-stat .insights-stat-label {
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.insights-roadmap-stat .insights-stat-value,
+.insights-roadmap-stat .insights-stat-label {
+  text-align: left;
+}

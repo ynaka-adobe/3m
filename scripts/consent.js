@@ -42,6 +42,50 @@ export const CATEGORIES = [
 
 const OPTIONAL = CATEGORIES.filter((c) => !c.required).map((c) => c.id);
 
+/**
+ * Consent experience variants, for demonstrating the optimization guidance in
+ * Adobe's "Maximizing Data Value Under Modern Privacy Regulations" POV:
+ * plain reassuring language over legal boilerplate, strong visual priority on
+ * the primary action, and testing an interstitial nudge against a passive
+ * banner.
+ *
+ * `default` is the shipped experience and is deliberately untouched — the
+ * alternates are opt-in demo modes selected with `?consent-variant=…`. Every
+ * variant uses the identical consent machinery: necessary stays locked on, all
+ * three categories remain, and Reject all is always one click away. Only copy,
+ * emphasis and placement change.
+ */
+const VARIANTS = {
+  default: {
+    id: 'default',
+    interstitial: false,
+    eyebrow: 'Your privacy choices',
+    heading: 'We use cookies to improve your 3M experience',
+    intro: 'We use cookies and similar technologies to keep the site reliable, measure how our '
+      + 'content performs, and personalize what you see. You are in control — choose what '
+      + 'you are comfortable with, and change it any time.',
+    accept: 'Accept all',
+    reject: 'Reject all',
+  },
+  nudge: {
+    id: 'nudge',
+    interstitial: true,
+    eyebrow: 'Before you explore',
+    heading: 'Help us make 3M.com work better for you',
+    intro: 'Say yes to cookies and we can show you the products, guides and offers that are '
+      + 'actually relevant to your work — and skip the ones that are not. We never sell your '
+      + 'data, and you can change your mind from any page in two clicks.',
+    accept: 'Yes, personalize my experience',
+    reject: 'Not now',
+  },
+};
+
+/** @returns {object} the active variant descriptor */
+function variant() {
+  const requested = new URLSearchParams(window.location.search).get('consent-variant');
+  return VARIANTS[requested] || VARIANTS.default;
+}
+
 const listeners = new Set();
 let state = null;
 
@@ -192,18 +236,17 @@ export function openConsent({ mode = 'banner' } = {}) {
   loadCSS(`${window.hlx.codeBasePath}/styles/consent.css`);
 
   const root = document.createElement('div');
-  root.className = 'consent';
+  const v = variant();
+  root.className = `consent consent-variant-${v.id}`;
   root.innerHTML = `
-    <div class="consent-scrim" data-consent-scrim hidden></div>
-    <div class="consent-dialog" role="dialog" aria-modal="false"
+    <div class="consent-scrim" data-consent-scrim${v.interstitial ? '' : ' hidden'}></div>
+    <div class="consent-dialog" role="dialog" aria-modal="${v.interstitial}"
          aria-labelledby="consent-heading" aria-describedby="consent-intro">
       <div class="consent-body">
-        <p class="consent-eyebrow">Your privacy choices</p>
-        <h2 id="consent-heading">We use cookies to improve your 3M experience</h2>
+        <p class="consent-eyebrow">${v.eyebrow}</p>
+        <h2 id="consent-heading">${v.heading}</h2>
         <p id="consent-intro">
-          We use cookies and similar technologies to keep the site reliable, measure how our
-          content performs, and personalize what you see. You are in control — choose what
-          you are comfortable with, and change it any time.
+          ${v.intro}
         </p>
         <form class="consent-categories" data-consent-categories hidden>
           ${buildToggles(getConsent())}
@@ -216,8 +259,8 @@ export function openConsent({ mode = 'banner' } = {}) {
       <div class="consent-actions">
         <button type="button" class="consent-btn consent-btn-ghost" data-consent="manage">Manage preferences</button>
         <button type="button" class="consent-btn consent-btn-ghost" data-consent="save" hidden>Save my choices</button>
-        <button type="button" class="consent-btn consent-btn-secondary" data-consent="reject">Reject all</button>
-        <button type="button" class="consent-btn consent-btn-primary" data-consent="accept">Accept all</button>
+        <button type="button" class="consent-btn consent-btn-secondary" data-consent="reject">${v.reject}</button>
+        <button type="button" class="consent-btn consent-btn-primary" data-consent="accept">${v.accept}</button>
       </div>
     </div>`;
 
@@ -232,9 +275,11 @@ export function openConsent({ mode = 'banner' } = {}) {
     form.hidden = !expanded;
     manageBtn.hidden = expanded;
     saveBtn.hidden = !expanded;
-    scrim.hidden = !expanded;
+    // the nudge variant is interstitial by design, so its scrim stays up in
+    // both views; the default banner only dims the page when expanded
+    scrim.hidden = !expanded && !v.interstitial;
     dialog.classList.toggle('consent-dialog-expanded', expanded);
-    dialog.setAttribute('aria-modal', String(expanded));
+    dialog.setAttribute('aria-modal', String(expanded || v.interstitial));
     if (expanded) form.querySelector('input:not([disabled])')?.focus();
   };
 
