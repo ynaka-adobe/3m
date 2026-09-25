@@ -94,10 +94,14 @@ function getPageContext() {
  */
 function describeBlock(block) {
   if (!block) return null;
+  // `at-element-marker` is stamped on by at.js when Target applies an offer, and
+  // `appear` by scripts.js section reveal — neither is an authored variant, so
+  // they must not pollute the component identity reported to Analytics.
+  const noise = new Set(['block', 'at-element-marker', 'appear']);
   const name = block.dataset.blockName
-    || [...block.classList].find((c) => c !== 'block')
+    || [...block.classList].find((c) => !noise.has(c))
     || 'unknown';
-  const variants = [...block.classList].filter((c) => c !== 'block' && c !== name);
+  const variants = [...block.classList].filter((c) => !noise.has(c) && c !== name);
   const section = block.closest('.section');
   const sections = section ? [...section.parentElement.children] : [];
 
@@ -202,12 +206,24 @@ function observeBlocks() {
   // picked up automatically here. No per-block analytics code, ever.
   const mutation = new MutationObserver((records) => {
     records.forEach((record) => {
+      if (record.type === 'attributes') {
+        // Markup is often injected raw and only decorated a tick later (Target
+        // offers, fragments, lazily loaded sections). At childList time there is
+        // no [data-block-name] yet, so watch for decorateBlock() stamping it on.
+        register(record.target);
+        return;
+      }
       record.addedNodes.forEach((node) => {
         if (node.nodeType === 1) register(node);
       });
     });
   });
-  mutation.observe(document.body, { childList: true, subtree: true });
+  mutation.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-block-name'],
+  });
 }
 
 /**
