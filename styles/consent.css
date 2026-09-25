@@ -300,3 +300,75 @@
     transform: none;
   }
 }
+
+/* ───────────────────── consent experience variants (demo) ─────────────── */
+
+/*
+ * `?consent-variant=nudge` — an alternate experience for demonstrating the
+ * optimization guidance in Adobe's privacy POV: centre-stage placement rather
+ * than a passive bottom bar, warmer plain-language copy, and much stronger
+ * visual priority on the primary action.
+ *
+ * It changes emphasis only. The same three categories are present, "necessary"
+ * stays locked on, and the decline action remains a single visible click — it
+ * is a nudge, not a dark pattern.
+ */
+
+.consent-variant-nudge {
+  inset: 0;
+  align-items: center;
+  padding: 24px;
+}
+
+.consent-variant-nudge .consent-dialog {
+  max-width: 520px;
+  padding: 34px;
+  text-align: center;
+  border-top-width: 6px;
+  transform: translateY(16px) scale(0.97);
+}
+
+.consent-variant-nudge.consent-visible .consent-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.consent-variant-nudge .consent-dialog-expanded {
+  max-width: 760px;
+  text-align: left;
+}
+
+.consent-variant-nudge .consent-actions {
+  flex-direction: column-reverse;
+  align-items: stretch;
+}
+
+.consent-variant-nudge .consent-btn-primary {
+  order: -1;
+  padding: 16px 28px;
+  font-size: var(--body-font-size-s);
+  box-shadow: 0 8px 22px rgb(227 0 11 / 34%);
+}
+
+.consent-variant-nudge .consent-btn-secondary,
+.consent-variant-nudge .consent-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  text-decoration: underline;
+}
+
+@media (width >= 600px) {
+  .consent-variant-nudge .consent-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .consent-variant-nudge .consent-btn-primary {
+    order: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consent-variant-nudge .consent-dialog {
+    transform: none;
+  }
+}
