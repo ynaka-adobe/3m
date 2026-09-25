@@ -14,7 +14,6 @@ import {
   toClassName,
   toCamelCase,
 } from './aem.js';
-import { loadTarget, applyTargetHeroMboxIfConfigured } from './target.js';
 
 /**
  * load fonts.css and set a session storage flag
@@ -220,8 +219,8 @@ function loadDelayed() {
 async function loadPage() {
   await loadEager(document);
   await loadLazy(document);
-  await loadTarget();
-  await applyTargetHeroMboxIfConfigured();
+  // Target now starts from the delayed phase, behind personalization consent.
+  // See initTarget() in scripts/target.js.
   loadDelayed();
 }
 
