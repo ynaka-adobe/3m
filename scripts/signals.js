@@ -54,6 +54,9 @@ export const INVISIBLE_TRAFFIC_SHARE = 38;
 
 /* ──────────────────────── measured client signals ──────────────────────── */
 
+/** How long a visitor may sit without moving the pointer before it looks odd. */
+const POINTER_IDLE_MS = 5000;
+
 /**
  * Weighted heuristics. Each returns a reason string when it fires. Weights are
  * deliberately modest so no single soft signal can brand a real visitor a bot;
@@ -89,8 +92,12 @@ const HEURISTICS = [
   {
     id: 'no-pointer',
     weight: 20,
-    test: (o) => o.elapsed > 5000 && o.pointerMoves === 0,
-    reason: 'No pointer movement recorded since the page loaded',
+    // Recency, not a lifetime total. A visitor has to move the mouse to click
+    // the consent banner, so a cumulative "never moved" counter is spent after
+    // the first click and can never fire again — which is exactly the idle
+    // visitor this check exists to catch.
+    test: (o) => o.pointerIdleMs > POINTER_IDLE_MS,
+    reason: 'No pointer movement recorded in the last 5 seconds',
   },
   {
     id: 'metronomic',
@@ -103,7 +110,7 @@ const HEURISTICS = [
 /** Passive observation state. Listeners are passive and never block input. */
 const observed = {
   startedAt: Date.now(),
-  pointerMoves: 0,
+  lastPointerMoveAt: null,
   gaps: [],
   lastInteraction: null,
 };
@@ -127,7 +134,7 @@ export function observeSignals() {
   if (listening) return;
   listening = true;
   window.addEventListener('pointermove', () => {
-    observed.pointerMoves += 1;
+    observed.lastPointerMoveAt = Date.now();
   }, { passive: true });
   // Cadence deliberately excludes pointermove: the browser emits it at a near
   // fixed sampling rate, so including it would make every human look scripted.
@@ -159,9 +166,12 @@ function cadenceVariance() {
  *            verdict: string, checked: number}}
  */
 export function assessBot() {
+  const now = Date.now();
   const ctx = {
-    elapsed: Date.now() - observed.startedAt,
-    pointerMoves: observed.pointerMoves,
+    elapsed: now - observed.startedAt,
+    // Time since the last pointer movement, or since load if there has never
+    // been one. Lets the check re-arm whenever the visitor goes quiet again.
+    pointerIdleMs: now - (observed.lastPointerMoveAt ?? observed.startedAt),
     cadenceVariance: cadenceVariance(),
   };
 
