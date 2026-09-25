@@ -22,9 +22,12 @@ export default function decorate(block) {
   const heading = block.querySelector('h1, h2, h3');
   const ps = [...block.querySelectorAll('p')];
   const ctaP = ps.find((p) => p.querySelector('a'));
-  const lede = ps.find((p) => p !== ctaP && p.textContent.trim());
   // eyebrow = first cell with short text, no heading, no link
   const eyebrowCell = cells.find((c) => !c.querySelector('h1,h2,h3,a,picture,img') && c.textContent.trim());
+  // `wrapTextNodes` in aem.js wraps every bare-text block column in a <p>, so the
+  // eyebrow cell is always a lede candidate too. Exclude it, or it renders twice
+  // and the real lede is dropped.
+  const lede = ps.find((p) => p !== ctaP && !eyebrowCell?.contains(p) && p.textContent.trim());
   const eyebrow = eyebrowCell ? eyebrowCell.textContent.trim() : '';
 
   const inner = document.createElement('div');
@@ -53,7 +56,26 @@ export default function decorate(block) {
   if (ctaP) {
     const actions = document.createElement('div');
     actions.className = 'actions';
-    [...ctaP.childNodes].forEach((n) => actions.append(n.cloneNode(true)));
+    // Accept either all CTAs in one paragraph (legacy) or one per paragraph.
+    // The latter is required for scripts.js decorateButtons() to buttonize them,
+    // since it skips any link whose paragraph contains other text.
+    ps.filter((p) => p.querySelector('a')).forEach((p) => {
+      [...p.childNodes].forEach((n) => actions.append(n.cloneNode(true)));
+    });
+    // decorateButtons() only buttonizes a link whose paragraph holds nothing
+    // else, so two CTAs authored in one paragraph stay bare. This block owns its
+    // actions row, so apply the same <strong>/<em> contract here as a fallback.
+    [...actions.querySelectorAll('a')].forEach((a) => {
+      if (a.classList.contains('button')) return;
+      const strong = a.closest('strong');
+      const em = a.closest('em');
+      if (!strong && !em) return;
+      if (strong && em) a.className = 'button accent';
+      else a.className = strong ? 'button primary' : 'button secondary';
+      let outer = strong || em;
+      if (strong && em) outer = strong.contains(em) ? strong : em;
+      outer.replaceWith(a);
+    });
     inner.append(actions);
   }
 
