@@ -1,4 +1,5 @@
 import { decorateBlock, getMetadata, loadBlock } from './aem.js';
+import decorateButtons from './buttons.js';
 import { hasConsent, onConsentChange } from './consent.js';
 
 /**
@@ -16,6 +17,9 @@ const CONSENT_CATEGORY = 'personalization';
  * @param {Element} container
  */
 async function decorateInjectedBlocks(container) {
+  // Target-injected markup never passes through decorateMain(), so <strong><a>
+  // / <em><a> would stay bare links instead of becoming .button/.button.secondary.
+  decorateButtons(container);
   const blocks = container.querySelectorAll('div[class]:not([data-block-status])');
   await Promise.all([...blocks].map(async (block) => {
     decorateBlock(block);
