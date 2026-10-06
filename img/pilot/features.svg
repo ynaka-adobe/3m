@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" role="img" aria-label="Application steps">
+  <rect width="800" height="900" fill="#f5f5f5"/>
+  <rect x="0" y="0" width="12" height="900" fill="#d10411"/>
+  <g>
+    <circle cx="200" cy="180" r="56" fill="#d10411"/>
+    <circle cx="200" cy="380" r="56" fill="#202024"/>
+    <circle cx="200" cy="580" r="56" fill="#595959"/>
+    <circle cx="200" cy="780" r="56" fill="#d10411" opacity=".6"/>
+  </g>
+  <g fill="#202024" opacity=".2">
+    <rect x="300" y="160" width="400" height="18"/><rect x="300" y="196" width="300" height="18"/>
+    <rect x="300" y="360" width="400" height="18"/><rect x="300" y="396" width="260" height="18"/>
+    <rect x="300" y="560" width="400" height="18"/><rect x="300" y="596" width="320" height="18"/>
+    <rect x="300" y="760" width="400" height="18"/><rect x="300" y="796" width="280" height="18"/>
+  </g>
+  <path d="M200 236v88M200 436v88M200 636v88" stroke="#202024" stroke-width="3" opacity=".3"/>
+</svg>
