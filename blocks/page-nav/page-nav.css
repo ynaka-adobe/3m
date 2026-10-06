@@ -1,0 +1,150 @@
+.page-nav .pn-head {
+  padding: 18px 0 20px;
+}
+
+.page-nav .pn-title {
+  margin: 0;
+  font-weight: 300;
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.page-nav .pn-title strong {
+  font-weight: 700;
+}
+
+.page-nav .pn-standfirst {
+  margin: 12px 0 0;
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 62ch;
+}
+
+.page-nav .pn-nav {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.page-nav .pn-groups {
+  display: flex;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.page-nav .pn-groups::-webkit-scrollbar {
+  display: none;
+}
+
+.page-nav .pn-group {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.page-nav .pn-trigger,
+.page-nav .pn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 14px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--heading-font-family);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.page-nav .pn-trigger:hover,
+.page-nav .pn-link:hover {
+  color: var(--accent);
+}
+
+.page-nav .pn-trigger:focus-visible,
+.page-nav .pn-link:focus-visible {
+  outline: 2px solid var(--link-color);
+  outline-offset: -2px;
+}
+
+.page-nav .pn-caret {
+  width: 0;
+  height: 0;
+  border-inline: 4px solid transparent;
+  border-top: 5px solid currentcolor;
+  transition: transform 0.15s ease;
+}
+
+.page-nav .pn-group.is-open .pn-caret {
+  transform: rotate(180deg);
+}
+
+.page-nav .pn-menu {
+  display: none;
+  position: absolute;
+  inset-inline-start: 0;
+  top: 100%;
+  z-index: 30;
+  min-width: 240px;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+  background: var(--background-color);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.page-nav .pn-group.is-open .pn-menu {
+  display: block;
+}
+
+.page-nav .pn-menu a {
+  display: block;
+  padding: 9px 18px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.page-nav .pn-menu a:hover {
+  background: var(--light-color);
+  color: var(--accent);
+}
+
+.page-nav.light {
+  background: var(--light-color);
+}
+
+/* pinned state — the bar sticks, the title scrolls away */
+.page-nav.is-pinned .pn-nav {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: var(--background-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-nav .pn-caret {
+    transition: none;
+  }
+}
+
+@media (width >= 900px) {
+  .page-nav .pn-head {
+    padding: 28px 0 26px;
+  }
+
+  .page-nav .pn-trigger,
+  .page-nav .pn-link {
+    font-size: 16px;
+    padding: 18px;
+  }
+}

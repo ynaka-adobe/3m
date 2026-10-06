@@ -1,0 +1,77 @@
+.anchor-nav .an-label {
+  margin: 0 0 10px;
+  font-family: var(--heading-font-family);
+  font-weight: 700;
+  font-size: var(--body-font-size-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.anchor-nav .an-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.anchor-nav .an-link {
+  display: block;
+  padding: 7px 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--muted);
+  border-inline-start: 2px solid var(--line);
+  padding-inline-start: 14px;
+}
+
+.anchor-nav .an-link:hover {
+  color: var(--ink);
+}
+
+.anchor-nav .an-link.is-active {
+  color: var(--ink);
+  font-weight: 700;
+  border-inline-start-color: var(--accent);
+}
+
+/* tabs variant — horizontal underline bar */
+.anchor-nav.tabs .an-list {
+  display: flex;
+  gap: 32px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+}
+
+.anchor-nav.tabs .an-list::-webkit-scrollbar {
+  display: none;
+}
+
+.anchor-nav.tabs .an-link {
+  border-inline-start: 0;
+  padding: 14px 0;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  font-family: var(--heading-font-family);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.anchor-nav.tabs .an-link.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.anchor-nav-wrapper.is-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--background-color);
+}
+
+@media (width >= 900px) {
+  .anchor-nav.tabs .an-link {
+    font-size: 16px;
+  }
+}
