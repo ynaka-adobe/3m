@@ -281,3 +281,67 @@ a.card:hover .card-arrow {
     aspect-ratio: 16 / 9;
   }
 }
+
+/* mds product variant — MDS "Highlighted products": hairline-ruled grid of
+   product tiles (contained square image, product-name link, options note) */
+.cards.mds.product > ul {
+  gap: 1px;
+  border: 1px solid #ddd;
+  background: #ddd;
+}
+
+.cards.mds.product .card {
+  box-shadow: none;
+}
+
+.cards.mds.product a.card:hover {
+  box-shadow: none;
+}
+
+.cards.mds.product .card-media {
+  padding: 30px 30px 0;
+}
+
+.cards.mds.product .card-media img {
+  max-width: 180px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.cards.mds.product .card-body {
+  padding: 20px 20px 25px;
+  row-gap: 10px;
+}
+
+.cards.mds.product .card-body h3 {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.cards.mds.product .card-arrow {
+  display: none;
+}
+
+.cards.mds.product .card-body p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.cards.mds.product .card-body p::before {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background: url("/icons/options.svg") center / contain no-repeat;
+}
+
+@media (width >= 900px) {
+  .cards.mds.product > ul:has(> li:nth-child(4):last-child) .card-media img {
+    aspect-ratio: 1;
+  }
+}

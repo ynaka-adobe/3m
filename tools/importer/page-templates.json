@@ -137,7 +137,8 @@
     {
       "name": "figma-site-template",
       "urls": [
-        "http://localhost:8765/en/figma-site-template-1.html"
+        "http://localhost:8765/en/figma-site-template-1.html",
+        "http://localhost:8765/en/figma-site-template-2.html"
       ],
       "representativeUrl": "http://localhost:8765/en/figma-site-template-1.html",
       "coverageGaps": [],

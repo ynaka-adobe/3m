@@ -5,7 +5,7 @@
 }
 
 .columns > div + div {
-  margin-top: 30px;
+  margin-top: 40px;
 }
 
 .columns img {
@@ -33,6 +33,10 @@
   color: var(--text-color);
 }
 
+.columns li + li {
+  margin-top: 14px;
+}
+
 .columns a:any-link {
   color: #003ce6;
   text-decoration: underline;
@@ -54,12 +58,17 @@
     max-width: 750px;
   }
 
+  /* MDS stackable image: 750px copy + 350px image column; the image hugs
+     the copy side (right-aligned when it follows the copy, left when first) */
   .columns > div > .columns-img-col {
     flex: 0 1 350px;
     min-width: 250px;
-    margin-left: auto;
     display: flex;
     justify-content: flex-end;
+  }
+
+  .columns > div > .columns-img-col:first-child {
+    justify-content: flex-start;
   }
 
   .columns > div > .columns-img-col img {
@@ -82,6 +91,10 @@
 .columns.links li {
   font-size: 14px;
   line-height: 22px;
+}
+
+.columns.links li + li {
+  margin-top: 0;
 }
 
 .columns.links a:any-link {

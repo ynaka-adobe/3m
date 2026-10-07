@@ -344,6 +344,11 @@ body.mds main > .section.full > div {
   padding: 0;
 }
 
+/* MDS light ground is #f9f9f9 (sampled from the design), not the site's #f5f5f5 */
+body.mds main .section.light {
+  background: #f9f9f9;
+}
+
 body.mds main > .section > .default-content-wrapper {
   margin-bottom: 30px;
 }
@@ -382,9 +387,6 @@ body.mds a.button:any-link {
 }
 
 /* body-copy section ("Title with Text"): regular 14/22 copy, 750px measure */
-body.mds main > .section.text > .default-content-wrapper h2 {
-  margin-bottom: 30px;
-}
 
 body.mds main > .section.text > .default-content-wrapper p {
   max-width: 750px;
@@ -392,6 +394,10 @@ body.mds main > .section.text > .default-content-wrapper p {
   font-size: 14px;
   line-height: 22px;
   font-weight: 400;
+}
+
+body.mds main > .section.text > .default-content-wrapper h2 + p {
+  margin-top: 30px;
 }
 
 /* centered CTA section ("Content CTA", centered) */

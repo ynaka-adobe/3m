@@ -8,7 +8,8 @@
  *   2. L2 site title     plain text or a link to the L2 home
  *   3. tabs              list of links; a nested list under an item becomes
  *                        that tab's dropdown. The tab linking to the current
- *                        page is active, else the first tab.
+ *                        page is active, else a bold tab label, else the
+ *                        first tab.
  */
 let uid = 0;
 
@@ -60,10 +61,16 @@ function buildTabs(cell) {
   // own link of a tab = first link outside its nested dropdown list
   const ownLink = (li) => [...li.querySelectorAll('a')].find((a) => !a.closest('li ul'));
   const path = window.location.pathname.replace(/\.html$/, '');
-  const activeIndex = Math.max(0, items.findIndex((li) => {
+  let activeIndex = items.findIndex((li) => {
     const a = ownLink(li);
-    return a && new URL(a.href, window.location).pathname.replace(/\.html$/, '') === path;
-  }));
+    // in-page anchors (#section) point at this page but don't mark a tab
+    return a && !a.getAttribute('href').startsWith('#')
+      && new URL(a.href, window.location).pathname.replace(/\.html$/, '') === path;
+  });
+  // else an author-bolded tab label (e.g. the dropdown this page lives under)
+  if (activeIndex < 0) {
+    activeIndex = Math.max(0, items.findIndex((li) => li.querySelector(':scope > strong, :scope > p > strong')));
+  }
 
   items.forEach((srcLi, i) => {
     const li = document.createElement('li');
