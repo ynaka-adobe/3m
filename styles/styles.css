@@ -321,3 +321,106 @@ main > .section > .default-content-wrapper h2 strong {
     padding: 56px 0;
   }
 }
+
+/* ── MDS page template (Template: mds) — 3M Design System "Core Site" pages ──
+   1300px content column, 32/45 bold section heads, 30px vertical rhythm. */
+body.mds {
+  --maxw: 1300px;
+}
+
+body.mds main > .section {
+  padding: 30px 0;
+}
+
+body.mds main > .section.full {
+  padding: 0;
+}
+
+body.mds main > .section > div {
+  padding: 0 20px;
+}
+
+body.mds main > .section.full > div {
+  padding: 0;
+}
+
+/* MDS light ground is #f9f9f9 (sampled from the design), not the site's #f5f5f5 */
+body.mds main .section.light {
+  background: #f9f9f9;
+}
+
+body.mds main > .section > .default-content-wrapper {
+  margin-bottom: 30px;
+}
+
+body.mds main > .section > .default-content-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+body.mds main > .section > .default-content-wrapper h2 {
+  max-width: 1080px;
+  font-size: 26px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #000;
+}
+
+body.mds main > .section > .default-content-wrapper p {
+  max-width: 1080px;
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 25px;
+  font-weight: 300;
+  color: var(--text-color);
+}
+
+body.mds main > .section > .default-content-wrapper p.button-wrapper {
+  margin-top: 30px;
+}
+
+body.mds a.button:any-link {
+  min-height: 40px;
+  padding: 8px 30px;
+  border-width: 1px;
+  font-size: 16px;
+}
+
+/* body-copy section ("Title with Text"): regular 14/22 copy, 750px measure */
+
+body.mds main > .section.text > .default-content-wrapper p {
+  max-width: 750px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+body.mds main > .section.text > .default-content-wrapper h2 + p {
+  margin-top: 30px;
+}
+
+/* centered CTA section ("Content CTA", centered) */
+body.mds main > .section.center > .default-content-wrapper {
+  text-align: center;
+}
+
+body.mds main > .section.center > .default-content-wrapper > * {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (width >= 900px) {
+  body.mds main > .section > div {
+    padding: 0 70px;
+  }
+
+  body.mds main > .section.full > div {
+    padding: 0;
+  }
+
+  body.mds main > .section > .default-content-wrapper h2 {
+    font-size: 32px;
+    line-height: 45px;
+  }
+}

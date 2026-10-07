@@ -133,6 +133,24 @@
           "defaultContent": []
         }
       ]
+    },
+    {
+      "name": "figma-site-template",
+      "urls": [
+        "http://localhost:8765/en/figma-site-template-1.html",
+        "http://localhost:8765/en/figma-site-template-2.html"
+      ],
+      "representativeUrl": "http://localhost:8765/en/figma-site-template-1.html",
+      "coverageGaps": [],
+      "description": "MDS Core Site page templates transcribed from Figma (MDS for AEM PIlot, node 1:6449) into a local design snapshot",
+      "blocks": [
+        {
+          "name": "figma-block",
+          "instances": [
+            "main section > div.figma-block"
+          ]
+        }
+      ]
     }
   ]
 }

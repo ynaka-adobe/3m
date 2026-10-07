@@ -59,3 +59,69 @@
   border-top: 1px solid #dadada;
   background-color: var(--background-color);
 }
+
+/* mds variant — MDS FAQ: boxed questions, red plus/minus, 1080px measure */
+.accordion.mds {
+  max-width: 1080px;
+}
+
+.accordion.mds details {
+  border-color: #ddd;
+  background: #fff;
+}
+
+.accordion.mds details + details {
+  margin-top: 25px;
+}
+
+.accordion.mds details summary {
+  padding: 22px 60px 22px 20px;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 700;
+  color: #000;
+}
+
+.accordion.mds details[open] summary,
+.accordion.mds details summary:hover,
+.accordion.mds details summary:focus {
+  background-color: #fff;
+}
+
+.accordion.mds details summary::before,
+.accordion.mds details summary::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  width: 16px;
+  height: 2px;
+  border: 0;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: transform 0.2s;
+}
+
+.accordion.mds details summary::after {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.accordion.mds details[open] summary::after {
+  transform: translateY(-50%) rotate(0deg);
+}
+
+.accordion.mds details .accordion-item-body {
+  padding: 0 20px 20px;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-color);
+}
+
+.accordion.mds details[open] .accordion-item-body {
+  border-top: 0;
+}
+
+.accordion.mds details summary p,
+.accordion.mds details .accordion-item-body p {
+  margin: 0;
+}

@@ -1,0 +1,20 @@
+{
+  "status": "success",
+  "url": "http://localhost:8765/en/figma-site-template-2.html",
+  "path": "en/figma-site-template-2",
+  "timestamp": "2026-10-07T16:18:00.114Z",
+  "title": "Application Page Title | 3M United States",
+  "template": "figma-site-template",
+  "blocks": [
+    "ssn",
+    "hero (mds)",
+    "jump-links",
+    "columns",
+    "hero (mds, campaign)",
+    "cards (mds, product)",
+    "columns",
+    "accordion (mds)",
+    "cards (mds)",
+    "cards (mds)"
+  ]
+}
