@@ -149,8 +149,12 @@ function capture(form) {
   if (!fields.length) return;
   current = {
     fields,
+    // The locator's quote modal is appended to <body>, outside the section and
+    // block structure, so there is no block to walk up to — hence the explicit
+    // check for its dialog. Verified against the real DOM: the modal form's
+    // ancestry is .marketo < .rs-quote-dialog < .rs-quote-overlay.
     source: formEl?.closest('[data-block-name], .block')?.dataset.blockName
-      || (formEl?.closest('.modal, dialog') ? 'quote modal' : 'marketo'),
+      || (formEl?.closest('.rs-quote-dialog, .modal, dialog') ? 'quote modal' : 'marketo'),
     formId: form.getId?.() ?? null,
     at: new Date(),
   };
