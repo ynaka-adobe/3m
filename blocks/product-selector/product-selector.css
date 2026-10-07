@@ -1,0 +1,110 @@
+.product-selector .ps-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.product-selector .ps-text::before {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 4px;
+  background: var(--accent);
+  margin-bottom: 22px;
+}
+
+.product-selector .ps-text h2 {
+  margin: 0 0 10px;
+  font-weight: 300;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.product-selector .ps-text h2 strong {
+  font-weight: 700;
+}
+
+.product-selector .ps-text p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.product-selector .ps-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.product-selector .ps-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.product-selector .ps-label {
+  font-family: var(--heading-font-family);
+  font-weight: 700;
+  font-size: var(--body-font-size-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.product-selector .ps-select {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 36px 12px 14px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  background-color: var(--background-color);
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+    linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 55%, calc(100% - 12px) 55%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  font-family: var(--body-font-family);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.product-selector .ps-select:focus-visible {
+  outline: 2px solid var(--link-color);
+  outline-offset: 2px;
+}
+
+.product-selector .ps-cta {
+  flex-shrink: 0;
+}
+
+/* ink ground */
+.product-selector.ink .ps-text h2,
+.product-selector.ink .ps-label {
+  color: #fff;
+}
+
+.product-selector.ink .ps-text p {
+  color: rgb(255 255 255 / 78%);
+}
+
+@media (width >= 900px) {
+  .product-selector.inline .ps-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 48px;
+  }
+
+  .product-selector.inline .ps-controls {
+    flex-shrink: 0;
+  }
+}
