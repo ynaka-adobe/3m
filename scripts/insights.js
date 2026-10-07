@@ -23,6 +23,7 @@
  */
 
 import { subscribe } from './analytics.js';
+import { onIdentity, observeIdentity } from './identity.js';
 import {
   OPT_IN_BENCHMARK, OPT_IN_ENTERPRISE_RANGE, INVISIBLE_TRAFFIC_SHARE,
   observeSignals, assessBot, consentPosture,
@@ -55,8 +56,9 @@ const state = {
   categories: new Map(),
   consented: false,
   consentCategories: null,
+  identity: null,
   // `<details>` open state must survive the panel's full re-render on each event
-  open: { signals: true, benchmark: false },
+  open: { identity: true, signals: true, benchmark: false },
 };
 
 let refs = null;
@@ -246,6 +248,72 @@ function provenance(kind) {
   return chip;
 }
 
+/* ─────────────────────────── real-time identity ────────────────────────── */
+
+/**
+ * The first-party profile built from the quote form. Deliberately shows the
+ * real submitted values — the point is to watch an identity form in real time —
+ * while making its handling explicit, because this is the one card on the panel
+ * that holds personal data.
+ */
+function renderIdentity() {
+  const section = el('details', 'insights-section insights-signals insights-identity');
+  section.open = state.open.identity;
+  section.addEventListener('toggle', () => { state.open.identity = section.open; });
+
+  const summary = el('summary', 'insights-heading insights-signals-summary');
+  summary.append(el('span', null, 'Identity'));
+  summary.append(el(
+    'span',
+    `insights-badge ${state.identity ? 'insights-badge-live' : ''}`.trim(),
+    state.identity ? 'Captured' : 'Awaiting',
+  ));
+  section.append(summary);
+
+  if (!state.identity) {
+    section.append(el(
+      'p',
+      'insights-disclaimer',
+      'A first-party profile appears here the moment a visitor submits the quote '
+      + 'form — from the Marketo block, or from the locator\u2019s "Get a quote" modal.',
+    ));
+    section.append(renderEmpty('No identity captured yet — submit a quote to see this update live.'));
+    return section;
+  }
+
+  const { fields, source, at } = state.identity;
+  const head = el('div', 'insights-roadmap-stat');
+  head.append(el('span', 'insights-stat-value', String(fields.length)));
+  head.append(el('span', 'insights-stat-label', `attributes captured from ${source}`));
+  head.append(el('span', 'insights-note', `Submitted at ${at.toLocaleTimeString()}`));
+  head.append(provenance('measured'));
+  section.append(head);
+
+  const dl = el('dl', 'insights-observations insights-identity-fields');
+  fields.forEach((f) => {
+    const row = el('div');
+    const dt = el('dt', null, f.label);
+    if (f.sensitive) dt.append(el('span', 'insights-pii', 'PII'));
+    row.append(dt);
+    const dd = el('dd');
+    dd.append(el('strong', null, f.value));
+    row.append(dd);
+    dl.append(row);
+  });
+  section.append(dl);
+
+  section.append(el(
+    'p',
+    'insights-disclaimer',
+    'Held in memory for this page only — never written to storage, and never '
+    + 'pushed to the data layer, because everything on the data layer is '
+    + 'forwarded to Adobe. The event that reaches Analytics is form-submit with '
+    + 'the component and form name, carrying no field values.',
+  ));
+
+  return section;
+}
+
 function renderSignals() {
   const section = el('details', 'insights-section insights-signals');
   section.open = state.open.signals;
@@ -369,6 +437,9 @@ function render() {
   stats.append(renderStat('Links clicked', [...state.links.values()].reduce((s, r) => s + r.count, 0)));
   stats.append(renderStat('Scroll', state.scroll ? `${state.scroll}%` : '—'));
   body.append(stats);
+
+  // ── identity (above Observations: the profile frames everything below it)
+  body.append(renderIdentity());
 
   // ── insights
   const insightSection = el('section', 'insights-section');
@@ -530,9 +601,16 @@ export default async function initInsights() {
   // start passive signal observation as early as the panel exists, so the bot
   // assessment has real interaction history by the time it is first opened
   observeSignals();
+  // identity capture is independent of the data layer — personal data must not
+  // travel on the channel that forwards to Adobe (see identity.js)
+  observeIdentity();
   build();
   subscribe((entry) => {
     record(entry);
+    scheduleRender();
+  });
+  onIdentity((profile) => {
+    state.identity = profile;
     scheduleRender();
   });
   render();
