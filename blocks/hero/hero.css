@@ -118,3 +118,82 @@
   height: auto;
   object-fit: contain;
 }
+
+/* mds variant — MDS page-template intro: centered-left copy, no scrim/rule */
+.hero.mds {
+  min-height: 450px;
+  align-items: center;
+}
+
+.hero.mds .hero-scrim,
+.hero.mds .rule {
+  display: none;
+}
+
+.hero.mds .wrap {
+  max-width: 1300px;
+  padding: 30px 20px;
+  text-shadow: none;
+}
+
+.hero.mds h1,
+.hero.mds h2 {
+  max-width: 750px;
+  font-size: 36px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #fff;
+}
+
+.hero.mds .lede {
+  max-width: 520px;
+  margin: 20px 0 30px;
+  font-size: 18px;
+  line-height: 25px;
+  font-weight: 300;
+  color: #fff;
+}
+
+.hero.mds .actions .button {
+  min-height: 45px;
+  padding: 10px 24px;
+  font-size: 18px;
+}
+
+.hero.mds.campaign {
+  min-height: 300px;
+}
+
+.hero.mds.campaign h2 {
+  margin-bottom: 30px;
+}
+
+.hero.mds.campaign .actions .button {
+  min-height: 40px;
+  padding: 8px 20px;
+  border-width: 1px;
+  font-size: 14px;
+}
+
+@media (width >= 900px) {
+  .hero.mds {
+    min-height: 450px;
+  }
+
+  .hero.mds.campaign {
+    min-height: 300px;
+  }
+
+  .hero.mds .wrap {
+    padding: 30px 70px;
+  }
+
+  .hero.mds h1 {
+    font-size: 50px;
+  }
+
+  .hero.mds h2 {
+    font-size: 40px;
+  }
+}

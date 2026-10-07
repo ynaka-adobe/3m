@@ -195,3 +195,89 @@ a.card:hover .card-arrow {
     padding: 0;
   }
 }
+
+/* mds variant — MDS "Content Cards": white tiles on the section ground,
+   placeholder-ratio image, underlined title with a red chevron, optional
+   description + bullets. 4 cards lay out 4-up, otherwise 3-up. */
+.cards.mds > ul {
+  gap: 20px;
+}
+
+.cards.mds .card {
+  border: 0;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 16%);
+  transition: box-shadow 0.2s;
+}
+
+.cards.mds a.card:hover {
+  transform: none;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
+}
+
+.cards.mds .card-media img {
+  aspect-ratio: 5 / 3;
+}
+
+.cards.mds .card-body {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-content: start;
+  gap: 12px 15px;
+  padding: 20px 30px 30px;
+}
+
+.cards.mds .card-body > * {
+  grid-column: 1 / -1;
+}
+
+.cards.mds .card-body h3 {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cards.mds .card-arrow {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  padding: 0;
+  font-size: 28px;
+  line-height: 22px;
+}
+
+.cards.mds .card-body p,
+.cards.mds .card-body ul,
+.cards.mds .card-body ol {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-color);
+}
+
+.cards.mds .card-body ul,
+.cards.mds .card-body ol {
+  display: block;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.cards.mds .card-body li + li {
+  margin-top: 10px;
+}
+
+@media (width >= 900px) {
+  .cards.mds > ul {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .cards.mds > ul:has(> li:nth-child(4):last-child) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .cards.mds > ul:has(> li:nth-child(4):last-child) .card-media img {
+    aspect-ratio: 16 / 9;
+  }
+}

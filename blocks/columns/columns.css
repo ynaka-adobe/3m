@@ -1,0 +1,110 @@
+.columns > div {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.columns > div + div {
+  margin-top: 30px;
+}
+
+.columns img {
+  width: 100%;
+}
+
+.columns > div > .columns-img-col img {
+  display: block;
+}
+
+/* text cell — MDS "stackable image" copy */
+.columns h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 25px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.columns p,
+.columns ul {
+  margin: 20px 0 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-color);
+}
+
+.columns a:any-link {
+  color: #003ce6;
+  text-decoration: underline;
+}
+
+.columns a:hover {
+  color: var(--link-hover-color);
+}
+
+@media (width >= 900px) {
+  .columns > div {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 30px;
+  }
+
+  .columns > div > div {
+    flex: 1;
+    max-width: 750px;
+  }
+
+  .columns > div > .columns-img-col {
+    flex: 0 1 350px;
+    min-width: 250px;
+    margin-left: auto;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .columns > div > .columns-img-col img {
+    width: 250px;
+    height: 188px;
+    object-fit: cover;
+  }
+}
+
+/* links variant — MDS "Link List": columns of plain / icon links */
+.columns.links ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+
+.columns.links li {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.columns.links a:any-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #000;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.columns.links a:hover {
+  color: var(--accent);
+}
+
+.columns.links .icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+@media (width >= 900px) {
+  .columns.links > div > div {
+    max-width: none;
+  }
+}

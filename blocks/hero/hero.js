@@ -16,6 +16,10 @@
  * Variant "hero banner": the image already carries its own text/CTA (a flat
  * banner export), so it renders as a clean full-bleed image with no scrim or
  * overlay. If a CTA link is authored, the whole banner links there.
+ *
+ * Variant "hero mds": MDS page-template intro — left-aligned, vertically
+ * centered copy, no scrim/rule. Add "campaign" for the shorter mid-page promo
+ * banner (headline renders as <h2>).
  */
 const IMG_PATH = /^\/[\w./-]+\.(jpg|jpeg|png|webp|avif)$/i;
 
@@ -75,7 +79,8 @@ export default function decorate(block) {
     inner.append(e);
   }
   if (heading) {
-    const h1 = document.createElement('h1');
+    // a campaign banner is a mid-page promo, not the page title
+    const h1 = document.createElement(block.classList.contains('campaign') ? 'h2' : 'h1');
     h1.append(...heading.childNodes);
     inner.append(h1);
   }
@@ -92,6 +97,15 @@ export default function decorate(block) {
     const actions = document.createElement('div');
     actions.className = 'actions';
     [...(ctaCell.querySelector('p') || ctaCell).childNodes].forEach((n) => actions.append(n.cloneNode(true)));
+    // a CTA cell without a <p> wrapper is skipped by decorateButtons: apply
+    // the same <strong>/<em> → primary/secondary convention here
+    actions.querySelectorAll('a:not(.button)').forEach((a) => {
+      const strong = a.closest('strong');
+      const em = a.closest('em');
+      if (!strong && !em) return;
+      a.classList.add('button', strong ? 'primary' : 'secondary');
+      (strong || em).replaceWith(a);
+    });
     inner.append(actions);
   }
 
