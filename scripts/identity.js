@@ -185,6 +185,22 @@ export function getIdentity() {
  * Marketo loads asynchronously and may not be present at all on pages without
  * a form, so this polls briefly and then gives up rather than waiting forever.
  */
+/**
+ * Puts the submit button back the way Marketo found it.
+ *
+ * Marketo disables the button and swaps its label to "Please Wait" while the
+ * submission is in flight, then relies on the follow-up navigation to clear
+ * it. Since we cancel that navigation, nothing ever resets it and the form is
+ * left looking permanently stuck.
+ */
+function restoreSubmitButton(formEl, label) {
+  const btn = formEl?.querySelector('.mktoButton');
+  if (!btn) return;
+  btn.disabled = false;
+  btn.removeAttribute('disabled');
+  if (label) btn.textContent = label;
+}
+
 export function observeIdentity() {
   if (hooked) return;
   hooked = true;
@@ -201,10 +217,14 @@ export function observeIdentity() {
   const hook = () => {
     if (!window.MktoForms2?.whenReady) return false;
     window.MktoForms2.whenReady((form) => {
+      const formEl = form.getFormElem?.()[0];
+      // read the label now, before Marketo overwrites it with "Please Wait"
+      const label = formEl?.querySelector('.mktoButton')?.textContent;
       // `onSuccess` fires after Marketo has accepted the submission, so the
       // values are the ones actually taken, not an abandoned draft.
       form.onSuccess(() => {
         capture(form);
+        restoreSubmitButton(formEl, label);
         // Returning false cancels Marketo's follow-up navigation. Without it
         // the page reloads immediately and the profile — which is held in
         // memory by design — is gone before anyone can look at it. The lead is
