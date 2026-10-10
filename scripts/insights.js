@@ -268,7 +268,9 @@ function renderSignals() {
   // ── bot assessment (genuinely computed here)
   const bot = assessBot();
   const head = el('div', 'insights-signal-head');
-  const gauge = el('div', `insights-gauge insights-gauge-${bot.verdict === 'Human' ? 'ok' : 'warn'}`);
+  // Keyed off the score, not the label, so rewording a verdict cannot silently
+  // change the colour.
+  const gauge = el('div', `insights-gauge insights-gauge-${bot.score < 30 ? 'ok' : 'warn'}`);
   gauge.append(el('span', 'insights-gauge-value', String(bot.score)));
   gauge.append(el('span', 'insights-gauge-scale', '/ 100'));
   head.append(gauge);
