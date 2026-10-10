@@ -9,7 +9,7 @@
 
 This POC demonstrates an Adobe **Edge Delivery Services (EDS)** website for 3M, built to show:
 
-- Authoring a marketing site in a document-based, Markdown/Google-Doc-style CMS (Document Authoring, "DA") that renders directly to server-generated HTML pages — not an API-only headless CMS
+- Authoring a marketing site in a document-based, Markdown-based, Agentic CMS called Document Authoring ("DA") that renders directly to server-generated HTML pages - as part of a Performance-First Architecture
 - Client-side analytics instrumentation feeding **Adobe Analytics** (Analysis Workspace)
 - **Adobe Target** personalization (A/B and experience targeting)
 - A **Marketo** lead-capture form embedded as a reusable block, wired into a car-customization "find an installer" flow
@@ -44,16 +44,16 @@ Authoring happens in **DA** (`https://da.live/#/ynaka-adobe/3m`), a Google-Docs-
 ## 3. High-Level Architecture
 
 ```
-┌─────────────────────┐        author          ┌──────────────────────┐
-│   DA (da.live)       │ ───────────────────▶   │  EDS content bus      │
-│  docs/library/*       │                        │ (preview/live)        │
-│  pages (hero, cards…) │                        └──────────┬────────────┘
-└─────────────────────┘                                    │
-                                                            ▼
+┌───────────────────────┐        author         ┌──────────────────────┐
+│   DA (da.live)        │ ───────────────────▶  │  EDS content bus     │
+│  docs/library/*       │                       │ (preview/live)       │
+│  pages (hero, cards…) │                       └──────────┬───────────┘
+└───────────────────────┘                                  │
+                                                           ▼
 ┌───────────────────────────────────────────────────────────────────────┐
-│  ynaka-adobe/3m  (GitHub)                                              │
-│  blocks/*.js + *.css   scripts/*.js   styles/*.css                     │
-│  — vanilla JS, no build step, loaded directly by the EDS runtime —     │
+│  ynaka-adobe/3m  (GitHub)                                             │
+│  blocks/*.js + *.css   scripts/*.js   styles/*.css                    │
+│  — vanilla JS, no build step, loaded directly by the EDS runtime —    │
 └───────────────────────────────────────────┬───────────────────────────┘
                                              │ code-bus (AEM Code Sync)
                                              ▼
@@ -61,15 +61,15 @@ Authoring happens in **DA** (`https://da.live/#/ynaka-adobe/3m`), a Google-Docs-
                                              │
                                              ▼
 ┌───────────────────────────────────────────────────────────────────────┐
-│  Adobe Managed CDN  (config in ynaka-adobe/AEM-p154856, config-eds/)   │
+│  Adobe Managed CDN  (config in ynaka-adobe/AEM-p154856, config-eds/)  │
 │  originSelectors + requestTransformations per domain                  │
-│                                                                         │
-│   3m.ynaka-adobe.com/*            → EDS origin (default)               │
-│   3m.ynaka-adobe.com/*.html       → rewritten to extensionless path    │
-│   3m.ynaka-adobe.com/mmm          → www.3m.com   (homepage proxy)      │
-│   3m.ynaka-adobe.com/mmm/login    → order.3m.com/store/.../login       │
-│   3m.ynaka-adobe.com/store/*      → order.3m.com  (bCom asset tree)    │
-│   3m.ynaka-adobe.com/en_US/* etc. → www.3m.com    (3m.com asset tree)  │
+│                                                                       │
+│   3m.ynaka-adobe.com/*            → EDS origin (default)              │
+│   3m.ynaka-adobe.com/*.html       → rewritten to extensionless path   │
+│   3m.ynaka-adobe.com/mmm          → www.3m.com   (homepage proxy)     │
+│   3m.ynaka-adobe.com/mmm/login    → order.3m.com/store/.../login      │
+│   3m.ynaka-adobe.com/store/*      → order.3m.com  (bCom asset tree)   │
+│   3m.ynaka-adobe.com/en_US/* etc. → www.3m.com    (3m.com asset tree) │
 └───────────────────────────────────────────────────────────────────────┘
                                              │
                       ┌──────────────────────┼───────────────────────┐
