@@ -9,7 +9,7 @@
 
 This POC demonstrates an Adobe **Edge Delivery Services (EDS)** website for 3M, built to show:
 
-- Authoring a marketing site in a headless, Markdown/Google-Doc-style CMS (Document Authoring, "DA")
+- Authoring a marketing site in a document-based, Markdown/Google-Doc-style CMS (Document Authoring, "DA") that renders directly to server-generated HTML pages — not an API-only headless CMS
 - Client-side analytics instrumentation feeding **Adobe Analytics** (Analysis Workspace)
 - **Adobe Target** personalization (A/B and experience targeting)
 - A **Marketo** lead-capture form embedded as a reusable block, wired into a car-customization "find an installer" flow
@@ -275,7 +275,7 @@ Both were merged into `main` (PRs **#45** and **#46**) after confirming no file-
 
 | Term | Meaning |
 |---|---|
-| **EDS** | Adobe Edge Delivery Services — the headless, performance-first web framework this site is built on |
+| **EDS** | Adobe Edge Delivery Services — a document-based, performance-first web framework; pages are rendered server-side from authored content, not served purely headless/API-only |
 | **DA** | Document Authoring — the da.live content-editing UI for EDS |
 | **Block** | A reusable, self-contained content component (JS + CSS), the core EDS building block |
 | **Code bus / Content bus** | EDS's two independent delivery pipelines — code (this GitHub repo) vs. content (DA) |
