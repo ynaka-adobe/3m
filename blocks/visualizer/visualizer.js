@@ -19,12 +19,14 @@ const PPF_MESH = { gold: 'sportscar_ppf_gold', platinum: 'sportscar_ppf_platinum
 
 const FINISH_HINT = {
   Gloss: 'High-shine mirror finish.',
+  'High Gloss': 'Deep, extra-high-gloss finish with a paint-like shine.',
   Matte: 'Flat, non-reflective look.',
   Satin: 'Soft sheen between matte and gloss.',
   Metallic: 'Metal-flake depth that shifts in light.',
   ColorFlip: 'Color-shifting flip depending on angle.',
   Brushed: 'Brushed-metal texture.',
   Textured: 'Carbon-fiber texture.',
+  Texture: 'Textured finish such as brushed metal or carbon fiber.',
   Tint: 'Applies to the glass, not the body.',
   Clear: 'Invisible protection with a subtle sheen.',
 };
@@ -34,26 +36,43 @@ const FINISH_HINT = {
 const LANGS = ['en', 'de', 'jp', 'fr', 'ko', 'zh'];
 const I18N = {
   en: {
-    all: 'All', coverage: 'Coverage', platinum: 'Platinum (full)', gold: 'Gold (partial)', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.', findInstaller: 'Find an installer',
+    all: 'All', coverage: 'Coverage', platinum: 'Full Car', gold: 'Full Front', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.', findInstaller: 'Find an installer',
   },
   de: {
-    all: 'Alle', coverage: 'Abdeckung', platinum: 'Platin (voll)', gold: 'Gold (teilweise)', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.', findInstaller: 'Installateur finden',
+    all: 'Alle', coverage: 'Abdeckung', platinum: 'Gesamtes Fahrzeug', gold: 'Gesamte Front', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.', findInstaller: 'Installateur finden',
   },
   jp: {
-    all: 'すべて', coverage: 'カバー範囲', platinum: 'プラチナ（全体）', gold: 'ゴールド（部分）', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。', findInstaller: '施工店を探す',
+    all: 'すべて', coverage: 'カバー範囲', platinum: '車両全体', gold: 'フロント全体', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。', findInstaller: '施工店を探す',
   },
 };
 
 // How each finish maps to physically-based material params on the paint.
 const FINISH_PBR = {
   Gloss: { metalness: 0.0, roughness: 0.08, clearcoat: 1.0 },
+  'High Gloss': { metalness: 0.0, roughness: 0.04, clearcoat: 1.0 },
   Metallic: { metalness: 0.9, roughness: 0.25, clearcoat: 0.6 },
   ColorFlip: { metalness: 0.7, roughness: 0.18, clearcoat: 0.8 },
   Satin: { metalness: 0.2, roughness: 0.45, clearcoat: 0.2 },
   Brushed: { metalness: 0.85, roughness: 0.55, clearcoat: 0.1 },
   Matte: { metalness: 0.0, roughness: 0.9, clearcoat: 0.0 },
   Textured: { metalness: 0.3, roughness: 0.55, clearcoat: 0.2 },
+  Texture: { metalness: 0.3, roughness: 0.55, clearcoat: 0.2 },
   Clear: { metalness: 0.0, roughness: 0.12, clearcoat: 1.0 },
+};
+
+// Per-film material presets (the sheet's `preset` column, named after the
+// 3M Restyling Studio presets). These win over the finish defaults above.
+const PRESET_PBR = {
+  'gloss-modern': { metalness: 0.1, roughness: 0.1, clearcoat: 1.0 },
+  'gloss-modern-metallic': { metalness: 0.75, roughness: 0.3, clearcoat: 1.0 },
+  'satin-modern': { metalness: 0.0, roughness: 0.5, clearcoat: 0.15 },
+  'satin-modern-metallic': { metalness: 0.6, roughness: 0.4, clearcoat: 0.15 },
+  'matte-modern': { metalness: 0.0, roughness: 0.9, clearcoat: 0.0 },
+  'matte-modern-metallic': { metalness: 0.6, roughness: 0.75, clearcoat: 0.0 },
+  'brushed-metal': { metalness: 0.85, roughness: 0.45, clearcoat: 0.0 },
+  'carbon-modern': { metalness: 0.3, roughness: 0.5, clearcoat: 0.5 },
+  'two-color': { metalness: 0.7, roughness: 0.18, clearcoat: 0.8 },
+  physical: { metalness: 0.9, roughness: 0.6, clearcoat: 0.0 },
 };
 
 const VIEWS = {
@@ -101,6 +120,11 @@ function makeFloorTexture(THREE) {
   tex.repeat.set(6, 6);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
+}
+
+// Swatch fill: the film's color, or its texture image (brushed, carbon…) over it.
+function swatchBg(film) {
+  return film.swatchImage ? `${film.color} url("${film.swatchImage}") center / cover` : film.color;
 }
 
 function el(tag, cls, html) {
@@ -362,7 +386,9 @@ async function initStage(stage, modelUrl, ppfUrl) {
       if (film.product === 'Window Tint') {
         ppfActive = false;
         showPPF();
-        glasses.forEach((g) => { g.color.set(film.color); g.opacity = 0.55; });
+        // darker tints carry a higher opacity in the sheet
+        const opacity = parseFloat(film.opacity) || 0.55;
+        glasses.forEach((g) => { g.color.set(film.color); g.opacity = opacity; });
         return;
       }
       glasses.forEach((g) => { g.color.set(0x0d1a17); g.opacity = 0.35; });
@@ -384,7 +410,8 @@ async function initStage(stage, modelUrl, ppfUrl) {
       }
       ppfActive = false;
       showPPF();
-      const pbr = FINISH_PBR[film.finish] || { metalness: 0.2, roughness: 0.4, clearcoat: 0.5 };
+      const pbr = PRESET_PBR[film.preset] || FINISH_PBR[film.finish]
+        || { metalness: 0.2, roughness: 0.4, clearcoat: 0.5 };
       paints.forEach((p) => {
         p.color.set(film.color);
         p.metalness = pbr.metalness;
@@ -517,7 +544,10 @@ export default async function decorate(block) {
 
   function renderFinishes() {
     finishRow.textContent = '';
-    finishesFor(activeProduct).forEach((f) => {
+    const finishes = finishesFor(activeProduct);
+    // a single finish (e.g. window tint) needs no filter
+    finishRow.style.display = finishes.length > 2 ? '' : 'none';
+    finishes.forEach((f) => {
       const b = el('button', `rs-chip${f === activeFinish ? ' is-active' : ''}`, finishLabel(f));
       b.type = 'button';
       // eslint-disable-next-line no-use-before-define
@@ -529,14 +559,15 @@ export default async function decorate(block) {
   function select(film) {
     selected = film;
     if (viewer) viewer.setFilm(film);
-    caption.textContent = `${productLabel(film.product)} · ${film.series}`;
+    caption.textContent = [productLabel(film.product), film.series].filter(Boolean).join(' · ');
     detail.innerHTML = `
-      <div class="rs-swatch-lg" style="background:${film.color}"></div>
+      <div class="rs-swatch-lg"></div>
       <div>
         <strong>${film.name}</strong>
-        <span class="rs-sku">${film.id}</span>
+        <span class="rs-sku">${film.code || film.id}</span>
         <p>${film.hint || FINISH_HINT[film.finish] || ''}</p>
       </div>`;
+    detail.querySelector('.rs-swatch-lg').style.background = swatchBg(film);
     grid.querySelectorAll('.rs-swatch').forEach((s) => {
       s.classList.toggle('is-active', s.dataset.id === film.id);
     });
@@ -566,8 +597,8 @@ export default async function decorate(block) {
       const s = el('button', 'rs-swatch');
       s.type = 'button';
       s.dataset.id = f.id;
-      s.title = `${f.name} (${f.id})`;
-      s.style.background = f.color;
+      s.title = `${f.name} (${f.code || f.id})`;
+      s.style.background = swatchBg(f);
       s.setAttribute('aria-label', f.name);
       s.onclick = () => select(f);
       grid.append(s);
