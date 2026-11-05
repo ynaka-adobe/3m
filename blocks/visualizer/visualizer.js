@@ -39,12 +39,31 @@ const I18N = {
     all: 'All', coverage: 'Coverage', platinum: 'Full Car', gold: 'Full Front', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.', findInstaller: 'Find an installer',
   },
   de: {
-    all: 'Alle', coverage: 'Abdeckung', platinum: 'Gesamtes Fahrzeug', gold: 'Gesamte Front', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.', findInstaller: 'Installateur finden',
+    all: 'Alle', coverage: 'Abdeckung', platinum: 'Komplettes Fahrzeug', gold: 'Volle Front', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.', findInstaller: 'Installateur finden',
   },
   jp: {
-    all: 'すべて', coverage: 'カバー範囲', platinum: '車両全体', gold: 'フロント全体', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。', findInstaller: '施工店を探す',
+    all: 'すべて', coverage: 'カバー範囲', platinum: 'フルボディ', gold: 'フロントフル', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。', findInstaller: '施工店を探す',
   },
 };
+
+// Translated pages label the config rows in their own language; map those
+// labels to the block's keys (readBlockConfig drops non-latin labels).
+const CONFIG_KEYS = {
+  quelle: 'source', ソース: 'source', titel: 'title', titre: 'title', タイトル: 'title',
+};
+
+function readConfig(block) {
+  const cfg = readBlockConfig(block);
+  block.querySelectorAll(':scope > div').forEach((row) => {
+    const [label, value] = row.children;
+    const key = label && CONFIG_KEYS[label.textContent.trim().toLowerCase()];
+    if (key && value && !cfg[key]) {
+      const link = value.querySelector('a');
+      cfg[key] = link ? link.href : value.textContent.trim();
+    }
+  });
+  return cfg;
+}
 
 // How each finish maps to physically-based material params on the paint.
 const FINISH_PBR = {
@@ -433,11 +452,16 @@ async function initStage(stage, modelUrl, ppfUrl) {
 }
 
 export default async function decorate(block) {
-  const cfg = readBlockConfig(block);
+  const cfg = readConfig(block);
   const seg = (window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
   const lang = LANGS.includes(seg) ? seg : 'en';
   const t = I18N[lang] || I18N.en;
-  const source = cfg.source || `/${lang}/consumer/films.json`;
+  const langSheet = `/${lang}/consumer/films.json`;
+  // Translated pages often keep the master's source path, so a language's own
+  // sheet (its market catalogue) wins; the root sheet is the last fallback.
+  const sources = [...new Set([
+    lang !== 'en' && langSheet, cfg.source || langSheet, '/films.json',
+  ].filter(Boolean))];
   const title = cfg.title || '3M Restyling Studio Visualizer';
   const modelUrl = cfg.model || MODEL;
   const ppfUrl = cfg.ppf || PPF_MODEL;
@@ -498,15 +522,17 @@ export default async function decorate(block) {
     return json.data || json;
   }
   let films = [];
-  try {
-    films = await loadFilms(source);
-  } catch (e) {
+  for (let i = 0; i < sources.length && !films.length; i += 1) {
     try {
-      films = await loadFilms('/films.json');
-    } catch (e2) {
-      grid.textContent = 'Could not load the film catalog.';
-      return;
+      // eslint-disable-next-line no-await-in-loop
+      films = await loadFilms(sources[i]);
+    } catch (e) {
+      // try the next sheet
     }
+  }
+  if (!films.length) {
+    grid.textContent = 'Could not load the film catalog.';
+    return;
   }
 
   let viewer = null;
