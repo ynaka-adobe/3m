@@ -457,10 +457,12 @@ export default async function decorate(block) {
   const lang = LANGS.includes(seg) ? seg : 'en';
   const t = I18N[lang] || I18N.en;
   const langSheet = `/${lang}/consumer/films.json`;
-  // Translated pages often keep the master's source path, so a language's own
-  // sheet (its market catalogue) wins; the root sheet is the last fallback.
+  // A market catalogue shipped with the code (/films-{lang}.json) wins, then
+  // the language's authored sheet; translated pages often keep the master's
+  // source path, and the root sheet is the last fallback.
   const sources = [...new Set([
-    lang !== 'en' && langSheet, cfg.source || langSheet, '/films.json',
+    lang !== 'en' && `/films-${lang}.json`, lang !== 'en' && langSheet,
+    cfg.source || langSheet, '/films.json',
   ].filter(Boolean))];
   const title = cfg.title || '3M Restyling Studio Visualizer';
   const modelUrl = cfg.model || MODEL;
