@@ -1,7 +1,8 @@
-import {
-  readBlockConfig, loadCSS, loadScript,
-} from '../../scripts/aem.js';
+import { readBlockConfig, loadCSS, getMetadata } from '../../scripts/aem.js';
 import { createDealerApi, searchSample } from './dealer-api.js';
+import {
+  loadGoogleMaps, createMap, createSuggester, geocodeAddress,
+} from './google-map.js';
 
 // default Marketo form design URL for the "Get a quote" modal (override per
 // page with a `quote` config row on the block)
@@ -13,14 +14,7 @@ const RADIUS = {
 const KM_PER_MILE = 1.609344;
 // width of the list floating over the map; keep in sync with locator.css
 const LIST_WIDTH = 400;
-const SELECT_ZOOM = 15;
 const DIRECTIONS = 'https://www.google.com/maps/dir/?api=1&destination=';
-const GEOCODER = 'https://nominatim.openstreetmap.org/search';
-// keyless OpenStreetMap tiles, greyed out in locator.css; fine for v1 traffic,
-// swap for a keyed provider (e.g. Google Maps) before high-traffic launch
-const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
-const LEAFLET = '/deps/leaflet';
 
 // per site language: units, address lookup country, the location used when the
 // browser's is not available, and the sample data used when the API is unreachable
@@ -59,7 +53,6 @@ const STRINGS = {
     search: 'Search',
     nearMe: 'Show results based on my location',
     myLocation: 'My location',
-    name: 'Company name',
     radius: 'Radius',
     products: 'Product type',
     clear: 'Clear filters',
@@ -81,6 +74,7 @@ const STRINGS = {
     sample: 'The installer service can\'t be reached from this site yet, so sample data is shown.',
     close: 'Close',
     map: 'Map of installers',
+    mapUnavailable: 'The map is not available right now.',
   },
   de: {
     title: 'Fachbetrieb finden',
@@ -88,7 +82,6 @@ const STRINGS = {
     search: 'Suchen',
     nearMe: 'Ergebnisse in meiner Nähe anzeigen',
     myLocation: 'Mein Standort',
-    name: 'Firmenname',
     radius: 'Umkreis',
     products: 'Produkttyp',
     clear: 'Filter zurücksetzen',
@@ -110,6 +103,7 @@ const STRINGS = {
     sample: 'Der Fachbetriebe-Service ist von dieser Website noch nicht erreichbar. Es werden Beispieldaten angezeigt.',
     close: 'Schliessen',
     map: 'Karte der Fachbetriebe',
+    mapUnavailable: 'Die Karte ist derzeit nicht verfügbar.',
   },
   jp: {
     title: '施工店を探す',
@@ -117,7 +111,6 @@ const STRINGS = {
     search: '検索',
     nearMe: '現在地周辺の結果を表示',
     myLocation: '現在地',
-    name: '会社名',
     radius: '半径',
     products: '製品タイプ',
     clear: 'フィルターをクリア',
@@ -139,6 +132,7 @@ const STRINGS = {
     sample: '施工店サービスにまだ接続できないため、サンプルデータを表示しています。',
     close: '閉じる',
     map: '施工店の地図',
+    mapUnavailable: '現在、地図を表示できません。',
   },
 };
 STRINGS.ja = STRINGS.jp;
@@ -179,17 +173,6 @@ function num(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-async function geocode(query, { country, geoLang }) {
-  const params = new URLSearchParams({
-    q: query, format: 'jsonv2', limit: '1', 'accept-language': geoLang,
-  });
-  if (country) params.set('countrycodes', country);
-  const res = await fetch(`${GEOCODER}?${params}`);
-  if (!res.ok) throw new Error(`${res.status} geocoder`);
-  const [hit] = await res.json();
-  return hit ? { lat: Number(hit.lat), lon: Number(hit.lon) } : null;
-}
-
 // browser location; gives up after `wait` ms so an ignored prompt doesn't block the page
 function locate(wait = 8000) {
   return new Promise((resolve, reject) => {
@@ -221,139 +204,116 @@ function addressLines(d) {
   return [street, place].filter(Boolean);
 }
 
-async function loadLeaflet() {
-  await Promise.all([
-    loadCSS(`${LEAFLET}/leaflet.css`),
-    loadCSS(`${LEAFLET}/MarkerCluster.css`),
-    loadScript(`${LEAFLET}/leaflet.min.js`),
-  ]);
-  await loadScript(`${LEAFLET}/leaflet.markercluster.min.js`);
-  return window.L;
-}
-
 /**
- * Map adapter: everything Leaflet-specific lives here, so the provider can be
- * swapped (e.g. for Google Maps) without touching the list and filters.
+ * Turns the location input into a combobox with location suggestions. The
+ * suggestion source is set once the map service has loaded.
+ * @param {HTMLInputElement} input location field
+ * @param {object} options { id, label, onPick(item) }
  */
-function createMap(L, container, { onSelect }) {
-  const map = L.map(container, {
-    zoomControl: false,
-    scrollWheelZoom: false,
-  }).setView([46.8, 8.2], 4);
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
-  L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(map);
-  // only zoom with the wheel once the visitor has engaged with the map
-  map.on('focus click', () => map.scrollWheelZoom.enable());
-  map.on('blur mouseout', () => map.scrollWheelZoom.disable());
+function createSuggestions(input, { id, label, onPick }) {
+  const box = el('ul', 'locator-suggestions');
+  box.id = id;
+  box.hidden = true;
+  box.setAttribute('role', 'listbox');
+  box.setAttribute('aria-label', label);
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  input.setAttribute('aria-expanded', 'false');
+  input.setAttribute('aria-controls', id);
 
-  const accent = getComputedStyle(container).getPropertyValue('--accent').trim() || '#d10411';
-  const pinIcon = (active) => L.divIcon({
-    html: ICONS.pin,
-    className: `locator-pin${active ? ' is-active' : ''}`,
-    iconSize: active ? [42, 52] : [22, 27],
-    iconAnchor: active ? [21, 52] : [11, 27],
-  });
-  const clusters = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    maxClusterRadius: 40,
-    disableClusteringAtZoom: SELECT_ZOOM - 1,
-    iconCreateFunction: (c) => L.divIcon({
-      html: `<span>${c.getChildCount()}</span>`,
-      className: 'locator-cluster',
-      iconSize: [40, 40],
-    }),
-  }).addTo(map);
-  const markers = new Map();
-  let originMarker = null;
-  let radiusCircle = null;
-  let activeId = null;
+  let source = null;
+  let items = [];
+  let active = -1;
+  let timer;
+  let seq = 0;
 
-  // the list covers the left of the map, so keep pins clear of it
-  const leftPad = () => (container.closest('.is-list-view') ? 0 : LIST_WIDTH);
-  const padding = () => ({
-    paddingTopLeft: [leftPad() + 32, 48],
-    paddingBottomRight: [64, 48],
-  });
-
-  function centerOn(latlng, zoom) {
-    const point = map.project(latlng, zoom).subtract([leftPad() / 2, 0]);
-    map.setView(map.unproject(point, zoom), zoom);
+  function close() {
+    // drop pending and in-flight lookups so a late reply doesn't reopen the list
+    clearTimeout(timer);
+    seq += 1;
+    box.hidden = true;
+    box.textContent = '';
+    items = [];
+    active = -1;
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
   }
 
-  let lastFit = null;
-  const api = {
-    setDealers(dealers) {
-      clusters.clearLayers();
-      markers.clear();
-      activeId = null;
-      dealers.filter((d) => d.lat !== null).forEach((d) => {
-        const marker = L.marker([d.lat, d.lon], {
-          icon: pinIcon(false), title: d.name, alt: d.name, riseOnHover: true,
-        });
-        marker.on('click', () => onSelect(d.id, 'map'));
-        markers.set(d.id, marker);
-      });
-      clusters.addLayers([...markers.values()]);
-    },
-    setOrigin(origin, radiusMiles) {
-      if (originMarker) originMarker.remove();
-      if (radiusCircle) radiusCircle.remove();
-      originMarker = null;
-      radiusCircle = null;
-      if (!origin) return;
-      radiusCircle = L.circle([origin.lat, origin.lon], {
-        radius: radiusMiles * KM_PER_MILE * 1000,
-        color: accent,
-        weight: 1,
-        opacity: 0.5,
-        fillColor: accent,
-        fillOpacity: 0.04,
-        interactive: false,
-      }).addTo(map);
-      originMarker = L.circleMarker([origin.lat, origin.lon], {
-        radius: 7, color: '#fff', weight: 3, fillColor: '#202024', fillOpacity: 1, interactive: false,
-      }).addTo(map);
-    },
-    select(id) {
-      const prev = markers.get(activeId);
-      if (prev) prev.setIcon(pinIcon(false)).setZIndexOffset(0);
-      activeId = id;
-      const marker = markers.get(id);
-      if (!marker) return;
-      marker.setIcon(pinIcon(true)).setZIndexOffset(1000);
-      centerOn(marker.getLatLng(), Math.max(map.getZoom(), SELECT_ZOOM));
-    },
-    fit(dealers, origin) {
-      lastFit = [dealers, origin];
-      const points = dealers.filter((d) => d.lat !== null).map((d) => [d.lat, d.lon]);
-      if (origin) points.push([origin.lat, origin.lon]);
-      if (points.length < 2) {
-        // nothing (or only the search location) to show: frame the search radius
-        if (radiusCircle) map.fitBounds(radiusCircle.getBounds(), padding());
-        else if (points.length) centerOn(L.latLng(points[0]), 13);
-        return;
-      }
-      map.fitBounds(L.latLngBounds(points), { ...padding(), maxZoom: 14 });
-    },
-    resize() {
-      map.invalidateSize();
-    },
-  };
+  function highlight(i) {
+    active = i;
+    [...box.children].forEach((li, n) => li.setAttribute('aria-selected', String(n === i)));
+    if (i >= 0) input.setAttribute('aria-activedescendant', box.children[i].id);
+    else input.removeAttribute('aria-activedescendant');
+  }
 
-  // the block can be built while its section is still hidden: once the map
-  // gets a size, redraw it and repeat the last fit
-  let wasHidden = !container.clientWidth;
-  new ResizeObserver(() => {
-    if (!container.clientWidth) {
-      wasHidden = true;
+  function pick(i) {
+    const item = items[i];
+    if (!item) return;
+    input.value = item.text;
+    close();
+    onPick(item);
+  }
+
+  function show(list) {
+    close();
+    items = list;
+    list.forEach((item, i) => {
+      const li = text('li', 'locator-suggestion', item.text);
+      li.id = `${id}-${i}`;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+      // mousedown so the pick happens before the input loses focus
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        pick(i);
+      });
+      box.append(li);
+    });
+    box.hidden = !list.length;
+    input.setAttribute('aria-expanded', String(!!list.length));
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (!source || q.length < 2) {
+      close();
       return;
     }
-    map.invalidateSize();
-    if (wasHidden && lastFit) api.fit(...lastFit);
-    wasHidden = false;
-  }).observe(container);
+    timer = setTimeout(async () => {
+      seq += 1;
+      const current = seq;
+      try {
+        const list = await source.suggest(q);
+        if (current === seq && input.value.trim() === q) show(list);
+      } catch (e) {
+        close();
+      }
+    }, 250);
+  });
 
-  return api;
+  input.addEventListener('keydown', (e) => {
+    if (box.hidden || !items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      highlight((active + 1) % items.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlight(active <= 0 ? items.length - 1 : active - 1);
+    } else if (e.key === 'Enter' && active >= 0) {
+      e.preventDefault();
+      pick(active);
+    } else if (e.key === 'Escape') {
+      close();
+    }
+  });
+  input.addEventListener('blur', () => setTimeout(close, 150));
+
+  return {
+    element: box,
+    close,
+    setSource(value) { source = value; },
+  };
 }
 
 function createCard(d, { t, region, onSelect }) {
@@ -456,7 +416,7 @@ async function openQuote(d, { t, quote }) {
 /**
  * Build the locator UI into `root`. Shared by the block and the modal.
  * @param {Element} root container to render into
- * @param {object} opts block config: { api, region, radius, lat, lon, sample,
+ * @param {object} opts block config: { key, mapId, api, region, radius, lat, lon, sample,
  *   title, quote, unit, country, onClose }
  */
 async function buildLocator(root, opts) {
@@ -493,7 +453,7 @@ async function buildLocator(root, opts) {
   where.type = 'search';
   where.placeholder = t.location;
   where.setAttribute('aria-label', t.location);
-  where.autocomplete = 'postal-code';
+  where.autocomplete = 'off';
   const go = el('button', 'locator-go', ICONS.search);
   go.type = 'submit';
   go.setAttribute('aria-label', t.search);
@@ -502,12 +462,13 @@ async function buildLocator(root, opts) {
   nearMe.type = 'button';
   nearMe.setAttribute('aria-label', t.nearMe);
   nearMe.title = t.nearMe;
-  form.append(where, nearMe, go);
-
-  const name = el('input', 'locator-name');
-  name.type = 'search';
-  name.placeholder = t.name;
-  name.setAttribute('aria-label', t.name);
+  const suggestions = createSuggestions(where, {
+    id: `${uid}-suggestions`,
+    label: t.location,
+    // eslint-disable-next-line no-use-before-define
+    onPick: (item) => pickSuggestion(item),
+  });
+  form.append(where, nearMe, go, suggestions.element);
 
   // radius slider, in the page's unit
   const radiusWrap = el('div', 'locator-radius');
@@ -532,7 +493,7 @@ async function buildLocator(root, opts) {
   status.setAttribute('role', 'status');
   const note = el('p', 'locator-note');
   const row = el('div', 'locator-filter-row');
-  row.append(form, name, radiusWrap, count);
+  row.append(form, radiusWrap, count);
 
   const chipRow = el('div', 'locator-chip-row');
   const chips = el('div', 'locator-chips');
@@ -579,12 +540,13 @@ async function buildLocator(root, opts) {
     hasMore: false,
     origin: null,
     take: PAGE_SIZE,
-    name: '',
     products: new Set(),
     selectedId: null,
     view: 'map',
   };
   let mapApi = null;
+  let maps = null;
+  let suggester = null;
   let shown = [];
   let seq = 0;
   let controller = null;
@@ -614,10 +576,7 @@ async function buildLocator(root, opts) {
   }
 
   function matches(d) {
-    const q = state.name.trim().toLowerCase();
-    const hitName = !q || d.name.toLowerCase().includes(q);
-    const hitProduct = !state.products.size || d.products.some((p) => state.products.has(p));
-    return hitName && hitProduct;
+    return !state.products.size || d.products.some((p) => state.products.has(p));
   }
 
   // product chips come from the results loaded so far; selections are kept
@@ -642,7 +601,7 @@ async function buildLocator(root, opts) {
   }
 
   function render({ fit = true } = {}) {
-    const filtering = !!state.name.trim() || state.products.size > 0;
+    const filtering = state.products.size > 0;
     shown = state.dealers.filter(matches)
       .sort((a, b) => (a.distanceInMiles ?? Infinity) - (b.distanceInMiles ?? Infinity));
     state.selectedId = null;
@@ -742,6 +701,7 @@ async function buildLocator(root, opts) {
 
   function searchFrom(origin) {
     state.origin = origin;
+    suggester?.setBias(origin);
     return query();
   }
 
@@ -791,16 +751,43 @@ async function buildLocator(root, opts) {
     });
   });
 
+  // typed search: the geocoder, or the top suggestion if the geocoder is refused
+  async function lookup(value) {
+    try {
+      return await geocodeAddress(maps, value, region);
+    } catch (err) {
+      if (!suggester) throw err;
+      // eslint-disable-next-line no-console
+      console.warn('locator: geocoder unavailable, using place suggestions', err);
+      const [first] = await suggester.suggest(value);
+      return first ? suggester.resolve(first) : null;
+    }
+  }
+
+  async function pickSuggestion(item) {
+    status.textContent = '';
+    try {
+      await searchFrom(await suggester.resolve(item));
+    } catch (err) {
+      status.textContent = t.notFound;
+    }
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    suggestions.close();
     const value = where.value.trim();
     status.textContent = '';
     if (!value || value === t.myLocation) {
       await useBrowserLocation();
       return;
     }
+    if (!maps) {
+      status.textContent = t.mapUnavailable;
+      return;
+    }
     try {
-      const origin = await geocode(value, region);
+      const origin = await lookup(value);
       if (!origin) {
         status.textContent = t.notFound;
         return;
@@ -820,14 +807,7 @@ async function buildLocator(root, opts) {
     radiusTimer = setTimeout(() => query(), 350);
   });
 
-  name.addEventListener('input', () => {
-    state.name = name.value;
-    render();
-  });
-
   clear.addEventListener('click', () => {
-    state.name = '';
-    name.value = '';
     state.products.clear();
     chips.querySelectorAll('.locator-chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
     render();
@@ -838,11 +818,51 @@ async function buildLocator(root, opts) {
   setView('map');
   message(t.loading);
 
-  const L = await loadLeaflet().catch(() => null);
-  if (L) mapApi = createMap(L, mapEl, { onSelect: selectDealer });
-  else mapEl.append(text('p', 'locator-message', t.error));
+  function mapUnavailable() {
+    mapApi = null;
+    mapEl.textContent = '';
+    mapEl.append(text('p', 'locator-message', t.mapUnavailable));
+  }
+
+  if (opts.key) {
+    try {
+      maps = await loadGoogleMaps({
+        key: opts.key, language: region.geoLang, region: region.country,
+      });
+      mapApi = await createMap(maps, mapEl, {
+        onSelect: selectDealer,
+        mapId: opts.mapId,
+        listWidth: LIST_WIDTH,
+        onAuthError: () => {
+          // eslint-disable-next-line no-console
+          console.warn('locator: Google Maps rejected the API key; check its restrictions and enabled APIs');
+          mapUnavailable();
+        },
+      });
+      suggester = await createSuggester(maps, {
+        country: region.country, language: region.geoLang,
+      }).catch(() => null);
+      suggestions.setSource(suggester);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('locator: Google Maps failed to load', e);
+      mapUnavailable();
+    }
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn('locator: no Google Maps API key; add google-maps-key page metadata or a key row');
+    mapUnavailable();
+  }
   // don't hold up the rest of the page while the visitor answers the location prompt
   useBrowserLocation({ initial: true });
+}
+
+// the Google Maps key and optional map ID: a block row wins over page metadata
+function mapsConfig(cfg = {}) {
+  return {
+    key: (cfg.key || cfg['google-maps-key'] || getMetadata('google-maps-key')).trim(),
+    mapId: (cfg['map-id'] || getMetadata('google-maps-map-id')).trim(),
+  };
 }
 
 /**
@@ -871,6 +891,7 @@ export async function openLocatorModal({ api, title, quote } = {}) {
 
   const t = STRINGS[pageLang()] || STRINGS.en;
   await buildLocator(overlay, {
+    ...mapsConfig(),
     api,
     title: title || t.title,
     quote,
@@ -881,6 +902,7 @@ export async function openLocatorModal({ api, title, quote } = {}) {
 export default async function decorate(block) {
   const cfg = readBlockConfig(block);
   await buildLocator(block, {
+    ...mapsConfig(cfg),
     api: cfg.api,
     region: cfg.region,
     radius: cfg.radius,

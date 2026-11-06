@@ -4,6 +4,7 @@
   --locator-border: rgb(0 0 0 / 15%);
   --locator-list-width: 400px; /* keep in sync with LIST_WIDTH in locator.js */
   --locator-height: 640px;
+  --locator-pin: #f00; /* 3M red, for the map pins and clusters */
 
   position: relative;
   display: grid;
@@ -59,10 +60,6 @@
 
 .locator .locator-where {
   padding-right: 84px;
-}
-
-.locator .locator-name {
-  flex: 0 1 260px;
 }
 
 .locator .locator-radius {
@@ -266,9 +263,10 @@
   background: #f0f0f0;
 }
 
+/* stops above the map's bottom edge so the Google logo stays visible */
 .locator .locator-list-wrap {
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: 0 auto 30px 0;
   z-index: 1;
   box-sizing: border-box;
   width: var(--locator-list-width);
@@ -358,7 +356,7 @@
 
 .locator .locator-card:hover .locator-card-pin path,
 .locator .locator-card.is-active .locator-card-pin path {
-  fill: var(--accent);
+  fill: var(--locator-pin);
 }
 
 .locator .locator-card-dist {
@@ -505,10 +503,17 @@
   white-space: nowrap;
 }
 
-/* ---- map pins and clusters ---- */
+/* ---- map pins and clusters (HTML markers, used with a map ID) ---- */
 .locator .locator-pin {
-  border: 0;
-  background: none;
+  width: 22px;
+  height: 27px;
+  cursor: pointer;
+  transition: width 0.15s, height 0.15s;
+}
+
+.locator .locator-pin.is-active {
+  width: 42px;
+  height: 52px;
 }
 
 .locator .locator-pin svg {
@@ -519,37 +524,75 @@
 }
 
 .locator .locator-pin path {
-  fill: var(--accent);
+  fill: var(--locator-pin);
 }
 
 .locator .locator-pin circle {
   fill: #fff;
 }
 
+/* advanced markers anchor at the bottom centre: shift round markers down */
 .locator .locator-cluster {
   display: grid;
   place-items: center;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--locator-pin);
   box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
   color: #fff;
   font-family: var(--body-font-family);
   font-size: 14px;
   font-weight: 700;
+  transform: translateY(50%);
 }
 
-.locator .leaflet-container {
+.locator .locator-origin {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+  transform: translateY(50%);
+}
+
+.locator .gm-style {
   font-family: var(--body-font-family);
 }
 
-/* muted, light-grey base map so the red pins stand out */
-.locator .leaflet-tile-pane {
-  filter: grayscale(1) contrast(0.85) brightness(1.08);
+/* ---- location suggestions ---- */
+.locator .locator-suggestions {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 4px 0;
+  border: 1px solid var(--locator-border);
+  border-top: 0;
+  background: #fff;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 15%);
+  list-style: none;
 }
 
-.locator .leaflet-container a {
-  color: inherit;
+.locator .locator-suggestions[hidden] {
+  display: none;
+}
+
+.locator .locator-suggestion {
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.locator .locator-suggestion:hover,
+.locator .locator-suggestion[aria-selected="true"] {
+  background: #f0f0f0;
 }
 
 /* ---- modal (opened from other blocks, e.g. the visualizer) ---- */
