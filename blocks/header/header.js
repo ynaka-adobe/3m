@@ -171,7 +171,8 @@ export default async function decorate(block) {
   const megas = parseMegaSections(sections);
 
   const accountItemHTML = (li, i) => {
-    const a = li.querySelector(':scope > a');
+    // EDS wraps the link in a <p> when the item has a nested list
+    const a = li.querySelector(':scope > a, :scope > p > a');
     if (!a) return '';
     const subLinks = [...li.querySelectorAll(':scope > ul a')];
     const id = `nav-account-menu-${i}`;
