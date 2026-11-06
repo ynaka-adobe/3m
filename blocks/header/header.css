@@ -338,6 +338,7 @@ header .nav-bottom {
   display: flex;
   justify-content: flex-end;
   border-top: 1px solid #ccc;
+  background: #fff;
 }
 
 header .nav-panel {
@@ -504,8 +505,27 @@ header .nav-mega-feature {
   display: none;
 }
 
-header .nav-mega-overlay {
+/* page tint behind an open menu; the nav becomes a stacking context so the
+   tint sits under the (white) header rows and the open menu */
+header .nav-overlay {
   display: none;
+}
+
+header .nav-3m.is-account-open {
+  z-index: 100;
+}
+
+/* the account tint covers the page column only, as on www.3m.com */
+header .nav-3m.is-account-open .nav-overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: -1;
+  display: block;
+  width: var(--page-width, 100vw);
+  background: rgb(0 0 0 / 25%);
+  transform: translateX(-50%);
 }
 
 header .nav-locale-mobile {
@@ -561,10 +581,65 @@ header .nav-account .nav-icon-user {
   height: 22px;
 }
 
-header .nav-account .nav-icon-chevron-down {
+header .nav-account .nav-icon-chevron-down,
+header .nav-account .nav-icon-chevron-up {
   width: 14px;
   height: 14px;
   margin-left: 13.5px;
+}
+
+header .nav-account .nav-icon-chevron-up,
+header .nav-3m.is-account-open .nav-account .nav-icon-chevron-down {
+  display: none;
+}
+
+header .nav-3m.is-account-open .nav-account .nav-icon-chevron-up {
+  display: block;
+}
+
+/* ── account dropdown ── */
+header .nav-account-menu {
+  position: absolute;
+  top: 91px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: none;
+  background: #fff;
+  box-shadow: 0 7px 10px 0 #4b4b4b;
+  color: #4b4b4b;
+  font-size: 16px;
+  line-height: 20px;
+  text-align: center;
+}
+
+header .nav-3m.is-account-open .nav-account-menu {
+  display: block;
+}
+
+header .nav-account-primary,
+header .nav-account-secondary {
+  padding: 20px;
+}
+
+header .nav-account-secondary {
+  border-top: 1px solid #f4f4f4;
+}
+
+header .nav-account-primary a:any-link,
+header .nav-account-primary a:hover {
+  display: block;
+  width: 50%;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 3px;
+  color: #03c;
+  font-weight: 700;
+}
+
+header .nav-account-secondary a:any-link,
+header .nav-account-secondary a:hover {
+  color: #4b4b4b;
 }
 
 @media (width >= 768px) {
@@ -634,6 +709,12 @@ header .nav-account .nav-icon-chevron-down {
 
   header .nav-account .nav-icon-user {
     top: -2px;
+  }
+
+  header .nav-account-menu {
+    top: 113px;
+    left: auto;
+    width: 40%;
   }
 }
 
@@ -739,7 +820,6 @@ header .nav-account .nav-icon-chevron-down {
     height: 70px;
     padding-bottom: 6px;
     border-top: 1px solid #fff;
-    background: #fff;
   }
 
   header .nav-panel,
@@ -805,19 +885,28 @@ header .nav-account .nav-icon-chevron-down {
     top: -3px;
   }
 
-  header .nav-account .nav-icon-chevron-down {
+  header .nav-account .nav-icon-chevron-down,
+  header .nav-account .nav-icon-chevron-up {
     width: 11px;
     height: 11px;
   }
 
-  /* menu panels: full-width dropdown under the nav row. While one is open the
-     rest of the page is tinted; the nav forms a stacking context so the tint
-     sits under the (white) header rows and the panel */
+  header .nav-account-menu {
+    top: 126px;
+    width: 300px;
+  }
+
+  header .nav-account-secondary a:any-link {
+    text-decoration: underline;
+  }
+
+  /* menu panels: full-width dropdown under the nav row; while one is open the
+     whole window is tinted */
   header .nav-3m.is-mega-open {
     z-index: 100;
   }
 
-  header .nav-3m.is-mega-open .nav-mega-overlay {
+  header .nav-3m.is-mega-open .nav-overlay {
     position: fixed;
     inset: 0;
     z-index: -1;

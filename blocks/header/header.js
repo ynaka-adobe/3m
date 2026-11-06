@@ -5,7 +5,8 @@
  * panel and an account bar. Nav links come from a per-locale fragment
  * (/{locale}/nav) so labels and links are authored/translated in DA:
  * - section 1: list of primary nav links
- * - section 2: list of account link(s)
+ * - section 2: the account link; a nested list under it becomes the account
+ *   dropdown (first link is the primary "Sign In", the rest are secondary)
  * - further sections: one menu panel each, opened from the primary link whose
  *   label matches the section heading. A panel holds a list of links, an
  *   optional "view all" link paragraph, and an optional image + caption.
@@ -166,8 +167,24 @@ export default async function decorate(block) {
   const sections = frag ? [...frag.querySelectorAll(':scope > div')] : [];
   const linksIn = (section) => (section ? [...section.querySelectorAll('a')] : []);
   const navAnchors = linksIn(sections[0]);
-  const actionAnchors = linksIn(sections[1]);
+  const accountItems = sections[1] ? [...sections[1].querySelectorAll(':scope > ul > li')] : [];
   const megas = parseMegaSections(sections);
+
+  const accountItemHTML = (li, i) => {
+    const a = li.querySelector(':scope > a');
+    if (!a) return '';
+    const subLinks = [...li.querySelectorAll(':scope > ul a')];
+    const id = `nav-account-menu-${i}`;
+    const label = `${icon('user')}<span>${a.textContent.trim()}</span>${icon('chevron-down', 'nav-account-closed')}${icon('chevron-up', 'nav-account-opened')}`;
+    if (!subLinks.length) return `<a class="nav-account" href="${a.getAttribute('href')}">${label}</a>`;
+    const [primary, ...rest] = subLinks;
+    return `
+      <a class="nav-account" href="${a.getAttribute('href')}" aria-haspopup="true" aria-expanded="false" aria-controls="${id}">${label}</a>
+      <div class="nav-account-menu" id="${id}">
+        <div class="nav-account-primary"><a href="${primary.getAttribute('href')}">${primary.textContent.trim()}</a></div>
+        ${rest.map((r) => `<div class="nav-account-secondary"><a href="${r.getAttribute('href')}">${r.textContent.trim()}</a></div>`).join('')}
+      </div>`;
+  };
 
   const navItemHTML = (a, i) => {
     const label = a.textContent.trim();
@@ -204,10 +221,10 @@ export default async function decorate(block) {
         ${localeToggleHTML(locale, 'nav-locale-mobile')}
       </div>
       <div class="nav-actions">
-        ${actionAnchors.map((a) => `<a class="nav-account" href="${a.getAttribute('href')}">${icon('user')}<span>${a.textContent.trim()}</span>${icon('chevron-down')}</a>`).join('')}
+        ${accountItems.map(accountItemHTML).join('')}
       </div>
     </div>
-    <div class="nav-mega-overlay"></div>
+    <div class="nav-overlay"></div>
     ${localePopupHTML(locale)}`;
 
   // Language switcher popup (opened from the top-bar or mobile-panel toggle).
@@ -227,6 +244,7 @@ export default async function decorate(block) {
         return;
       }
       opener = toggle;
+      nav.dispatchEvent(new CustomEvent('nav:close-menus'));
       nav.classList.add('is-locale-open');
       toggle.setAttribute('aria-expanded', 'true');
       popup.querySelector('input:checked').focus();
@@ -277,10 +295,39 @@ export default async function decorate(block) {
   document.addEventListener('click', (e) => {
     if (window.matchMedia('(width >= 960px)').matches && !e.target.closest('.nav-links')) closeMegas();
   });
+
+  // Account dropdown (www.3m.com sign-in links), at every breakpoint.
+  const accountLink = nav.querySelector('.nav-account[aria-haspopup]');
+  const closeAccount = () => {
+    if (!accountLink) return;
+    nav.classList.remove('is-account-open');
+    accountLink.setAttribute('aria-expanded', 'false');
+  };
+  if (accountLink) {
+    accountLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (nav.classList.contains('is-account-open')) {
+        closeAccount();
+        return;
+      }
+      closeMegas();
+      nav.classList.add('is-account-open');
+      accountLink.setAttribute('aria-expanded', 'true');
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.nav-account, .nav-account-menu')) closeAccount();
+    });
+  }
+  nav.addEventListener('nav:close-menus', () => {
+    closeMegas();
+    closeAccount();
+  });
   nav.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const open = nav.querySelector('.nav-links > li.is-open > a');
+    const open = nav.querySelector('.nav-links > li.is-open > a')
+      || (nav.classList.contains('is-account-open') && accountLink);
     closeMegas();
+    closeAccount();
     if (open) open.focus();
   });
 
