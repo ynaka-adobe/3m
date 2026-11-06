@@ -1,4 +1,8 @@
 import { readBlockConfig } from '../../scripts/aem.js';
+import {
+  I18N, STUDIO_I18N, INFO_LINKS, SHARE_I18N,
+} from './strings.js';
+import { VEHICLES, DEFAULT_VEHICLE } from './vehicles.js';
 
 // three.js is loaded lazily from a CDN so it never weighs down first paint.
 const THREE_VER = '0.160.0';
@@ -6,16 +10,11 @@ const CDN = `https://esm.sh/three@${THREE_VER}`;
 const BASE = '/blocks/visualizer/assets';
 // Fusion webhook that receives a shared snapshot as multipart/form-data.
 const SHARE_ENDPOINT = 'https://hook.fusion.adobe.com/dntcs3kickjm3pnjq1rkcha10co8qjp5';
-const MODEL = `${BASE}/sportscar.glb`;
-const PPF_MODEL = `${BASE}/sportscar-ppf.glb`;
 
 // Material names inside the model (from the FBX): `carpaint` is the wrap
 // surface, `windowglass` is what window tint colors.
 const PAINT_MAT = 'carpaint';
 const GLASS_MAT = 'windowglass';
-
-// PPF overlay meshes = Scotchgard Pro Series coverage tiers.
-const PPF_MESH = { gold: 'sportscar_ppf_gold', platinum: 'sportscar_ppf_platinum' };
 
 const FINISH_HINT = {
   Gloss: 'High-shine mirror finish.',
@@ -34,76 +33,26 @@ const FINISH_HINT = {
 // Known content languages (DA folder names). The block picks the film sheet
 // for the page's language and localizes its own chrome strings below.
 const LANGS = ['en', 'de', 'jp', 'fr', 'ko', 'zh'];
-const I18N = {
-  en: {
-    all: 'All', coverage: 'Coverage', platinum: 'Full Car', gold: 'Full Front', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.', findInstaller: 'Find an installer',
-  },
-  de: {
-    all: 'Alle', coverage: 'Abdeckung', platinum: 'Komplettes Fahrzeug', gold: 'Volle Front', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.', findInstaller: 'Installateur finden',
-  },
-  jp: {
-    all: 'すべて', coverage: 'カバー範囲', platinum: 'フルボディ', gold: 'フロントフル', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。', findInstaller: '施工店を探す',
-  },
-};
-
-// Share dialog strings, from the original Restyling Studio's share texts.
-const SHARE_I18N = {
-  en: {
-    button: 'Share',
-    title: 'Share your design',
-    copy: 'Copy Link',
-    copied: 'Copied!',
-    download: 'Download',
-    blocked: 'Your browser blocked the share window. Copy the link instead.',
-    noMail: 'No email app opened? Send it with:',
-    copyMessage: 'Copy message',
-    email: 'Email',
-    subject: '3m.com/RestylingStudio',
-    hashtags: '#3MFilms #3MTint',
-    wrap: 'Check out my design! Wrapped with [wrap1]',
-    tint: 'Check out my design! Tinted with [tint]',
-    none: 'Check out the 3M Restyling Studio!',
-  },
-  de: {
-    button: 'Teilen',
-    title: 'Teilen Sie Ihr Design',
-    copy: 'Link kopieren',
-    copied: 'Kopiert!',
-    download: 'Herunterladen',
-    blocked: 'Ihr Browser hat das Fenster blockiert. Kopieren Sie stattdessen den Link.',
-    noMail: 'Kein E-Mail-Programm geöffnet? Senden mit:',
-    copyMessage: 'Nachricht kopieren',
-    email: 'E-Mail',
-    subject: '3m.de/RestylingStudio',
-    hashtags: '#3MFolie #3MAutofilm #3MTint',
-    wrap: 'Schau dir mein Design an! Foliert mit [wrap1]',
-    tint: 'Schau dir mein Design an! Getönt mit [tint]',
-    none: 'Schau Dir das 3M Restyling Studio an!',
-  },
-  jp: {
-    button: 'シェア',
-    title: 'デザインをシェアする',
-    copy: 'リンクをコピー',
-    copied: 'コピーされました！',
-    download: 'ダウンロード',
-    blocked: 'ブラウザがウィンドウをブロックしました。代わりにリンクをコピーしてください。',
-    noMail: 'メールアプリが開きませんか？こちらから送信：',
-    copyMessage: 'メッセージをコピー',
-    email: 'E-mail',
-    subject: '3mcompany.jp/RestylingStudio',
-    hashtags: '#3MFilms #3Mオートウィンドウフィルム',
-    wrap: 'MYデザインをチェック！[wrap1]',
-    tint: 'MYデザインをチェック！[tint]をウィンドウに使用',
-    none: '3M Restyling Studioをチェック！',
-  },
-};
 // campaign tracking the original appends to links shared on each network
 const SHARE_UTM = {
   facebook: 'tebg-csd-autoent-en_us-eng-autoenthusiast-osm-fb-na-checkoutmydesign-visitfromshare-ne19-na',
   twitter: 'tebg-csd-autoent-en_us-eng-autoenthusiast-osm-twt-na-checkoutmydesign-visitfromshare-ne19-na',
 };
-// a shared link reopens the design: #d/<film id>~<coverage>~<view>~<theme>
-const DESIGN_HASH = /^#d\/([^~]+)(?:~(platinum|gold))?(?:~(side|front|rear))?(?:~(light|dark))?$/;
+// Wrappable parts (per vehicle in vehicles.js). "Entire Vehicle" covers the six
+// body parts; accents are separate.
+const BODY_PARTS = ['front', 'hood', 'left', 'top', 'right', 'rear'];
+const WRAP_PRODUCTS = ['Wrap Film', 'Protection Wrap Film'];
+// short keys for design links
+const PART_CODES = {
+  front: 'f', hood: 'h', left: 'l', top: 't', right: 'r', rear: 'b', accents: 'a',
+};
+
+// A shared link reopens the design:
+// #d/<layers>~<coverage>~<view>~<theme>~<vehicle>, layers = "e:G247,a:G12,w:CRBLK35"
+// (e = entire vehicle, w = window tint, p = paint protection; vehicle = its
+// one-letter code). Older links carry a single film id instead of layers.
+const DESIGN_HASH = /^#d\/([^~]+)(?:~(silver|gold|platinum))?(?:~(side|front|rear))?(?:~(light|dark))?(?:~([A-Z]))?$/;
+const TIER_ORDER = ['silver', 'gold', 'platinum'];
 
 // Translated pages label the config rows in their own language; map those
 // labels to the block's keys (readBlockConfig drops non-latin labels).
@@ -140,6 +89,8 @@ const FINISH_PBR = {
 
 // Per-film material presets (the sheet's `preset` column, named after the
 // 3M Restyling Studio presets). These win over the finish defaults above.
+const DEFAULT_PBR = { metalness: 0.2, roughness: 0.4, clearcoat: 0.5 };
+
 const PRESET_PBR = {
   'gloss-modern': { metalness: 0.1, roughness: 0.1, clearcoat: 1.0 },
   'gloss-modern-metallic': { metalness: 0.75, roughness: 0.3, clearcoat: 1.0 },
@@ -416,8 +367,156 @@ async function loadThree() {
   };
 }
 
+// name → meshes: a named node and every mesh under it (a node whose mesh has
+// several materials loads as a group of meshes with suffixed names)
+function meshesByName(root, names) {
+  const wanted = new Set(names);
+  const found = {};
+  root.traverse((o) => {
+    if (!wanted.has(o.name)) return;
+    o.traverse((m) => {
+      if (m.isMesh) (found[o.name] ||= []).push(m);
+    });
+  });
+  return found;
+}
+
+// Model materials the original studio draws with the vehicle's color map
+// (baked trim, chrome, tyre and rim detail). Materials listed in KEEP_LOOK
+// (paint, glass, lights, interior) keep their own look.
+const KEEP_LOOK = ['carpaint', 'windowglass', 'headlightglass', 'lights', 'lightsred',
+  'lightsorange', 'interior', 'sunroof', 'blackmapless', 'blackinterior'];
+
+function colorMapped(THREE, m, map) {
+  const name = (m.name || '').toLowerCase();
+  if (name === 'black') return new THREE.MeshBasicMaterial({ name: m.name, color: 0xffffff, map });
+  if (name === 'tire') return new THREE.MeshBasicMaterial({ name: m.name, color: 0xcccccc, map });
+  if (name === 'chrome') {
+    return new THREE.MeshStandardMaterial({
+      name: m.name, map, metalness: 1, roughness: 0.31,
+    });
+  }
+  if (['redglass', 'redglass.gt', 'clearglass', 'orangeglass'].includes(name)) {
+    m.map = map;
+    m.transparent = true;
+    m.needsUpdate = true;
+    return m;
+  }
+  return new THREE.MeshStandardMaterial({ name: m.name, map });
+}
+
+// Prepare one vehicle: wrappable materials per part, tint glass and the
+// paint protection overlay with its coverage tiers.
+async function prepareVehicle(THREE, loader, vehicle) {
+  const glasses = [];
+  // part → [{ mat, base }]: a physical material per wrappable mesh, plus the
+  // look it has without a wrap
+  const partMats = Object.fromEntries(Object.keys(vehicle.parts).map((p) => [p, []]));
+  const [gltf, colorMap] = await Promise.all([
+    loader.loadAsync(`${BASE}/${vehicle.model}`),
+    new THREE.TextureLoader().loadAsync(`${BASE}/colormaps/${vehicle.colorMap}`).catch(() => null),
+  ]);
+  const model = gltf.scene;
+  if (colorMap) {
+    // glTF texture coordinates: no vertical flip
+    colorMap.flipY = false;
+    colorMap.colorSpace = THREE.SRGBColorSpace;
+  }
+  const mapped = new Map();
+  const partOfMesh = new Map();
+  Object.entries(vehicle.parts).forEach(([part, names]) => {
+    Object.values(meshesByName(model, names)).flat().forEach((m) => partOfMesh.set(m, part));
+  });
+  model.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    o.castShadow = true;
+    const part = partOfMesh.get(o);
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    if (part) {
+      const swapped = mats.map((m) => {
+        const paint = m.name === PAINT_MAT;
+        // trim parts (accents, sills) get their unwrapped look from the color map
+        const map = !paint && colorMap ? colorMap : null;
+        const base = {
+          color: map ? new THREE.Color(0xffffff) : m.color.clone(),
+          map,
+          metalness: paint ? 0 : (m.metalness ?? 0),
+          roughness: paint ? 0.1 : (m.roughness ?? 0.5),
+          clearcoat: paint ? 1 : 0,
+        };
+        const mat = new THREE.MeshPhysicalMaterial({
+          color: base.color.clone(),
+          map,
+          metalness: base.metalness,
+          roughness: base.roughness,
+          clearcoat: base.clearcoat,
+          clearcoatRoughness: 0.06,
+        });
+        partMats[part].push({ mat, base });
+        return mat;
+      });
+      o.material = Array.isArray(o.material) ? swapped : swapped[0];
+      return;
+    }
+    mats.forEach((m) => {
+      if (m.name === GLASS_MAT) {
+        m.transparent = true;
+        m.opacity = 0.35;
+        glasses.push(m);
+      }
+    });
+    if (colorMap) {
+      const swapped = mats.map((m) => {
+        if (KEEP_LOOK.includes((m.name || '').toLowerCase())) return m;
+        if (!mapped.has(m)) mapped.set(m, colorMapped(THREE, m, colorMap));
+        return mapped.get(m);
+      });
+      o.material = Array.isArray(o.material) ? swapped : swapped[0];
+    }
+  });
+
+  // PPF overlay: parented under the car so it inherits the same transform.
+  let ppfMeshes = {};
+  const ppfMats = new Set();
+  try {
+    const ppf = (await loader.loadAsync(`${BASE}/${vehicle.ppf}`)).scene;
+    ppf.traverse((o) => {
+      if (!o.isMesh) return;
+      o.visible = false;
+      if (o.material) {
+        o.material.transparent = true;
+        ppfMats.add(o.material);
+      }
+    });
+    ppfMeshes = meshesByName(ppf, Object.values(vehicle.ppfTiers).flat());
+    model.add(ppf);
+  } catch (e) {
+    // the overlay is optional: paint protection then only changes the sheen
+  }
+  // coverage tiers this car offers (cumulative mesh lists)
+  const tiers = Object.fromEntries(Object.entries(vehicle.ppfTiers)
+    .map(([tier, names]) => [tier, names.flatMap((n) => ppfMeshes[n] || [])])
+    .filter(([, meshes]) => meshes.length));
+
+  // center the car; the floor goes to its base
+  const box = new THREE.Box3().setFromObject(model);
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+  return {
+    vehicle,
+    model,
+    glasses,
+    partMats,
+    ppfMeshes: Object.values(ppfMeshes).flat(),
+    ppfMats: [...ppfMats],
+    tiers,
+    floorY: box.min.y - center.y,
+    radius: box.getSize(new THREE.Vector3()).length() / 2,
+  };
+}
+
 // Build the 3D scene and return a small API the UI drives.
-async function initStage(stage, modelUrl, ppfUrl) {
+async function initStage(stage) {
   const {
     THREE, GLTFLoader, OrbitControls, RoomEnvironment,
   } = await loadThree();
@@ -442,8 +541,6 @@ async function initStage(stage, modelUrl, ppfUrl) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.enablePan = false;
-  controls.minDistance = 3;
-  controls.maxDistance = 9;
   controls.maxPolarAngle = Math.PI / 2.05;
 
   const hemi = new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.6);
@@ -470,66 +567,12 @@ async function initStage(stage, modelUrl, ppfUrl) {
   floor.receiveShadow = true;
   scene.add(floor);
 
-  const paints = [];
-  const glasses = [];
-
+  // Models are quantized (KHR_mesh_quantization), which three.js reads natively:
+  // decoders that need WebAssembly are blocked by the site's CSP.
   const loader = new GLTFLoader();
-  const gltf = await loader.loadAsync(modelUrl);
-  const model = gltf.scene;
-
-  model.traverse((o) => {
-    if (!o.isMesh || !o.material) return;
-    o.castShadow = true;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    mats.forEach((m) => {
-      if (m.name === PAINT_MAT) {
-        const up = new THREE.MeshPhysicalMaterial({
-          color: m.color, metalness: 0, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.06,
-        });
-        o.material = Array.isArray(o.material)
-          ? o.material.map((x) => (x.name === PAINT_MAT ? up : x)) : up;
-        paints.push(up);
-      } else if (m.name === GLASS_MAT) {
-        m.transparent = true;
-        m.opacity = 0.35;
-        glasses.push(m);
-      }
-    });
-  });
-
-  // PPF overlay: parented under the car so it inherits the same transform.
-  const ppfMeshes = {};
-  let ppfMat = null;
-  if (ppfUrl) {
-    try {
-      const ppfGltf = await loader.loadAsync(ppfUrl);
-      ppfGltf.scene.traverse((o) => {
-        if (!o.isMesh) return;
-        o.visible = false;
-        if (o.material) {
-          o.material.transparent = true;
-          ppfMat = o.material;
-        }
-        if (o.name === PPF_MESH.gold) ppfMeshes.gold = o;
-        if (o.name === PPF_MESH.platinum) ppfMeshes.platinum = o;
-      });
-      model.add(ppfGltf.scene);
-    } catch (e) {
-      // PPF overlay is optional; fall back to roughness-only PPF below.
-    }
-  }
-
-  // center + frame the car, and drop the floor to the car's base
-  const box = new THREE.Box3().setFromObject(model);
-  const center = box.getCenter(new THREE.Vector3());
-  model.position.sub(center);
-  scene.add(model);
-  floor.position.y = box.min.y - center.y;
-  const radius = box.getSize(new THREE.Vector3()).length() / 2;
-  const dist = radius / Math.sin((camera.fov * Math.PI) / 360);
-  camera.position.setLength(dist);
-  controls.target.set(0, 0, 0);
-  controls.update();
+  const cache = {};
+  let car = null;
+  let dist = 6;
 
   function resize() {
     const w = stage.clientWidth;
@@ -542,8 +585,26 @@ async function initStage(stage, modelUrl, ppfUrl) {
   resize();
   new ResizeObserver(resize).observe(stage);
 
+  // camera flights: ease the direction and distance toward a target position
+  let flight = null;
+  controls.addEventListener('start', () => { flight = null; });
+  function flyTo(target, ms = 700) {
+    flight = {
+      from: camera.position.clone(), to: target, t0: performance.now(), ms,
+    };
+  }
+
   (function animate() {
     requestAnimationFrame(animate);
+    if (flight) {
+      const k = Math.min(1, (performance.now() - flight.t0) / flight.ms);
+      const e = k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
+      const dir = flight.from.clone().normalize()
+        .lerp(flight.to.clone().normalize(), e).normalize();
+      const len = flight.from.length() + (flight.to.length() - flight.from.length()) * e;
+      camera.position.copy(dir.multiplyScalar(len));
+      if (k === 1) flight = null;
+    }
     controls.update();
     renderer.render(scene, camera);
   }());
@@ -552,9 +613,10 @@ async function initStage(stage, modelUrl, ppfUrl) {
   let ppfActive = false;
 
   function showPPF() {
-    Object.entries(ppfMeshes).forEach(([tier, mesh]) => {
-      mesh.visible = ppfActive && tier === coverage;
-    });
+    if (!car) return;
+    car.ppfMeshes.forEach((m) => { m.visible = false; });
+    const tier = car.tiers[coverage] ? coverage : Object.keys(car.tiers).pop();
+    if (ppfActive && tier) car.tiers[tier].forEach((m) => { m.visible = true; });
   }
 
   function setTheme(mode) {
@@ -569,8 +631,19 @@ async function initStage(stage, modelUrl, ppfUrl) {
     renderer.toneMappingExposure = t.exposure;
   }
 
+  // a position in the original studio's units → ours, keeping its direction
+  // and its distance relative to the car's start position
+  function fromOriginal(vec) {
+    const v = new THREE.Vector3(...vec);
+    const scale = v.length() / new THREE.Vector3(...car.vehicle.start).length();
+    return v.normalize().multiplyScalar(THREE.MathUtils.clamp(
+      dist * scale,
+      controls.minDistance,
+      controls.maxDistance,
+    ));
+  }
+
   return {
-    hasPPF: Object.keys(ppfMeshes).length > 0,
     // Capture the current view as a base64 data URL. WebGL clears the drawing
     // buffer after each frame, so force a fresh render and read it back in the
     // same call stack (no preserveDrawingBuffer needed).
@@ -579,54 +652,184 @@ async function initStage(stage, modelUrl, ppfUrl) {
       return renderer.domElement.toDataURL(type, quality);
     },
     setTheme,
-    setFilm(film) {
-      if (film.product === 'Window Tint') {
-        ppfActive = false;
-        showPPF();
-        // darker tints carry a higher opacity in the sheet
-        const opacity = parseFloat(film.opacity) || 0.55;
-        glasses.forEach((g) => { g.color.set(film.color); g.opacity = opacity; });
-        return;
-      }
-      glasses.forEach((g) => { g.color.set(0x0d1a17); g.opacity = 0.35; });
-      if (film.product === 'Paint Protection Film') {
-        const matte = film.finish === 'Matte';
-        if (ppfMat) {
-          // clear glossy film, or a translucent matte film over the paint
-          ppfMat.color.set(matte ? 0xd7d7d7 : 0xffffff);
-          ppfMat.opacity = matte ? 0.22 : 0.1;
-          ppfMat.roughness = matte ? 0.95 : 0.04;
-          ppfMat.metalness = 0;
-          ppfMat.needsUpdate = true;
-        }
-        // matte PPF also flattens the paint sheen underneath
-        paints.forEach((p) => { p.roughness = matte ? 0.8 : 0.1; p.clearcoat = matte ? 0.15 : 1; });
-        ppfActive = true;
-        showPPF();
-        return;
-      }
-      ppfActive = false;
-      showPPF();
-      const pbr = PRESET_PBR[film.preset] || FINISH_PBR[film.finish]
-        || { metalness: 0.2, roughness: 0.4, clearcoat: 0.5 };
-      paints.forEach((p) => {
-        p.color.set(film.color);
-        p.metalness = pbr.metalness;
-        p.roughness = pbr.roughness;
-        p.clearcoat = pbr.clearcoat;
-        p.needsUpdate = true;
-      });
-    },
-    setCoverage(tier) {
-      if (ppfMeshes[tier]) coverage = tier;
-      showPPF();
-    },
-    setView(name) {
-      const v = VIEWS[name] || VIEWS.side;
-      camera.position.set(...v).setLength(dist);
+    /**
+     * Show a vehicle (loaded once, then cached) and frame it.
+     * @returns {Promise<string[]>} the paint protection tiers it offers
+     */
+    async loadVehicle(vehicle) {
+      if (!cache[vehicle.key]) cache[vehicle.key] = prepareVehicle(THREE, loader, vehicle);
+      const next = await cache[vehicle.key];
+      if (car) scene.remove(car.model);
+      car = next;
+      scene.add(car.model);
+      floor.position.y = car.floorY;
+      dist = car.radius / Math.sin((camera.fov * Math.PI) / 360);
+      controls.minDistance = dist * 0.55;
+      controls.maxDistance = dist * 1.6;
+      camera.position.setLength(dist);
+      controls.target.set(0, 0, 0);
       controls.update();
+      showPPF();
+      return Object.keys(car.tiers);
+    },
+    /**
+     * Show a whole design: wraps per part, window tint and paint protection.
+     * @param {{ parts: object, tint: object, ppf: object, coverage: string }} d
+     */
+    applyDesign(d) {
+      if (!car) return;
+      const matte = d.ppf && d.ppf.finish === 'Matte';
+      Object.entries(car.partMats).forEach(([part, list]) => {
+        const film = d.parts[part];
+        const look = film
+          ? (PRESET_PBR[film.preset] || FINISH_PBR[film.finish] || DEFAULT_PBR)
+          : null;
+        list.forEach(({ mat, base }) => {
+          if (film) mat.color.set(film.color);
+          else mat.color.copy(base.color);
+          mat.map = film ? null : base.map;
+          const pbr = look || base;
+          mat.metalness = pbr.metalness;
+          // matte PPF also flattens the sheen of whatever is underneath
+          mat.roughness = matte ? Math.max(pbr.roughness, 0.8) : pbr.roughness;
+          mat.clearcoat = matte ? Math.min(pbr.clearcoat, 0.15) : pbr.clearcoat;
+          mat.needsUpdate = true;
+        });
+      });
+      if (d.tint) {
+        // darker tints carry a higher opacity in the sheet
+        const opacity = parseFloat(d.tint.opacity) || 0.55;
+        car.glasses.forEach((g) => { g.color.set(d.tint.color); g.opacity = opacity; });
+      } else {
+        car.glasses.forEach((g) => { g.color.set(0x0d1a17); g.opacity = 0.35; });
+      }
+      if (d.ppf) {
+        // clear glossy film, or a translucent matte film over the paint
+        car.ppfMats.forEach((m) => {
+          m.color.set(matte ? 0xd7d7d7 : 0xffffff);
+          m.opacity = matte ? 0.22 : 0.1;
+          m.roughness = matte ? 0.95 : 0.04;
+          m.metalness = 0;
+          m.needsUpdate = true;
+        });
+      }
+      ppfActive = !!d.ppf;
+      coverage = d.coverage;
+      showPPF();
+    },
+    setView(name, animate = true) {
+      const target = new THREE.Vector3(...(VIEWS[name] || VIEWS.side)).setLength(dist);
+      if (animate) flyTo(target);
+      else {
+        camera.position.copy(target);
+        controls.update();
+      }
+    },
+    // turn to a part the way the original studio does
+    focusPart(part) {
+      const cam = car && car.vehicle.cams[part];
+      if (cam) flyTo(fromOriginal(cam));
     },
   };
+}
+
+// Small yes/no dialog (styled like the share dialog); resolves true on confirm.
+function confirmDialog({
+  title, text, confirm, cancel,
+}) {
+  return new Promise((resolve) => {
+    const overlay = el('div', 'rs-share-popup');
+    const dialog = el('div', 'rs-share-dialog rs-confirm');
+    dialog.setAttribute('role', 'alertdialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', title);
+    dialog.append(el('h3', 'rs-share-heading', title), el('p', 'rs-confirm-text', text));
+    const actions = el('div', 'rs-share-actions');
+    const no = el('button', 'rs-share-copy', cancel);
+    const yes = el('button', 'rs-share-download', confirm);
+    no.type = 'button';
+    yes.type = 'button';
+    actions.append(no, yes);
+    dialog.append(actions);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    const done = (answer) => {
+      overlay.remove();
+      // eslint-disable-next-line no-use-before-define
+      document.removeEventListener('keydown', onKey);
+      resolve(answer);
+    };
+    function onKey(e) { if (e.key === 'Escape') done(false); }
+    document.addEventListener('keydown', onKey);
+    no.onclick = () => done(false);
+    yes.onclick = () => done(true);
+    overlay.onclick = (e) => { if (e.target === overlay) done(false); };
+    yes.focus();
+  });
+}
+
+function emptyDesign(coverage = 'platinum') {
+  return {
+    parts: {}, tint: null, ppf: null, coverage,
+  };
+}
+
+// the film on every body part, if they all share one
+function entireFilm(d) {
+  const body = BODY_PARTS.map((p) => d.parts[p]);
+  return body.every((f) => f && f === body[0]) ? body[0] : null;
+}
+
+// put a film on the design: wraps go to a part (or every body part)
+function placeFilm(d, film, target) {
+  if (WRAP_PRODUCTS.includes(film.product)) {
+    if (target === 'all') BODY_PARTS.forEach((p) => { d.parts[p] = film; });
+    else d.parts[target] = film;
+  } else if (film.product === 'Window Tint') d.tint = film;
+  else d.ppf = film;
+}
+
+function encodeDesign(d) {
+  const out = [];
+  const add = (key, film) => out.push(`${key}:${encodeURIComponent(film.id)}`);
+  const entire = entireFilm(d);
+  if (entire) add('e', entire);
+  else BODY_PARTS.forEach((p) => { if (d.parts[p]) add(PART_CODES[p], d.parts[p]); });
+  if (d.parts.accents) add('a', d.parts.accents);
+  if (d.tint) add('w', d.tint);
+  if (d.ppf) add('p', d.ppf);
+  return out.join(',') || '-';
+}
+
+function decodeDesign(code, byId) {
+  const d = emptyDesign();
+  if (!code.includes(':')) {
+    // older links: one film id
+    if (byId[code]) placeFilm(d, byId[code], 'all');
+    return d;
+  }
+  const partOf = Object.fromEntries(Object.entries(PART_CODES).map(([p, c]) => [c, p]));
+  code.split(',').forEach((pair) => {
+    const [key, id] = pair.split(':');
+    const film = byId[id];
+    if (!film) return;
+    if (key === 'e') BODY_PARTS.forEach((p) => { d.parts[p] = film; });
+    else if (key === 'w') d.tint = film;
+    else if (key === 'p') d.ppf = film;
+    else if (partOf[key]) d.parts[partOf[key]] = film;
+  });
+  return d;
+}
+
+// the original's share sentence: one, two or many wraps, plus the tint
+function designText(d, str) {
+  const names = [...new Set([...BODY_PARTS, 'accents'].map((p) => d.parts[p]).filter(Boolean)
+    .map((f) => f.name))];
+  const tint = d.tint && d.tint.name;
+  if (!names.length) return tint ? str.tintOnly.replace('[tint]', tint) : str.none;
+  const template = [str.single, str.two][names.length - 1] || str.many;
+  const text = template.replace('[wrap1]', names[0]).replace('[wrap2]', names[1]);
+  return tint ? `${text} ${str.tintSuffix.replace('[tint]', tint)}` : text;
 }
 
 export default async function decorate(block) {
@@ -634,6 +837,8 @@ export default async function decorate(block) {
   const seg = (window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
   const lang = LANGS.includes(seg) ? seg : 'en';
   const t = I18N[lang] || I18N.en;
+  const ui = STUDIO_I18N[lang] || STUDIO_I18N.en;
+  const shareStr = SHARE_I18N[lang] || SHARE_I18N.en;
   const langSheet = `/${lang}/consumer/films.json`;
   // A market catalogue shipped with the code (/films-{lang}.json) wins, then
   // the language's authored sheet; translated pages often keep the master's
@@ -643,8 +848,6 @@ export default async function decorate(block) {
     cfg.source || langSheet, '/films.json',
   ].filter(Boolean))];
   const title = cfg.title || '3M Restyling Studio Visualizer';
-  const modelUrl = cfg.model || MODEL;
-  const ppfUrl = cfg.ppf || PPF_MODEL;
 
   block.textContent = '';
   block.classList.add('rs-visualizer');
@@ -674,26 +877,59 @@ export default async function decorate(block) {
   const panel = el('aside', 'rs-panel-ui');
   panel.append(el('h2', 'rs-title', title));
   const productTabs = el('div', 'rs-tabs');
+  const partRow = el('div', 'rs-parts');
   const finishRow = el('div', 'rs-filters');
   const coverageRow = el('div', 'rs-coverage');
   const grid = el('div', 'rs-grid');
   const detail = el('div', 'rs-detail');
+  const designBox = el('div', 'rs-design');
+  const actionRow = el('div', 'rs-actions');
   // opens the locator as a full-screen takeover (shared with the locator block)
   const cta = el('button', 'rs-cta button', t.findInstaller);
   cta.type = 'button';
-  cta.onclick = async () => {
+  const openLocator = async () => {
     const { openLocatorModal } = await import('../locator/locator.js');
     openLocatorModal({ source: cfg.installers, title: t.findInstaller });
   };
+  cta.onclick = openLocator;
   // captures the current 3D view, posts it to the Fusion share webhook and
   // opens the share dialog with a link that reopens this design
-  const shareStr = SHARE_I18N[lang] || SHARE_I18N.en;
   const share = el('button', 'rs-share button', shareStr.button);
   share.type = 'button';
-  panel.append(productTabs, finishRow, coverageRow, grid, detail, cta, share);
+  const done = el('button', 'rs-done button', ui.done);
+  done.type = 'button';
+  actionRow.append(cta, share, done);
+  // product information pages, as linked from the original studio
+  const infoRow = el('div', 'rs-info');
+  infoRow.append(el('span', 'rs-info-label', ui.moreInfo));
+  (INFO_LINKS[lang] || INFO_LINKS.en).forEach(([label, href]) => {
+    const b = el('button', 'rs-info-link', `${label} ↗`);
+    b.type = 'button';
+    b.onclick = () => {
+      const win = window.open(href, '_blank');
+      if (win) win.opener = null;
+    };
+    infoRow.append(b);
+  });
+  panel.append(
+    productTabs,
+    partRow,
+    finishRow,
+    coverageRow,
+    grid,
+    detail,
+    designBox,
+    actionRow,
+    infoRow,
+  );
+
+  // vehicle picker ("Change Vehicle"), the original's five cars
+  const vehicleBar = el('div', 'rs-vehicles');
+  vehicleBar.setAttribute('role', 'group');
+  vehicleBar.setAttribute('aria-label', ui.changeVehicle);
 
   const stageWrap = el('div', 'rs-stagewrap');
-  stageWrap.append(stage, viewbar, caption);
+  stageWrap.append(stage, viewbar, caption, vehicleBar);
   block.append(stageWrap, panel);
 
   // load the language sheet; fall back to the root editing master
@@ -718,40 +954,47 @@ export default async function decorate(block) {
   }
 
   let viewer = null;
+  const byId = Object.fromEntries(films.map((f) => [f.id, f]));
   const products = [...new Set(films.map((f) => f.product))];
   let activeProduct = products[0];
   let activeFinish = 'All';
-  let activeCoverage = 'platinum';
   let activeView = 'side';
-  let selected = null;
+  // the part the wrap tabs apply to: 'all' (entire vehicle) or a PARTS key
+  let target = 'all';
+  let design = emptyDesign();
+  let vehicle = VEHICLES.find((v) => v.key === DEFAULT_VEHICLE);
+  // paint protection coverage tiers the current vehicle offers
+  let tiers = [];
+  const canHover = window.matchMedia('(hover: hover)').matches;
 
-  // a shared design link (#d/…) preselects its film, coverage, view and theme
-  let { hash } = window.location;
-  try {
-    // apps that re-encode shared links turn "~" into "%7E"
-    hash = decodeURIComponent(hash);
-  } catch (e) {
-    // malformed escape: match the raw hash
-  }
-  const shared = hash.match(DESIGN_HASH);
-  const sharedFilm = shared && films.find((f) => f.id === shared[1]);
-  if (sharedFilm) {
-    selected = sharedFilm;
-    activeProduct = sharedFilm.product;
-    activeCoverage = shared[2] || activeCoverage;
+  // a shared design link (#d/…) restores its layers, coverage, view and theme
+  function readSharedLink() {
+    let { hash } = window.location;
+    try {
+      // apps that re-encode shared links turn "~" into "%7E"
+      hash = decodeURIComponent(hash);
+    } catch (e) {
+      // malformed escape: match the raw hash
+    }
+    const shared = hash.match(DESIGN_HASH);
+    if (!shared) return false;
+    design = decodeDesign(shared[1], byId);
+    design.coverage = shared[2] || design.coverage;
     activeView = shared[3] || activeView;
     activeTheme = shared[4] || activeTheme;
+    vehicle = VEHICLES.find((v) => v.code === shared[5]) || vehicle;
+    const first = [...BODY_PARTS, 'accents'].map((p) => design.parts[p]).find(Boolean)
+      || design.tint || design.ppf;
+    if (first) activeProduct = first.product;
+    target = 'all';
+    return true;
   }
+  readSharedLink();
 
   function designUrl() {
-    const code = [encodeURIComponent(selected.id), activeCoverage, activeView, activeTheme].join('~');
+    const code = [encodeDesign(design), design.coverage, activeView, activeTheme, vehicle.code]
+      .join('~');
     return `${window.location.origin}${window.location.pathname}#d/${code}`;
-  }
-
-  function shareText() {
-    if (selected.product === 'Window Tint') return shareStr.tint.replace('[tint]', selected.name);
-    if (selected.product === 'Paint Protection Film') return shareStr.none;
-    return shareStr.wrap.replace('[wrap1]', selected.name);
   }
 
   function finishesFor(product) {
@@ -768,6 +1011,138 @@ export default async function decorate(block) {
     const f = films.find((x) => x.finish === finish);
     return (f && f.finishLabel) || finish;
   }
+  const isWrapTab = () => WRAP_PRODUCTS.includes(activeProduct);
+
+  // the film the current tab (and part) holds in the design
+  function assigned() {
+    if (isWrapTab()) {
+      const film = target === 'all' ? entireFilm(design) : design.parts[target];
+      return film && film.product === activeProduct ? film : null;
+    }
+    if (activeProduct === 'Window Tint') return design.tint;
+    if (activeProduct === 'Paint Protection Film') return design.ppf;
+    return null;
+  }
+
+  function showDetail(film) {
+    detail.textContent = '';
+    const sw = el('div', 'rs-swatch-lg');
+    const text = el('div');
+    if (film) {
+      sw.style.background = swatchBg(film);
+      text.append(
+        el('strong', '', film.name),
+        el('span', 'rs-sku', film.code || film.id),
+        el('p', '', film.hint || FINISH_HINT[film.finish] || ''),
+      );
+    } else {
+      sw.classList.add('is-empty');
+      text.append(el('strong', '', ui.noSelection), el('p', '', ui.preview));
+    }
+    detail.append(sw, text);
+  }
+
+  function markActive() {
+    const film = assigned();
+    grid.querySelectorAll('.rs-swatch').forEach((sEl) => {
+      sEl.classList.toggle('is-active', !!film && sEl.dataset.id === film.id);
+    });
+  }
+
+  function partLabel(part) {
+    return part === 'all' ? ui.entire : ui.parts[part];
+  }
+
+  // "Your Design": one row per layer, each removable, plus Clear All
+  function renderDesign(box = designBox, editable = true) {
+    box.textContent = '';
+    const head = el('div', 'rs-design-head');
+    head.append(el('h3', 'rs-design-title', ui.yourDesign));
+    const rows = [];
+    const entire = entireFilm(design);
+    if (entire) rows.push(['all', ui.entire, entire]);
+    else {
+      BODY_PARTS.filter((p) => design.parts[p])
+        .forEach((p) => rows.push([p, ui.parts[p], design.parts[p]]));
+    }
+    if (design.parts.accents) rows.push(['accents', ui.parts.accents, design.parts.accents]);
+    if (design.tint) rows.push(['tint', productLabel('Window Tint'), design.tint]);
+    if (design.ppf) {
+      const tier = t[design.coverage] || t.platinum;
+      rows.push(['ppf', `${productLabel('Paint Protection Film')} · ${tier}`, design.ppf]);
+    }
+    if (editable && rows.length) {
+      const clear = el('button', 'rs-design-clear', ui.clearAll);
+      clear.type = 'button';
+      clear.onclick = () => {
+        design = emptyDesign(design.coverage);
+        // eslint-disable-next-line no-use-before-define
+        refresh();
+      };
+      head.append(clear);
+    }
+    box.append(head);
+    const list = el('ul', 'rs-design-list');
+    if (!rows.length) list.append(el('li', 'rs-design-empty', ui.noSelections));
+    rows.forEach(([key, label, film]) => {
+      const li = el('li', 'rs-design-row');
+      const sw = el('span', 'rs-design-swatch');
+      sw.style.background = swatchBg(film);
+      const txt = el('span', 'rs-design-text');
+      txt.append(el('span', 'rs-design-part', label), el('span', 'rs-design-film', film.name));
+      li.append(sw, txt);
+      if (editable) {
+        const x = el('button', 'rs-design-remove', '×');
+        x.type = 'button';
+        x.setAttribute('aria-label', `${ui.remove}: ${label}`);
+        x.onclick = () => {
+          if (key === 'all') BODY_PARTS.forEach((p) => { delete design.parts[p]; });
+          else if (key === 'tint') design.tint = null;
+          else if (key === 'ppf') design.ppf = null;
+          else delete design.parts[key];
+          // eslint-disable-next-line no-use-before-define
+          refresh();
+        };
+        li.append(x);
+      }
+      list.append(li);
+    });
+    box.append(list);
+  }
+
+  function refresh() {
+    if (viewer) viewer.applyDesign(design);
+    markActive();
+    showDetail(assigned());
+    renderDesign();
+  }
+
+  // hover preview: show a film on the car without committing it
+  function preview(film) {
+    const temp = { ...design, parts: { ...design.parts } };
+    placeFilm(temp, film, target);
+    if (viewer) viewer.applyDesign(temp);
+    showDetail(film);
+  }
+
+  async function choose(film) {
+    if (isWrapTab() && target === 'all') {
+      // replacing different wraps on several parts needs a confirmation
+      const current = new Set(BODY_PARTS.map((p) => design.parts[p]).filter(Boolean));
+      if (current.size > 1 || (current.size === 1 && !entireFilm(design))) {
+        const ok = await confirmDialog({
+          title: ui.confirmTitle, text: ui.confirmText, confirm: ui.confirm, cancel: ui.cancel,
+        });
+        if (!ok) {
+          refresh();
+          return;
+        }
+      }
+    }
+    placeFilm(design, film, target);
+    caption.textContent = [productLabel(film.product), film.series].filter(Boolean).join(' · ');
+    refresh();
+  }
 
   function renderTabs() {
     productTabs.textContent = '';
@@ -777,6 +1152,28 @@ export default async function decorate(block) {
       // eslint-disable-next-line no-use-before-define
       b.onclick = () => { activeProduct = p; activeFinish = 'All'; renderAll(); };
       productTabs.append(b);
+    });
+  }
+
+  function renderParts() {
+    partRow.textContent = '';
+    partRow.style.display = isWrapTab() ? '' : 'none';
+    if (!isWrapTab()) return;
+    ['all', 'front', 'hood', 'left', 'top', 'right', 'rear', 'accents'].forEach((p) => {
+      const b = el('button', `rs-part${p === target ? ' is-active' : ''}`, partLabel(p));
+      b.type = 'button';
+      b.onclick = () => {
+        target = p;
+        renderParts();
+        markActive();
+        showDetail(assigned());
+        // turn the car to the chosen part
+        if (viewer) {
+          if (p === 'all') viewer.setView(activeView);
+          else viewer.focusPart(p);
+        }
+      };
+      partRow.append(b);
     });
   }
 
@@ -794,63 +1191,92 @@ export default async function decorate(block) {
     });
   }
 
-  function select(film) {
-    selected = film;
-    if (viewer) viewer.setFilm(film);
-    caption.textContent = [productLabel(film.product), film.series].filter(Boolean).join(' · ');
-    detail.innerHTML = `
-      <div class="rs-swatch-lg"></div>
-      <div>
-        <strong>${film.name}</strong>
-        <span class="rs-sku">${film.code || film.id}</span>
-        <p>${film.hint || FINISH_HINT[film.finish] || ''}</p>
-      </div>`;
-    detail.querySelector('.rs-swatch-lg').style.background = swatchBg(film);
-    grid.querySelectorAll('.rs-swatch').forEach((s) => {
-      s.classList.toggle('is-active', s.dataset.id === film.id);
-    });
-  }
-
   function renderCoverage() {
     coverageRow.textContent = '';
-    const isPPF = activeProduct === 'Paint Protection Film' && viewer && viewer.hasPPF;
+    const isPPF = activeProduct === 'Paint Protection Film' && tiers.length;
     coverageRow.style.display = isPPF ? '' : 'none';
     if (!isPPF) return;
     coverageRow.append(el('span', 'rs-coverage-label', t.coverage));
-    [['platinum', t.platinum], ['gold', t.gold]].forEach(([tier, label]) => {
-      const b = el('button', `rs-chip${tier === activeCoverage ? ' is-active' : ''}`, label);
+    TIER_ORDER.filter((tier) => tiers.includes(tier)).forEach((tier) => {
+      const label = t[tier];
+      const b = el('button', `rs-chip${tier === design.coverage ? ' is-active' : ''}`, label);
       b.type = 'button';
-      b.onclick = () => { activeCoverage = tier; viewer.setCoverage(tier); renderCoverage(); };
+      b.onclick = () => { design.coverage = tier; renderCoverage(); refresh(); };
       coverageRow.append(b);
     });
   }
 
   function renderGrid() {
+    renderParts();
     renderFinishes();
     renderCoverage();
     grid.textContent = '';
     const list = films.filter((f) => f.product === activeProduct
       && (activeFinish === 'All' || f.finish === activeFinish));
     list.forEach((f) => {
-      const s = el('button', 'rs-swatch');
-      s.type = 'button';
-      s.dataset.id = f.id;
-      s.title = `${f.name} (${f.code || f.id})`;
-      s.style.background = swatchBg(f);
-      s.setAttribute('aria-label', f.name);
-      s.onclick = () => select(f);
-      grid.append(s);
+      const sEl = el('button', 'rs-swatch');
+      sEl.type = 'button';
+      sEl.dataset.id = f.id;
+      sEl.title = `${f.name} (${f.code || f.id})`;
+      sEl.style.background = swatchBg(f);
+      sEl.setAttribute('aria-label', f.name);
+      sEl.onclick = () => choose(f);
+      if (canHover) {
+        sEl.onmouseenter = () => preview(f);
+        sEl.onmouseleave = () => refresh();
+      }
+      grid.append(sEl);
     });
-    // keep the current film if it belongs to this product, else pick the first
-    if (list.length) {
-      const keep = selected && list.find((f) => f.id === selected.id);
-      select(keep || list[0]);
-    }
+    markActive();
+    showDetail(assigned());
   }
 
   function renderAll() {
     renderTabs();
     renderGrid();
+  }
+
+  // a coverage tier the current vehicle doesn't offer falls back to Full Front
+  function fitCoverage() {
+    if (!tiers.length || tiers.includes(design.coverage)) return;
+    design.coverage = tiers.includes('gold') ? 'gold' : tiers[tiers.length - 1];
+  }
+
+  function renderVehicles() {
+    vehicleBar.textContent = '';
+    VEHICLES.forEach((v) => {
+      const b = el('button', `rs-vehicle${v === vehicle ? ' is-active' : ''}`);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', v === vehicle);
+      const img = el('img');
+      img.src = `${BASE}/vehicles/${v.thumb}`;
+      img.alt = '';
+      img.loading = 'lazy';
+      b.append(img, el('span', '', ui.vehicles[v.key]));
+      // eslint-disable-next-line no-use-before-define
+      b.onclick = () => switchVehicle(v);
+      vehicleBar.append(b);
+    });
+  }
+
+  // swap the car and keep the design: parts share the same keys on every car
+  async function switchVehicle(v) {
+    if (!viewer || v === vehicle) return;
+    vehicle = v;
+    renderVehicles();
+    vehicleBar.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    caption.textContent = t.loading;
+    try {
+      tiers = await viewer.loadVehicle(vehicle);
+      fitCoverage();
+      viewer.setView(activeView, false);
+      caption.textContent = t.drag;
+    } catch (e) {
+      caption.textContent = t.notLoaded;
+    }
+    vehicleBar.querySelectorAll('button').forEach((b) => { b.disabled = false; });
+    renderCoverage();
+    refresh();
   }
 
   viewbar.querySelectorAll('.rs-view').forEach((b) => {
@@ -872,11 +1298,11 @@ export default async function decorate(block) {
   });
 
   share.onclick = async () => {
-    if (!viewer || !selected) return;
+    if (!viewer) return;
     share.disabled = true;
     const dataUrl = viewer.capture('image/png');
     const dialog = showShareDialog({
-      s: shareStr, image: dataUrl, url: designUrl(), text: shareText(),
+      s: shareStr, image: dataUrl, url: designUrl(), text: designText(design, shareStr),
     });
     try {
       const blob = dataUrlToBlob(dataUrl);
@@ -898,24 +1324,104 @@ export default async function decorate(block) {
     }
   };
 
-  // reflect a shared design's theme and view in the controls
-  themeBar.querySelectorAll('.rs-theme-btn').forEach((b) => {
-    b.classList.toggle('is-active', b.dataset.theme === activeTheme);
-  });
-  viewbar.querySelectorAll('.rs-view').forEach((b) => {
-    b.classList.toggle('is-active', b.dataset.view === activeView);
+  // "Done": the original's finale with the design and what to do next
+  done.onclick = () => {
+    if (!viewer) return;
+    const image = viewer.capture('image/png');
+    const overlay = el('div', 'rs-share-popup');
+    const dialog = el('div', 'rs-share-dialog rs-finale');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', ui.finaleTitle);
+    const closeBtn = el('button', 'rs-share-close', '×');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close');
+    const img = el('img', 'rs-share-image');
+    img.src = image;
+    img.alt = designText(design, shareStr);
+    const summary = el('div', 'rs-design rs-finale-design');
+    renderDesign(summary, false);
+    const buttons = el('div', 'rs-finale-actions');
+    const close = () => {
+      overlay.remove();
+      // eslint-disable-next-line no-use-before-define
+      document.removeEventListener('keydown', onKey);
+    };
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    [
+      ['download', shareStr.download, () => {
+        const a = document.createElement('a');
+        a.href = image;
+        a.download = 'my-3m-design.png';
+        a.click();
+      }],
+      ['share', shareStr.button, () => { close(); share.click(); }],
+      ['installer', t.findInstaller, () => { close(); openLocator(); }],
+      ['restart', ui.restart, () => {
+        close();
+        design = emptyDesign(design.coverage);
+        target = 'all';
+        renderAll();
+        refresh();
+      }],
+    ].forEach(([key, label, action]) => {
+      const b = el('button', `rs-finale-btn rs-finale-${key}`, label);
+      b.type = 'button';
+      b.onclick = action;
+      buttons.append(b);
+    });
+    dialog.append(closeBtn, el('h3', 'rs-share-heading', ui.finaleTitle), img, summary, buttons);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    document.addEventListener('keydown', onKey);
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    closeBtn.onclick = close;
+    closeBtn.focus();
+  };
+
+  // reflect the theme and view (e.g. from a shared link) in the controls
+  function syncControls() {
+    themeBar.querySelectorAll('.rs-theme-btn').forEach((b) => {
+      b.classList.toggle('is-active', b.dataset.theme === activeTheme);
+    });
+    viewbar.querySelectorAll('.rs-view').forEach((b) => {
+      b.classList.toggle('is-active', b.dataset.view === activeView);
+    });
+  }
+
+  // a design link pasted into a tab already showing the studio
+  window.addEventListener('hashchange', () => {
+    const before = vehicle;
+    if (!readSharedLink()) return;
+    syncControls();
+    renderAll();
+    if (viewer) {
+      viewer.setTheme(activeTheme);
+      if (vehicle !== before) {
+        const next = vehicle;
+        vehicle = before;
+        switchVehicle(next);
+        return;
+      }
+      viewer.setView(activeView);
+    }
+    refresh();
   });
 
+  syncControls();
+  renderVehicles();
   renderAll();
+  renderDesign();
 
   try {
-    viewer = await initStage(stage, modelUrl, ppfUrl);
+    viewer = await initStage(stage);
+    tiers = await viewer.loadVehicle(vehicle);
+    fitCoverage();
     viewer.setTheme(activeTheme);
-    viewer.setView(activeView);
-    viewer.setCoverage(activeCoverage);
+    viewer.setView(activeView, false);
     caption.textContent = t.drag;
     renderCoverage();
-    select(selected || films[0]);
+    refresh();
   } catch (e) {
     stage.classList.add('rs-stage-error');
     caption.textContent = t.notLoaded;
