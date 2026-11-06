@@ -33,6 +33,9 @@ export const VEHICLES = [
       platinum: ['luxurysedan_ppf_silver', 'luxurysedan_ppf_gold', 'luxurysedan_ppf_platinum'],
     },
     start: [372, 354, 396],
+    // camera for shared snapshots (wide and narrow stages)
+    shot: [227, 140, 590],
+    shotPortrait: [501, 140, 882],
     cams: {
       front: [-8, 129, 636],
       hood: [-6, 446, 471],
@@ -65,6 +68,9 @@ export const VEHICLES = [
       platinum: ['tuner_ppf_silver', 'tuner_ppf_gold', 'tuner_ppf_platinum'],
     },
     start: [372, 354, 396],
+    // camera for shared snapshots (wide and narrow stages)
+    shot: [275, 132, 572],
+    shotPortrait: [549, 132, 863],
     cams: {
       front: [-2, 208, 615],
       hood: [-6, 446, 471],
@@ -98,6 +104,9 @@ export const VEHICLES = [
       platinum: ['sportscar_ppf_gold', 'sportscar_ppf_platinum'],
     },
     start: [372, 354, 396],
+    // camera for shared snapshots (wide and narrow stages)
+    shot: [248, 166, 575],
+    shotPortrait: [522, 166, 867],
     cams: {
       front: [0, 118, 500],
       hood: [0, 496, 336],
@@ -130,6 +139,9 @@ export const VEHICLES = [
       platinum: ['musclecar_ppf_silver', 'musclecar_ppf_gold', 'musclecar_ppf_platinum'],
     },
     start: [372, 354, 396],
+    // camera for shared snapshots (wide and narrow stages)
+    shot: [327, 151, 538],
+    shotPortrait: [325, 156, 877],
     cams: {
       front: [13, 175, 625],
       hood: [-2, 457, 462],
@@ -162,6 +174,9 @@ export const VEHICLES = [
       platinum: ['truck_ppf_silver', 'truck_ppf_gold', 'truck_ppf_platinum'],
     },
     start: [287, 386, 570],
+    // camera for shared snapshots (wide and narrow stages)
+    shot: [316, 153, 657],
+    shotPortrait: [496, 153, 1015],
     cams: {
       front: [0, 274, 589],
       hood: [200, 618, 0],

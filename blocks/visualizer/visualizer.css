@@ -1,24 +1,41 @@
 .rs-visualizer {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 32px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
   align-items: start;
-  padding: 24px;
+  padding: 10px;
   background: #f4f5f7;
   border-radius: 12px;
 }
 
-@media (width <= 900px) {
+@media (width >= 900px) {
   .rs-visualizer {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 32px;
+    padding: 24px;
   }
 }
 
 /* ---- stage ---- */
+
+/* the car stays in view while the panel scrolls (on phones the panel runs
+   underneath it, like the original's slide-up editor) */
 .rs-stagewrap {
-  background: linear-gradient(180deg, #eef1f4 0%, #cdd3da 100%);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 8px 8px 6px;
   border-radius: 10px;
-  padding: 20px 16px 12px;
+  background: linear-gradient(180deg, #eef1f4 0%, #cdd3da 100%);
+  box-shadow: 0 6px 12px -8px rgb(0 0 0 / 35%);
+}
+
+@media (width >= 900px) {
+  .rs-stagewrap {
+    top: 16px;
+    padding: 20px 16px 12px;
+    box-shadow: none;
+  }
 }
 
 .rs-stage {
@@ -80,7 +97,13 @@
   display: flex;
   gap: 8px;
   justify-content: center;
-  margin-top: 12px;
+  margin-top: 8px;
+}
+
+@media (width >= 900px) {
+  .rs-viewbar {
+    margin-top: 12px;
+  }
 }
 
 .rs-view {
@@ -100,10 +123,17 @@
 }
 
 .rs-caption {
-  margin-top: 10px;
+  margin-top: 6px;
   color: #555;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
+}
+
+@media (width >= 900px) {
+  .rs-caption {
+    margin-top: 10px;
+    font-size: 13px;
+  }
 }
 
 /* ---- panel ---- */
@@ -143,6 +173,9 @@
 }
 
 .rs-chip {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
   padding: 4px 12px;
   border: 1px solid #cfd3d8;
   border-radius: 16px;
@@ -150,6 +183,14 @@
   color: #444;
   font-size: 12px;
   cursor: pointer;
+}
+
+.rs-chip-icon {
+  width: 14px;
+  height: 14px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: #8a8f95;
 }
 
 .rs-chip.is-active {
@@ -696,16 +737,30 @@
   background: #c00;
 }
 
-/* ---- vehicle picker under the stage ---- */
+/* ---- vehicle picker under the stage (a scrolling strip on phones) ---- */
 .rs-vehicles {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+@media (width >= 600px) {
+  .rs-vehicles {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+    overflow: visible;
+  }
 }
 
 .rs-vehicle {
+  flex: 0 0 84px;
   display: flex;
+  white-space: nowrap;
   flex-direction: column;
   gap: 4px;
   align-items: center;
