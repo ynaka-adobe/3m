@@ -35,6 +35,13 @@ async function fetchFragment(path) {
     if (resp.ok) {
       const dom = document.createElement('div');
       dom.innerHTML = await resp.text();
+      // media paths are relative to the fragment ("./media_…"); resolve them so
+      // images load on pages at any depth
+      const base = new URL(path, window.location);
+      dom.querySelectorAll('img[src^="./media_"], source[srcset^="./media_"]').forEach((el) => {
+        const attr = el.tagName === 'IMG' ? 'src' : 'srcset';
+        el.setAttribute(attr, new URL(el.getAttribute(attr), base).href);
+      });
       return dom;
     }
   } catch (e) { /* fall through */ }
@@ -86,7 +93,9 @@ function parseMegaSections(sections) {
     if (!heading || !list) return;
     const paras = [...section.querySelectorAll(':scope > p')];
     const allLink = paras.map((p) => p.querySelector(':scope > a:only-child')).find(Boolean);
-    const picture = section.querySelector('picture, img');
+    // an image that failed to import comes through as src="about:error"; skip it
+    const img = section.querySelector('img');
+    const picture = img && !img.getAttribute('src').startsWith('about:') ? (img.closest('picture') || img) : null;
     const caption = paras.find((p) => !p.querySelector('a, picture, img') && p.textContent.trim());
     megas[heading.textContent.trim()] = {
       links: [...list.querySelectorAll('a')],
