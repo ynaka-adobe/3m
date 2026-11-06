@@ -163,9 +163,11 @@ function pageLang() {
   return REGIONS[seg] ? seg : 'en';
 }
 
-// sample data stands in for an unreachable API everywhere except the live site
+// sample data stands in for an unreachable API on every site, live included, until
+// the dealer API accepts browser requests from our domains; to stop showing it on
+// the live site, return !window.location.hostname.endsWith('.aem.live') here
 function allowSample() {
-  return !window.location.hostname.endsWith('.aem.live');
+  return true;
 }
 
 function num(value) {
