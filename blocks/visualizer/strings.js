@@ -5,13 +5,13 @@
 
 export const I18N = {
   en: {
-    all: 'All', coverage: 'Coverage', platinum: 'Full Car', gold: 'Full Front', silver: 'Partial Front', drag: 'Drag to rotate · scroll to zoom', loading: 'Loading 3D model…', notLoaded: 'Could not load the 3D model.', findInstaller: 'Find an installer',
+    all: 'All', coverage: 'Coverage', platinum: 'Full Car', gold: 'Full Front', silver: 'Partial Front', drag: 'Drag to rotate · scroll to zoom', dragTouch: 'Drag to rotate · pinch to zoom', loading: 'Welcome to the 3M™ Restyling Studio!', notLoaded: 'Unable to load the Restyling Studio. Either your browser is not fast enough or this is not supported on your device.', findInstaller: 'Find an installer',
   },
   de: {
-    all: 'Alle', coverage: 'Abdeckung', platinum: 'Komplettes Fahrzeug', gold: 'Volle Front', silver: 'Partielle Front', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', loading: '3D-Modell wird geladen…', notLoaded: '3D-Modell konnte nicht geladen werden.', findInstaller: 'Installateur finden',
+    all: 'Alle', coverage: 'Abdeckung', platinum: 'Komplettes Fahrzeug', gold: 'Volle Front', silver: 'Partielle Front', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', dragTouch: 'Ziehen zum Drehen · Finger spreizen zum Zoomen', loading: 'Willkommen im 3M™ Restyling Studio!', notLoaded: 'Das Restyling Studio kann nicht geladen werden. Entweder ist Ihr Browser nicht schnell genug oder Ihr Gerät unterstützt diese Anwendung nicht.', findInstaller: 'Installateur finden',
   },
   jp: {
-    all: 'すべて', coverage: 'カバー範囲', platinum: 'フルボディ', gold: 'フロントフル', silver: 'フロントの一部', drag: 'ドラッグで回転・スクロールでズーム', loading: '3Dモデルを読み込み中…', notLoaded: '3Dモデルを読み込めませんでした。', findInstaller: '施工店を探す',
+    all: 'すべて', coverage: 'カバー範囲', platinum: 'フルボディ', gold: 'フロントフル', silver: 'フロントの一部', drag: 'ドラッグで回転・スクロールでズーム', dragTouch: 'ドラッグで回転・ピンチでズーム', loading: '3M™ Restyling Studioへようこそ！', notLoaded: 'Restyling Studioを読み込むことができません。お使いのブラウザ環境またはデバイスについて、ウェブサイトとの互換性に問題がある可能性があります。', findInstaller: '施工店を探す',
   },
 };
 

@@ -3,6 +3,7 @@ import {
   I18N, STUDIO_I18N, INFO_LINKS, SHARE_I18N,
 } from './strings.js';
 import { VEHICLES, DEFAULT_VEHICLE } from './vehicles.js';
+import { PRESET_LOOK, FILM_LOOK } from './looks.js';
 
 // three.js is loaded lazily from a CDN so it never weighs down first paint.
 const THREE_VER = '0.160.0';
@@ -11,9 +12,7 @@ const BASE = '/blocks/visualizer/assets';
 // Fusion webhook that receives a shared snapshot as multipart/form-data.
 const SHARE_ENDPOINT = 'https://hook.fusion.adobe.com/dntcs3kickjm3pnjq1rkcha10co8qjp5';
 
-// Material names inside the model (from the FBX): `carpaint` is the wrap
-// surface, `windowglass` is what window tint colors.
-const PAINT_MAT = 'carpaint';
+// Material name inside the models (from the FBX) that window tint colors.
 const GLASS_MAT = 'windowglass';
 
 const FINISH_HINT = {
@@ -110,45 +109,51 @@ const VIEWS = {
   rear: [-3.4, 1.4, -3.4],
 };
 
-// Light and dark studio environments (marbled floor fading to a horizon).
+// Day and night studio, as in the original: its baked backdrop, light levels
+// and reflections (day: soft room light, night: its night sky box).
 const THEMES = {
   light: {
-    bg: 0xdfe3e7, floor: 0xcfd4d9, fog: [34, 95], exposure: 1.05, ambient: 0.6,
+    backdrop: 'backdrop-day.webp', bg: 0xdfe3e7, exposure: 1.05, ambient: 0.6, key: 2.2,
   },
   dark: {
-    bg: 0x16181b, floor: 0x2c3034, fog: [26, 78], exposure: 1.0, ambient: 0.35,
+    backdrop: 'backdrop-night.webp', bg: 0x101113, exposure: 1.0, ambient: 0.3, key: 1.5,
   },
 };
 
-// Procedural marbled-concrete floor texture so we ship no image asset.
-function makeFloorTexture(THREE) {
-  const size = 512;
-  const c = document.createElement('canvas');
-  c.width = size;
-  c.height = size;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#b8bcc1';
-  ctx.fillRect(0, 0, size, size);
-  for (let i = 0; i < 600; i += 1) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const r = 8 + Math.random() * 60;
-    const shade = Math.random() < 0.5 ? 255 : 0;
-    const a = 0.015 + Math.random() * 0.05;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(${shade},${shade},${shade},${a})`);
-    g.addColorStop(1, `rgba(${shade},${shade},${shade},0)`);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(6, 6);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+// an unwrapped part shows the original's matte primer grey
+const PRIMER = {
+  color: 0xc4c7ca, metalness: 0, roughness: 0.85, clearcoat: 0,
+};
+
+// finish filter icons (the original's finish-group overlays)
+const FINISH_ICON = {
+  Gloss: 'gloss', 'High Gloss': 'gloss', Matte: 'matte', Satin: 'satin',
+};
+
+// Two-tone flip films: at glancing angles the colour blends toward the film's
+// start/end colours (the original's two-colour shader), added to the
+// physical material's fragment shader.
+function addFlip(THREE, mat) {
+  const flip = {
+    rsFlipA: { value: new THREE.Color() },
+    rsFlipB: { value: new THREE.Color() },
+    rsFlipAmount: { value: 0 },
+    rsFlipStrength: { value: 1 },
+  };
+  mat.userData.flip = flip;
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, flip);
+    shader.fragmentShader = `uniform vec3 rsFlipA;
+uniform vec3 rsFlipB;
+uniform float rsFlipAmount;
+uniform float rsFlipStrength;
+${shader.fragmentShader}`.replace('#include <color_fragment>', `#include <color_fragment>
+  float rsFacing = abs(dot(normalize(vNormal), normalize(vViewPosition)));
+  float rsGlance = clamp((1.0 - rsFacing) * (0.8 + 0.15 * rsFlipStrength), 0.0, 1.0);
+  diffuseColor.rgb = mix(diffuseColor.rgb, mix(rsFlipA, rsFlipB, rsGlance),
+    rsFlipAmount * smoothstep(0.1, 0.9, rsGlance));`);
+  };
+  mat.customProgramCacheKey = () => 'rs-flip';
 }
 
 // Swatch fill: the film's color, or its texture image (brushed, carbon…) over it.
@@ -172,6 +177,18 @@ function dataUrlToBlob(dataUrl) {
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
   return new Blob([bytes], { type: mime });
+}
+
+// The original studio's analytics events (its Tealium tags), sent through the
+// site's consent-gated analytics, which is loaded on first use.
+const VEHICLE_EVENT_NAME = {
+  luxury: 'Luxury Car', tuner: 'Tuner Car', 'sports-car': 'Sports Car', 'muscle-car': 'Muscle Car', truck: 'Truck',
+};
+
+function studioEvent(name, detail = {}) {
+  import('../../scripts/analytics.js')
+    .then(({ track }) => track('restyling-studio', { studio: { eventName: name, ...detail } }))
+    .catch(() => {});
 }
 
 // the design link with a network's campaign tracking added
@@ -216,7 +233,7 @@ async function copyText(text, host) {
  * @returns {{ uploaded: Function, failed: Function }}
  */
 function showShareDialog({
-  s, image, url, text,
+  s, image, url, text, onEvent = () => {},
 }) {
   const overlay = el('div', 'rs-share-popup');
   const dialog = el('div', 'rs-share-dialog');
@@ -254,6 +271,7 @@ function showShareDialog({
     b.type = 'button';
     b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${SHARE_ICONS[key]}</svg><span>${label}</span>`;
     b.onclick = () => {
+      onEvent(`Link Click: Social Share: ${{ facebook: 'Facebook', x: 'Twitter', email: 'Email' }[key]}`);
       if (key === 'email') {
         // hand off to the mail app (detached link), and offer webmail in case
         // no app is registered for mailto: links
@@ -312,6 +330,7 @@ function showShareDialog({
   const downloadBtn = el('button', 'rs-share-download', s.download);
   downloadBtn.type = 'button';
   downloadBtn.onclick = () => {
+    onEvent('Link Click: Download');
     // a detached link: page-level click handlers never see this click
     const a = document.createElement('a');
     a.href = image;
@@ -409,8 +428,8 @@ function colorMapped(THREE, m, map) {
 // paint protection overlay with its coverage tiers.
 async function prepareVehicle(THREE, loader, vehicle) {
   const glasses = [];
-  // part → [{ mat, base }]: a physical material per wrappable mesh, plus the
-  // look it has without a wrap
+  const meshOfMat = new Map();
+  // part → physical materials of its meshes (primer grey until wrapped)
   const partMats = Object.fromEntries(Object.keys(vehicle.parts).map((p) => [p, []]));
   const [gltf, colorMap] = await Promise.all([
     loader.loadAsync(`${BASE}/${vehicle.model}`),
@@ -433,26 +452,17 @@ async function prepareVehicle(THREE, loader, vehicle) {
     const part = partOfMesh.get(o);
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     if (part) {
-      const swapped = mats.map((m) => {
-        const paint = m.name === PAINT_MAT;
-        // trim parts (accents, sills) get their unwrapped look from the color map
-        const map = !paint && colorMap ? colorMap : null;
-        const base = {
-          color: map ? new THREE.Color(0xffffff) : m.color.clone(),
-          map,
-          metalness: paint ? 0 : (m.metalness ?? 0),
-          roughness: paint ? 0.1 : (m.roughness ?? 0.5),
-          clearcoat: paint ? 1 : 0,
-        };
+      const swapped = mats.map(() => {
         const mat = new THREE.MeshPhysicalMaterial({
-          color: base.color.clone(),
-          map,
-          metalness: base.metalness,
-          roughness: base.roughness,
-          clearcoat: base.clearcoat,
+          color: PRIMER.color,
+          metalness: PRIMER.metalness,
+          roughness: PRIMER.roughness,
+          clearcoat: PRIMER.clearcoat,
           clearcoatRoughness: 0.06,
         });
-        partMats[part].push({ mat, base });
+        addFlip(THREE, mat);
+        partMats[part].push(mat);
+        meshOfMat.set(mat, o);
         return mat;
       });
       o.material = Array.isArray(o.material) ? swapped : swapped[0];
@@ -473,6 +483,41 @@ async function prepareVehicle(THREE, loader, vehicle) {
       });
       o.material = Array.isArray(o.material) ? swapped : swapped[0];
     }
+  });
+
+  // Each accent piece (stripes, trim) sits on a body part; unwrapped, it takes
+  // that part's look so it blends in, as on the original. Host = the part of
+  // the same-named panel (gt_accent_hood → gt_hood), else the body part whose
+  // meshes overlap it most (nearest one if none overlap).
+  const accentHost = new Map();
+  const partOfName = Object.fromEntries(Object.entries(vehicle.parts)
+    .filter(([part]) => part !== 'accents')
+    .flatMap(([part, names]) => names.map((n) => [n, part])));
+  const boxOf = (mat) => new THREE.Box3().setFromObject(meshOfMat.get(mat));
+  const bodyBoxes = Object.entries(partMats).filter(([part]) => part !== 'accents')
+    .flatMap(([part, mats]) => mats.map((m) => [part, boxOf(m)]));
+  (partMats.accents || []).forEach((mat) => {
+    const mesh = meshOfMat.get(mat);
+    const name = vehicle.parts.accents.find((n) => n === mesh.name || n === mesh.parent?.name);
+    const named = name && partOfName[name.replace('_accent', '')];
+    if (named) {
+      accentHost.set(mat, named);
+      return;
+    }
+    const box = boxOf(mat);
+    const center = box.getCenter(new THREE.Vector3());
+    let best = null;
+    let bestScore = -Infinity;
+    bodyBoxes.forEach(([part, other]) => {
+      const overlap = box.clone().intersect(other);
+      const size = overlap.isEmpty() ? null : overlap.getSize(new THREE.Vector3());
+      const score = size ? size.x * size.y * size.z + 1e3 : -other.distanceToPoint(center);
+      if (score > bestScore) {
+        bestScore = score;
+        best = part;
+      }
+    });
+    if (best) accentHost.set(mat, best);
   });
 
   // PPF overlay: parented under the car so it inherits the same transform.
@@ -507,6 +552,7 @@ async function prepareVehicle(THREE, loader, vehicle) {
     model,
     glasses,
     partMats,
+    accentHost,
     ppfMeshes: Object.values(ppfMeshes).flat(),
     ppfMats: [...ppfMats],
     tiers,
@@ -531,8 +577,8 @@ async function initStage(stage) {
 
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.fog = new THREE.Fog(THEMES.light.bg, ...THEMES.light.fog);
+  const envDay = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = envDay;
   scene.background = new THREE.Color(THEMES.light.bg);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
@@ -558,18 +604,60 @@ async function initStage(stage) {
   key.shadow.bias = -0.0004;
   scene.add(key);
 
-  // marbled studio floor
-  const floorMat = new THREE.MeshStandardMaterial({
-    map: makeFloorTexture(THREE), color: THEMES.light.floor, roughness: 0.75, metalness: 0.0,
-  });
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(80, 96), floorMat);
+  // the car's shadow lands on an invisible floor over the baked backdrop
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(40, 40),
+    new THREE.ShadowMaterial({ opacity: 0.3 }),
+  );
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
 
+  // textures (tiled film detail, backdrop), one per file and tiling
+  const texLoader = new THREE.TextureLoader();
+  const textures = {};
+  function texture(file, { repeat = 1, stretch = 1, color = false } = {}) {
+    const id = `${file}@${repeat}x${stretch}`;
+    if (!textures[id]) {
+      const tex = texLoader.load(`${BASE}/textures/${file}`);
+      // glTF texture coordinates: no vertical flip
+      tex.flipY = false;
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(repeat * stretch, repeat);
+      if (color) tex.colorSpace = THREE.SRGBColorSpace;
+      textures[id] = tex;
+    }
+    return textures[id];
+  }
+
   // Models are quantized (KHR_mesh_quantization), which three.js reads natively:
   // decoders that need WebAssembly are blocked by the site's CSP.
   const loader = new GLTFLoader();
+
+  // the original's curved "infinity" studio backdrop with baked day/night light
+  const backdropMat = new THREE.MeshBasicMaterial({
+    map: texture(THEMES.light.backdrop, { color: true }),
+  });
+  let backdrop = null;
+  try {
+    backdrop = (await loader.loadAsync(`${BASE}/backdrop.glb`)).scene;
+    backdrop.traverse((o) => { if (o.isMesh) o.material = backdropMat; });
+  } catch (e) {
+    // without it the plain background color shows
+  }
+
+  // night reflections from the original's night sky box, loaded on first use
+  let envNight = null;
+  function nightEnv() {
+    envNight ||= new THREE.CubeTextureLoader().setPath(`${BASE}/textures/night/`)
+      .loadAsync(['px.webp', 'nx.webp', 'py.webp', 'ny.webp', 'pz.webp', 'nz.webp'])
+      .then((cube) => {
+        cube.colorSpace = THREE.SRGBColorSpace;
+        return pmrem.fromCubemap(cube).texture;
+      });
+    return envNight;
+  }
   const cache = {};
   let car = null;
   let dist = 6;
@@ -619,16 +707,15 @@ async function initStage(stage) {
     if (ppfActive && tier) car.tiers[tier].forEach((m) => { m.visible = true; });
   }
 
-  function setTheme(mode) {
+  async function setTheme(mode) {
     const t = THEMES[mode] || THEMES.light;
-    const [near, far] = t.fog;
     scene.background.set(t.bg);
-    scene.fog.color.set(t.bg);
-    scene.fog.near = near;
-    scene.fog.far = far;
-    floorMat.color.set(t.floor);
+    backdropMat.map = texture(t.backdrop, { color: true });
+    backdropMat.needsUpdate = true;
     hemi.intensity = t.ambient;
+    key.intensity = t.key;
     renderer.toneMappingExposure = t.exposure;
+    scene.environment = mode === 'dark' ? await nightEnv().catch(() => envDay) : envDay;
   }
 
   // a position in the original studio's units → ours, keeping its direction
@@ -647,9 +734,19 @@ async function initStage(stage) {
     // Capture the current view as a base64 data URL. WebGL clears the drawing
     // buffer after each frame, so force a fresh render and read it back in the
     // same call stack (no preserveDrawingBuffer needed).
+    // The snapshot uses the vehicle's own camera position, as the original does.
     capture(type = 'image/png', quality = 0.92) {
+      const before = camera.position.clone();
+      const shot = car && (camera.aspect < 1 ? car.vehicle.shotPortrait : car.vehicle.shot);
+      if (shot) {
+        camera.position.copy(fromOriginal(shot));
+        camera.lookAt(controls.target);
+      }
       renderer.render(scene, camera);
-      return renderer.domElement.toDataURL(type, quality);
+      const url = renderer.domElement.toDataURL(type, quality);
+      camera.position.copy(before);
+      camera.lookAt(controls.target);
+      return url;
     },
     setTheme,
     /**
@@ -662,6 +759,8 @@ async function initStage(stage) {
       if (car) scene.remove(car.model);
       car = next;
       scene.add(car.model);
+      // the backdrop sits at the original's origin, like the car
+      if (backdrop) car.model.add(backdrop);
       floor.position.y = car.floorY;
       dist = car.radius / Math.sin((camera.fov * Math.PI) / 360);
       controls.minDistance = dist * 0.55;
@@ -679,20 +778,63 @@ async function initStage(stage) {
     applyDesign(d) {
       if (!car) return;
       const matte = d.ppf && d.ppf.finish === 'Matte';
-      Object.entries(car.partMats).forEach(([part, list]) => {
-        const film = d.parts[part];
-        const look = film
+      // a film's look on a part: base PBR plus flake / brushed / carbon detail,
+      // colour textures and flip colours
+      const styleFor = (film) => {
+        const pbr = film
           ? (PRESET_PBR[film.preset] || FINISH_PBR[film.finish] || DEFAULT_PBR)
-          : null;
-        list.forEach(({ mat, base }) => {
-          if (film) mat.color.set(film.color);
-          else mat.color.copy(base.color);
-          mat.map = film ? null : base.map;
-          const pbr = look || base;
+          : PRIMER;
+        const look = (film && (FILM_LOOK[film.id] || PRESET_LOOK[film.preset])) || {};
+        const tiling = { repeat: look.repeat || 1, stretch: look.stretch || 1 };
+        // the brushed-metal streak texture works as roughness, keeping the film's grey
+        const streaks = look.map && look.map.endsWith('roughness');
+        const rough = look.rough || (streaks && look.map);
+        const map = look.map && !streaks
+          ? texture(`${look.map}.webp`, { ...tiling, color: true }) : null;
+        let { color } = PRIMER;
+        // full-colour textures carry their own colours
+        if (film) color = map ? '#ffffff' : film.color;
+        return {
+          film,
+          pbr,
+          look,
+          color,
+          map,
+          normalMap: look.normal ? texture(`${look.normal}.webp`, tiling) : null,
+          roughnessMap: rough ? texture(`${rough}.webp`, tiling) : null,
+        };
+      };
+      const styles = new Map();
+      const style = (film) => {
+        if (!styles.has(film)) styles.set(film, styleFor(film));
+        return styles.get(film);
+      };
+      Object.entries(car.partMats).forEach(([part, list]) => {
+        list.forEach((mat) => {
+          // unwrapped accents blend into the part they sit on
+          const film = part === 'accents' && !d.parts.accents
+            ? d.parts[car.accentHost.get(mat)] : d.parts[part];
+          const {
+            pbr, look, color, map, normalMap, roughnessMap,
+          } = style(film);
+          mat.color.set(color);
+          mat.map = map;
+          mat.normalMap = normalMap;
+          if (normalMap) mat.normalScale.set(look.scale ?? 1, look.scale ?? 1);
+          mat.roughnessMap = roughnessMap;
+          mat.anisotropy = film && film.preset === 'brushed-metal' ? 0.7 : 0;
           mat.metalness = pbr.metalness;
           // matte PPF also flattens the sheen of whatever is underneath
           mat.roughness = matte ? Math.max(pbr.roughness, 0.8) : pbr.roughness;
           mat.clearcoat = matte ? Math.min(pbr.clearcoat, 0.15) : pbr.clearcoat;
+          const { flip } = mat.userData;
+          flip.rsFlipAmount.value = look.flip ? 1 : 0;
+          if (look.flip) {
+            const [from, to, strength] = look.flip;
+            flip.rsFlipA.value.set(from);
+            flip.rsFlipB.value.set(to);
+            flip.rsFlipStrength.value = strength;
+          }
           mat.needsUpdate = true;
         });
       });
@@ -891,7 +1033,11 @@ export default async function decorate(block) {
     const { openLocatorModal } = await import('../locator/locator.js');
     openLocatorModal({ source: cfg.installers, title: t.findInstaller });
   };
-  cta.onclick = openLocator;
+  cta.onclick = () => {
+    // eslint-disable-next-line no-use-before-define
+    studioEvent('Link Click: Restyler', designDetail());
+    openLocator();
+  };
   // captures the current 3D view, posts it to the Fusion share webhook and
   // opens the share dialog with a link that reopens this design
   const share = el('button', 'rs-share button', shareStr.button);
@@ -966,6 +1112,24 @@ export default async function decorate(block) {
   // paint protection coverage tiers the current vehicle offers
   let tiers = [];
   const canHover = window.matchMedia('(hover: hover)').matches;
+  // the design in the original's analytics format: vehicle plus each layer's film
+  function designDetail() {
+    const name = (f) => (f ? f.name.replace(/\s/g, '') : 'undefined');
+    return {
+      V: VEHICLE_EVENT_NAME[vehicle.key],
+      FB: name(design.parts.front),
+      H: name(design.parts.hood),
+      L: name(design.parts.left),
+      T: name(design.parts.top),
+      R: name(design.parts.right),
+      RB: name(design.parts.rear),
+      W: name(design.tint),
+      A: name(design.parts.accents),
+      PPF: name(design.ppf),
+    };
+  }
+  // touch screens pinch to zoom; mice scroll
+  const dragHint = window.matchMedia('(pointer: coarse)').matches ? t.dragTouch : t.drag;
 
   // a shared design link (#d/…) restores its layers, coverage, view and theme
   function readSharedLink() {
@@ -1185,6 +1349,12 @@ export default async function decorate(block) {
     finishes.forEach((f) => {
       const b = el('button', `rs-chip${f === activeFinish ? ' is-active' : ''}`, finishLabel(f));
       b.type = 'button';
+      if (FINISH_ICON[f]) {
+        const icon = el('img', 'rs-chip-icon');
+        icon.src = `${BASE}/icons/finish-${FINISH_ICON[f]}.webp`;
+        icon.alt = '';
+        b.prepend(icon);
+      }
       // eslint-disable-next-line no-use-before-define
       b.onclick = () => { activeFinish = f; renderGrid(); };
       finishRow.append(b);
@@ -1270,7 +1440,7 @@ export default async function decorate(block) {
       tiers = await viewer.loadVehicle(vehicle);
       fitCoverage();
       viewer.setView(activeView, false);
-      caption.textContent = t.drag;
+      caption.textContent = dragHint;
     } catch (e) {
       caption.textContent = t.notLoaded;
     }
@@ -1294,15 +1464,21 @@ export default async function decorate(block) {
       themeBar.querySelectorAll('.rs-theme-btn').forEach((x) => x.classList.remove('is-active'));
       b.classList.add('is-active');
       if (viewer) viewer.setTheme(activeTheme);
+      studioEvent(`Link Click: ${activeTheme === 'dark' ? 'Night' : 'Day'}`);
     };
   });
 
   share.onclick = async () => {
     if (!viewer) return;
+    studioEvent('Link Click: Share');
     share.disabled = true;
     const dataUrl = viewer.capture('image/png');
     const dialog = showShareDialog({
-      s: shareStr, image: dataUrl, url: designUrl(), text: designText(design, shareStr),
+      s: shareStr,
+      image: dataUrl,
+      url: designUrl(),
+      text: designText(design, shareStr),
+      onEvent: studioEvent,
     });
     try {
       const blob = dataUrlToBlob(dataUrl);
@@ -1327,6 +1503,7 @@ export default async function decorate(block) {
   // "Done": the original's finale with the design and what to do next
   done.onclick = () => {
     if (!viewer) return;
+    studioEvent('Done', designDetail());
     const image = viewer.capture('image/png');
     const overlay = el('div', 'rs-share-popup');
     const dialog = el('div', 'rs-share-dialog rs-finale');
@@ -1350,13 +1527,18 @@ export default async function decorate(block) {
     function onKey(e) { if (e.key === 'Escape') close(); }
     [
       ['download', shareStr.download, () => {
+        studioEvent('Link Click: Download');
         const a = document.createElement('a');
         a.href = image;
         a.download = 'my-3m-design.png';
         a.click();
       }],
       ['share', shareStr.button, () => { close(); share.click(); }],
-      ['installer', t.findInstaller, () => { close(); openLocator(); }],
+      ['installer', t.findInstaller, () => {
+        close();
+        studioEvent('Link Click: Restyler', designDetail());
+        openLocator();
+      }],
       ['restart', ui.restart, () => {
         close();
         design = emptyDesign(design.coverage);
@@ -1419,7 +1601,7 @@ export default async function decorate(block) {
     fitCoverage();
     viewer.setTheme(activeTheme);
     viewer.setView(activeView, false);
-    caption.textContent = t.drag;
+    caption.textContent = dragHint;
     renderCoverage();
     refresh();
   } catch (e) {
