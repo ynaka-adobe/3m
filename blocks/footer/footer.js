@@ -10,6 +10,8 @@ import { decorateIcons } from '../../scripts/aem.js';
  */
 const LOCALES = ['en', 'de', 'jp'];
 const CONSENT_HASH = '#cookie-preferences';
+const LOGO_ICON = 'icon-3m-logo-mark';
+const PRIVACY_ICON = 'icon-privacy-options';
 const tablet = window.matchMedia('(width >= 768px)');
 
 async function fetchFragment(path) {
@@ -54,8 +56,27 @@ function hideLabel(a) {
   });
 }
 
+const hasIcon = (a) => !!a.querySelector('.icon, img, picture');
+
+/**
+ * consent links are authored as `#cookie-preferences`;
+ * DA publishes hash-only hrefs as the site root
+ */
+function isConsentLink(a) {
+  const href = a.getAttribute('href') || '';
+  if (href === CONSENT_HASH) return true;
+  const url = new URL(href, window.location.href);
+  return url.origin === window.location.origin && url.pathname === '/' && !url.search && !url.hash;
+}
+
+/** social icon name from the link's domain, e.g. https://www.linkedin.com/... → linkedin */
+function socialIconName(a) {
+  const host = new URL(a.href).hostname.replace(/^www\./, '');
+  return host.split('.').slice(-2, -1)[0] || '';
+}
+
 function wireConsent(a) {
-  if (a.getAttribute('href') !== CONSENT_HASH) return;
+  a.setAttribute('href', CONSENT_HASH);
   a.dataset.consentReopen = '';
   a.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -98,19 +119,25 @@ function buildLegal(section) {
   if (!section) return row;
   const logo = section.querySelector('p a');
   if (logo) {
+    // DA can drop the authored icon span — fall back to the brand mark
+    if (!hasIcon(logo)) logo.prepend(el('span', `icon ${LOGO_ICON}`));
     hideLabel(logo);
     row.append(el('div', 'footer-logo', [logo]));
   }
+  const links = [...section.querySelectorAll('ul a')];
+  const consent = links.filter(isConsentLink);
+  // privacy-choices + cookie-preferences pair: the first carries the privacy-options badge
+  if (consent.length > 1 && !consent.some(hasIcon)) consent[0].append(el('span', `icon ${PRIVACY_ICON}`));
   const legal = el('div', 'footer-legal');
-  [...section.querySelectorAll('ul a')].forEach((a, i) => {
+  links.forEach((a, i) => {
     if (i) {
       const sep = el('span', 'footer-legal-sep', ['|']);
       sep.setAttribute('aria-hidden', 'true');
       legal.append(sep);
     }
     a.className = 'footer-legal-link';
-    if (a.querySelector('.icon')) a.classList.add('footer-legal-link-icon');
-    wireConsent(a);
+    if (hasIcon(a)) a.classList.add('footer-legal-link-icon');
+    if (consent.includes(a)) wireConsent(a);
     legal.append(a);
   });
   const copy = [...section.querySelectorAll(':scope > p')]
@@ -132,6 +159,7 @@ function buildSocial(section) {
     a.title = a.textContent.trim();
     a.target = '_blank';
     a.rel = 'noopener';
+    if (!hasIcon(a) && socialIconName(a)) a.prepend(el('span', `icon icon-${socialIconName(a)}`));
     hideLabel(a);
     a.append(el('span', 'footer-social-ring'));
     list.append(el('li', '', [a]));
