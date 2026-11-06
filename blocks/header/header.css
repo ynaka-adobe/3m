@@ -504,6 +504,10 @@ header .nav-mega-feature {
   display: none;
 }
 
+header .nav-mega-overlay {
+  display: none;
+}
+
 header .nav-locale-mobile {
   position: absolute;
   left: 0;
@@ -733,9 +737,9 @@ header .nav-account .nav-icon-chevron-down {
     justify-content: space-between;
     align-items: flex-start;
     height: 70px;
-    margin-top: 1px;
     padding-bottom: 6px;
-    border-top: 0;
+    border-top: 1px solid #fff;
+    background: #fff;
   }
 
   header .nav-panel,
@@ -806,7 +810,21 @@ header .nav-account .nav-icon-chevron-down {
     height: 11px;
   }
 
-  /* menu panels: full-width dropdown under the nav row */
+  /* menu panels: full-width dropdown under the nav row. While one is open the
+     rest of the page is tinted; the nav forms a stacking context so the tint
+     sits under the (white) header rows and the panel */
+  header .nav-3m.is-mega-open {
+    z-index: 100;
+  }
+
+  header .nav-3m.is-mega-open .nav-mega-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    display: block;
+    background: rgb(0 0 0 / 30%);
+  }
+
   header .nav-links > li.is-open > a {
     padding-bottom: 13px;
   }

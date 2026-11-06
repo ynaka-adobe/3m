@@ -207,6 +207,7 @@ export default async function decorate(block) {
         ${actionAnchors.map((a) => `<a class="nav-account" href="${a.getAttribute('href')}">${icon('user')}<span>${a.textContent.trim()}</span>${icon('chevron-down')}</a>`).join('')}
       </div>
     </div>
+    <div class="nav-mega-overlay"></div>
     ${localePopupHTML(locale)}`;
 
   // Language switcher popup (opened from the top-bar or mobile-panel toggle).
@@ -251,6 +252,7 @@ export default async function decorate(block) {
       li.querySelector(':scope > a').setAttribute('aria-expanded', 'false');
     });
     panel.classList.remove('is-drilled');
+    nav.classList.remove('is-mega-open');
   };
   nav.querySelectorAll('.nav-links > li.has-mega').forEach((li) => {
     const link = li.querySelector(':scope > a');
@@ -262,6 +264,7 @@ export default async function decorate(block) {
       li.classList.add('is-open');
       link.setAttribute('aria-expanded', 'true');
       panel.classList.add('is-drilled');
+      nav.classList.add('is-mega-open');
       panel.scrollTop = 0;
     });
     li.querySelector('.nav-mega-back').addEventListener('click', () => {
