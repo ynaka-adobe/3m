@@ -75,17 +75,6 @@ async function loadCarPersonalizationSubnav() {
 
 const icon = (name, cls = '') => `<img class="nav-icon nav-icon-${name} ${cls}" src="/icons/${name}.svg" alt="" aria-hidden="true">`;
 
-// Swap the locale segment of the current path and go there.
-function switchLocale(target) {
-  const parts = window.location.pathname.split('/');
-  if (LOCALES.includes(parts[1])) {
-    parts[1] = target;
-  } else {
-    parts.splice(1, 0, target);
-  }
-  window.location.pathname = parts.join('/') || '/';
-}
-
 function localeToggleHTML(locale, cls) {
   return `
     <div class="nav-locale ${cls}">
@@ -106,7 +95,7 @@ function localePopupHTML(locale) {
       <div class="nav-locale-title" id="nav-locale-title">${copy.title}</div>
       <form class="nav-locale-form">
         <div class="nav-locale-options">
-          ${LOCALES.map((l) => `<label><input type="radio" name="locale" value="${l}"${l === locale ? ' checked' : ''}><span>${LANGUAGE_LABEL[l]}</span></label>`).join('')}
+          <label><input type="radio" name="locale" value="${locale}" checked><span>${LANGUAGE_LABEL[locale]}</span></label>
         </div>
         <a class="nav-locale-change" href="${CHANGE_LOCATION_URL}">${copy.change}</a>
         <button class="nav-locale-save" type="submit">${copy.save}</button>
@@ -182,11 +171,10 @@ export default async function decorate(block) {
   nav.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeLocale();
   });
+  // Only the current language is listed (as on www.3m.com), so Save just confirms.
   nav.querySelector('.nav-locale-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const target = new FormData(e.target).get('locale');
-    if (target && target !== locale) switchLocale(target);
-    else closeLocale();
+    closeLocale();
   });
 
   const burger = nav.querySelector('.nav-burger');
