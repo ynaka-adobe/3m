@@ -1,3 +1,5 @@
+import { buildBlock, decorateBlock, loadBlock } from '../../scripts/aem.js';
+
 /**
  * header — 3M site chrome, matched to www.3m.com. Desktop renders two rows:
  * logo / search / locale on top, primary nav and the account link below.
@@ -73,16 +75,21 @@ async function loadCarPersonalizationSubnav() {
 
   const frag = await fetchFragment(subnavPath);
 
-  if (frag) {
-    // Find the main element and insert subnav as first section
-    const main = document.querySelector('main');
-    if (main) {
-      const subnavSection = document.createElement('div');
-      subnavSection.className = 'section';
-      subnavSection.innerHTML = `<div class="fragment">${frag.innerHTML}</div>`;
-      main.insertBefore(subnavSection, main.firstChild);
-    }
-  }
+  const main = document.querySelector('main');
+  if (!frag || !main) return;
+  // The subnav ("A > B > C" trail + page title) renders as a breadcrumb block
+  // in its own first section, like the www.3m.com breadcrumb strip.
+  const rows = [...frag.querySelectorAll(':scope > div > *')].map((el) => [el]);
+  if (!rows.length) return;
+  const block = buildBlock('breadcrumb', rows);
+  const wrapper = document.createElement('div');
+  wrapper.append(block);
+  const subnavSection = document.createElement('div');
+  subnavSection.className = 'section';
+  subnavSection.append(wrapper);
+  main.insertBefore(subnavSection, main.firstChild);
+  decorateBlock(block);
+  await loadBlock(block);
 }
 
 // Read the menu-panel sections (3rd section onward) of the nav fragment, keyed by heading.
