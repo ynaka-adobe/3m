@@ -10,6 +10,20 @@ const LOCALES = ['en', 'de', 'jp'];
 const LOCALE_LABEL = { en: 'US - EN', de: 'DE - DE', jp: 'JP - JA' };
 const SEARCH_LOCALE = { en: 'en_US', de: 'de_DE', jp: 'ja_JP' };
 const SEARCH_LABEL = { en: 'Search', de: 'Suche', jp: '検索' };
+// Language-switcher popup copy, keyed by the page's locale.
+const LOCALE_POPUP = {
+  en: {
+    title: '3M in the United States', change: 'Change 3M Location', save: 'Save', close: 'Close',
+  },
+  de: {
+    title: '3M in Deutschland', change: '3M-Standort ändern', save: 'Speichern', close: 'Schließen',
+  },
+  jp: {
+    title: '日本の3M', change: '3Mの国・地域を変更', save: '保存', close: '閉じる',
+  },
+};
+const LANGUAGE_LABEL = { en: 'English - EN', de: 'Deutsch - DE', jp: '日本語 - JA' };
+const CHANGE_LOCATION_URL = 'https://www.3m.com/3M/en_US/select-location/';
 
 async function fetchFragment(path) {
   try {
@@ -72,15 +86,31 @@ function switchLocale(target) {
   window.location.pathname = parts.join('/') || '/';
 }
 
-function localeHTML(locale, cls) {
+function localeToggleHTML(locale, cls) {
   return `
     <div class="nav-locale ${cls}">
-      <button class="nav-locale-toggle" type="button" aria-expanded="false" aria-label="Select language: ${LOCALE_LABEL[locale]}">
+      <button class="nav-locale-toggle" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="nav-locale-popup" aria-label="Select language: ${LOCALE_LABEL[locale]}">
         <span>${LOCALE_LABEL[locale]}</span>${icon('globe')}${icon('chevron-down')}
       </button>
-      <ul class="nav-locale-list">
-        ${LOCALES.map((l) => `<li><button type="button" data-locale="${l}"${l === locale ? ' aria-current="true"' : ''}>${LOCALE_LABEL[l]}</button></li>`).join('')}
-      </ul>
+    </div>`;
+}
+
+// One popup serves both toggles: anchored under the top-bar toggle on desktop,
+// centered over a dimmed page below 960px (as on www.3m.com).
+function localePopupHTML(locale) {
+  const copy = LOCALE_POPUP[locale];
+  return `
+    <div class="nav-locale-overlay"></div>
+    <div class="nav-locale-popup" id="nav-locale-popup" role="dialog" aria-modal="true" aria-labelledby="nav-locale-title">
+      <button class="nav-locale-close" type="button" aria-label="${copy.close}">${icon('close')}</button>
+      <div class="nav-locale-title" id="nav-locale-title">${copy.title}</div>
+      <form class="nav-locale-form">
+        <div class="nav-locale-options">
+          ${LOCALES.map((l) => `<label><input type="radio" name="locale" value="${l}"${l === locale ? ' checked' : ''}><span>${LANGUAGE_LABEL[l]}</span></label>`).join('')}
+        </div>
+        <a class="nav-locale-change" href="${CHANGE_LOCATION_URL}">${copy.change}</a>
+        <button class="nav-locale-save" type="submit">${copy.save}</button>
+      </form>
     </div>`;
 }
 
@@ -107,7 +137,7 @@ export default async function decorate(block) {
         <input type="search" name="Ntt" placeholder="${SEARCH_LABEL[locale]}" aria-label="${SEARCH_LABEL[locale]}" autocomplete="off">
         <button type="submit" aria-label="${SEARCH_LABEL[locale]}">${icon('search-3m')}</button>
       </form>
-      <div class="nav-top-end">${localeHTML(locale, 'nav-locale-desktop')}</div>
+      <div class="nav-top-end">${localeToggleHTML(locale, 'nav-locale-desktop')}</div>
       <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-panel">
         ${icon('menu', 'nav-burger-open')}${icon('close', 'nav-burger-close')}
       </button>
@@ -117,33 +147,46 @@ export default async function decorate(block) {
         <ul class="nav-links">
           ${navAnchors.map((a) => `<li><a href="${a.getAttribute('href')}"><span>${a.textContent.trim()}</span>${icon('chevron-down', 'nav-link-arrow')}</a></li>`).join('')}
         </ul>
-        ${localeHTML(locale, 'nav-locale-mobile')}
+        ${localeToggleHTML(locale, 'nav-locale-mobile')}
       </div>
       <div class="nav-actions">
         ${actionAnchors.map((a) => `<a class="nav-account" href="${a.getAttribute('href')}">${icon('user')}<span>${a.textContent.trim()}</span>${icon('chevron-down')}</a>`).join('')}
       </div>
-    </div>`;
+    </div>
+    ${localePopupHTML(locale)}`;
 
-  // Language switcher dropdowns (desktop top bar + mobile panel).
-  nav.querySelectorAll('.nav-locale').forEach((wrap) => {
-    const toggle = wrap.querySelector('.nav-locale-toggle');
+  // Language switcher popup (opened from the top-bar or mobile-panel toggle).
+  const toggles = [...nav.querySelectorAll('.nav-locale-toggle')];
+  const popup = nav.querySelector('.nav-locale-popup');
+  let opener = null;
+  const closeLocale = () => {
+    if (!nav.classList.contains('is-locale-open')) return;
+    nav.classList.remove('is-locale-open');
+    toggles.forEach((t) => t.setAttribute('aria-expanded', 'false'));
+    if (opener) opener.focus();
+  };
+  toggles.forEach((toggle) => {
     toggle.addEventListener('click', () => {
-      const open = wrap.classList.toggle('is-open');
-      toggle.setAttribute('aria-expanded', String(open));
-    });
-    wrap.querySelectorAll('[data-locale]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        if (btn.dataset.locale !== locale) switchLocale(btn.dataset.locale);
-      });
+      if (nav.classList.contains('is-locale-open')) {
+        closeLocale();
+        return;
+      }
+      opener = toggle;
+      nav.classList.add('is-locale-open');
+      toggle.setAttribute('aria-expanded', 'true');
+      popup.querySelector('input:checked').focus();
     });
   });
-  document.addEventListener('click', (e) => {
-    nav.querySelectorAll('.nav-locale.is-open').forEach((wrap) => {
-      if (!wrap.contains(e.target)) {
-        wrap.classList.remove('is-open');
-        wrap.querySelector('.nav-locale-toggle').setAttribute('aria-expanded', 'false');
-      }
-    });
+  nav.querySelector('.nav-locale-overlay').addEventListener('click', closeLocale);
+  nav.querySelector('.nav-locale-close').addEventListener('click', closeLocale);
+  nav.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLocale();
+  });
+  nav.querySelector('.nav-locale-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const target = new FormData(e.target).get('locale');
+    if (target && target !== locale) switchLocale(target);
+    else closeLocale();
   });
 
   const burger = nav.querySelector('.nav-burger');
