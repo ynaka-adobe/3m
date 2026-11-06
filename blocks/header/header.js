@@ -208,7 +208,7 @@ export default async function decorate(block) {
   nav.setAttribute('aria-label', 'Main');
   nav.innerHTML = `
     <div class="nav-top">
-      <a class="nav-logo" href="/${locale}/" aria-label="3M home">
+      <a class="nav-logo" href="https://www.3m.com/" aria-label="3M home">
         <img class="nav-logo-full" src="/icons/3m-logo.svg" alt="3M. Science. Applied to Life." width="227" height="40">
         <img class="nav-logo-mark" src="/icons/3m-logo-mark.svg" alt="3M" width="55" height="30">
       </a>
