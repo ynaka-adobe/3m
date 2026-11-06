@@ -219,9 +219,11 @@ export function assessBot() {
  * @returns {{label: string, granted: number, total: number}}
  */
 export function consentPosture(categories) {
-  if (!categories) return { label: 'No decision yet', granted: 0, total: 2 };
-  const optional = ['analytics', 'personalization'];
+  const optional = ['advertising', 'analytics', 'business-insights', 'performance'];
+  if (!categories) return { label: 'No decision yet', granted: 0, total: optional.length };
   const granted = optional.filter((id) => categories[id] === true).length;
-  const labels = ['Opted out of everything optional', 'Partial opt-in', 'Full opt-in'];
-  return { label: labels[granted], granted, total: optional.length };
+  let label = 'Partial opt-in';
+  if (granted === 0) label = 'Opted out of everything optional';
+  else if (granted === optional.length) label = 'Full opt-in';
+  return { label, granted, total: optional.length };
 }
