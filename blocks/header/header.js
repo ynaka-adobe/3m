@@ -3,8 +3,12 @@
  * logo / search / locale on top, primary nav and the account link below.
  * Under 960px it collapses to the 3M mark, a compact search, a hamburger
  * panel and an account bar. Nav links come from a per-locale fragment
- * (/{locale}/nav) so labels and links are authored/translated in DA: the
- * first list is the primary nav, the second holds the account link(s).
+ * (/{locale}/nav) so labels and links are authored/translated in DA:
+ * - section 1: list of primary nav links
+ * - section 2: list of account link(s)
+ * - further sections: one menu panel each, opened from the primary link whose
+ *   label matches the section heading. A panel holds a list of links, an
+ *   optional "view all" link paragraph, and an optional image + caption.
  */
 const LOCALES = ['en', 'de', 'jp'];
 const LOCALE_LABEL = { en: 'US - EN', de: 'DE - DE', jp: 'JP - JA' };
@@ -73,6 +77,27 @@ async function loadCarPersonalizationSubnav() {
   }
 }
 
+// Read the menu-panel sections (3rd section onward) of the nav fragment, keyed by heading.
+function parseMegaSections(sections) {
+  const megas = {};
+  sections.slice(2).forEach((section) => {
+    const heading = section.querySelector('h1, h2, h3, h4, h5, h6');
+    const list = section.querySelector('ul');
+    if (!heading || !list) return;
+    const paras = [...section.querySelectorAll(':scope > p')];
+    const allLink = paras.map((p) => p.querySelector(':scope > a:only-child')).find(Boolean);
+    const picture = section.querySelector('picture, img');
+    const caption = paras.find((p) => !p.querySelector('a, picture, img') && p.textContent.trim());
+    megas[heading.textContent.trim()] = {
+      links: [...list.querySelectorAll('a')],
+      allLink,
+      picture,
+      caption: caption ? caption.textContent.trim() : '',
+    };
+  });
+  return megas;
+}
+
 const icon = (name, cls = '') => `<img class="nav-icon nav-icon-${name} ${cls}" src="/icons/${name}.svg" alt="" aria-hidden="true">`;
 
 function localeToggleHTML(locale, cls) {
@@ -81,6 +106,27 @@ function localeToggleHTML(locale, cls) {
       <button class="nav-locale-toggle" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="nav-locale-popup" aria-label="Select language: ${LOCALE_LABEL[locale]}">
         <span>${LOCALE_LABEL[locale]}</span>${icon('globe')}${icon('chevron-down')}
       </button>
+    </div>`;
+}
+
+function megaHTML(id, title, mega) {
+  const { links, allLink, picture } = mega;
+  if (picture && picture.tagName === 'IMG') picture.setAttribute('loading', 'lazy');
+  else if (picture) picture.querySelectorAll('img').forEach((img) => img.setAttribute('loading', 'lazy'));
+  return `
+    <div class="nav-mega${picture ? ' has-feature' : ''}" id="${id}">
+      <div class="nav-mega-head">
+        <button class="nav-mega-back" type="button" aria-label="Back">${icon('chevron-left')}</button>
+        <span>${title}</span>
+      </div>
+      <ul class="nav-mega-list">
+        ${links.map((a) => `<li><a href="${a.getAttribute('href')}">${a.textContent.trim()}</a></li>`).join('')}
+      </ul>
+      ${allLink ? `<div class="nav-mega-all">
+        <a href="${allLink.getAttribute('href')}">${allLink.textContent.trim()}</a>
+        <button class="nav-mega-top" type="button" aria-label="Back to top">${icon('arrow-up')}</button>
+      </div>` : ''}
+      ${picture ? `<div class="nav-mega-feature">${picture.outerHTML}${mega.caption ? `<p>${mega.caption}</p>` : ''}</div>` : ''}
     </div>`;
 }
 
@@ -108,9 +154,19 @@ export default async function decorate(block) {
   const locale = LOCALES.includes(seg) ? seg : 'en';
 
   const frag = await loadNav(locale);
-  const lists = frag ? [...frag.querySelectorAll('ul')] : [];
-  const navAnchors = lists[0] ? [...lists[0].querySelectorAll('a')] : [];
-  const actionAnchors = lists[1] ? [...lists[1].querySelectorAll('a')] : [];
+  const sections = frag ? [...frag.querySelectorAll(':scope > div')] : [];
+  const linksIn = (section) => (section ? [...section.querySelectorAll('a')] : []);
+  const navAnchors = linksIn(sections[0]);
+  const actionAnchors = linksIn(sections[1]);
+  const megas = parseMegaSections(sections);
+
+  const navItemHTML = (a, i) => {
+    const label = a.textContent.trim();
+    const mega = megas[label];
+    const id = `nav-mega-${i}`;
+    const link = `<a href="${a.getAttribute('href')}"${mega ? ` aria-haspopup="true" aria-expanded="false" aria-controls="${id}"` : ''}><span>${label}</span>${icon('chevron-down', 'nav-link-arrow')}</a>`;
+    return `<li${mega ? ' class="has-mega"' : ''}>${link}${mega ? megaHTML(id, label, mega) : ''}</li>`;
+  };
 
   const nav = document.createElement('nav');
   nav.id = 'nav';
@@ -134,7 +190,7 @@ export default async function decorate(block) {
     <div class="nav-bottom">
       <div class="nav-panel" id="nav-panel">
         <ul class="nav-links">
-          ${navAnchors.map((a) => `<li><a href="${a.getAttribute('href')}"><span>${a.textContent.trim()}</span>${icon('chevron-down', 'nav-link-arrow')}</a></li>`).join('')}
+          ${navAnchors.map(navItemHTML).join('')}
         </ul>
         ${localeToggleHTML(locale, 'nav-locale-mobile')}
       </div>
@@ -177,11 +233,51 @@ export default async function decorate(block) {
     closeLocale();
   });
 
+  // Menu panels: a dropdown under the nav on desktop, a drill-down view in the
+  // hamburger panel below 960px. The primary link toggles instead of navigating.
+  const panel = nav.querySelector('.nav-panel');
+  const closeMegas = () => {
+    nav.querySelectorAll('.nav-links > li.is-open').forEach((li) => {
+      li.classList.remove('is-open');
+      li.querySelector(':scope > a').setAttribute('aria-expanded', 'false');
+    });
+    panel.classList.remove('is-drilled');
+  };
+  nav.querySelectorAll('.nav-links > li.has-mega').forEach((li) => {
+    const link = li.querySelector(':scope > a');
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const wasOpen = li.classList.contains('is-open');
+      closeMegas();
+      if (wasOpen) return;
+      li.classList.add('is-open');
+      link.setAttribute('aria-expanded', 'true');
+      panel.classList.add('is-drilled');
+      panel.scrollTop = 0;
+    });
+    li.querySelector('.nav-mega-back').addEventListener('click', () => {
+      closeMegas();
+      link.focus();
+    });
+    const top = li.querySelector('.nav-mega-top');
+    if (top) top.addEventListener('click', () => panel.scrollTo({ top: 0, behavior: 'smooth' }));
+  });
+  document.addEventListener('click', (e) => {
+    if (window.matchMedia('(width >= 960px)').matches && !e.target.closest('.nav-links')) closeMegas();
+  });
+  nav.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const open = nav.querySelector('.nav-links > li.is-open > a');
+    closeMegas();
+    if (open) open.focus();
+  });
+
   const burger = nav.querySelector('.nav-burger');
   burger.addEventListener('click', () => {
     const open = nav.classList.toggle('is-open');
     burger.setAttribute('aria-expanded', String(open));
     burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    if (!open) closeMegas();
   });
 
   block.replaceChildren(nav);

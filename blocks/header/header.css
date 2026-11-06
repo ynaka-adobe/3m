@@ -361,11 +361,11 @@ header .nav-3m.is-open .nav-panel {
   display: block;
 }
 
-header .nav-links li {
+header .nav-links > li {
   margin-bottom: 15px;
 }
 
-header .nav-links a {
+header .nav-links > li > a {
   position: relative;
   display: flex;
   align-items: center;
@@ -385,6 +385,123 @@ header .nav-links .nav-link-arrow {
   height: 16px;
   transform: rotate(-90deg);
   filter: brightness(0);
+}
+
+/* ── menu panels (Products, Industries): drill-down view below 960px ── */
+header .nav-mega {
+  display: none;
+  background: #fff;
+  color: #4b4b4b;
+}
+
+header .nav-links > li.is-open > .nav-mega {
+  display: block;
+}
+
+@media (width < 960px) {
+  header .nav-panel.is-drilled {
+    padding: 0;
+    border-width: 1px;
+    border-color: #f2f2f2;
+    background: #fff;
+  }
+
+  header .nav-panel.is-drilled .nav-links > li:not(.is-open),
+  header .nav-panel.is-drilled .nav-links > li.is-open > a,
+  header .nav-panel.is-drilled .nav-locale-mobile {
+    display: none;
+  }
+
+  header .nav-panel.is-drilled .nav-links > li {
+    margin: 0;
+  }
+}
+
+header .nav-mega-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+header .nav-mega-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  width: 78px;
+  height: 47px;
+  padding: 1px 6px 1px 22px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+header .nav-mega-back .nav-icon {
+  width: 13.33px;
+  height: 13.33px;
+}
+
+header .nav-mega-list li {
+  border-bottom: 1px solid #ddd;
+}
+
+header .nav-mega-list a:any-link,
+header .nav-mega-all a:any-link {
+  display: block;
+  padding: 20px 25px;
+  color: #4b4b4b;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 25px;
+}
+
+header .nav-mega-list a:hover,
+header .nav-mega-list a:focus-visible {
+  color: #4b4b4b;
+  text-decoration: underline;
+}
+
+header .nav-mega-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 20px 25px 150px;
+}
+
+header .nav-mega-all a:any-link,
+header .nav-mega-all a:hover {
+  padding: 0;
+  color: #003ce6;
+  font-size: 18px;
+  line-height: 22.5px;
+  text-decoration: underline;
+}
+
+header .nav-mega-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 39px;
+  padding: 10px;
+  border: 1px solid #4b4b4b;
+  background: #fff;
+  cursor: pointer;
+}
+
+header .nav-mega-top .nav-icon {
+  width: 14px;
+  height: 14px;
+}
+
+header .nav-mega-feature {
+  display: none;
 }
 
 header .nav-locale-mobile {
@@ -637,17 +754,17 @@ header .nav-account .nav-icon-chevron-down {
     display: flex;
   }
 
-  header .nav-links li {
+  header .nav-links > li {
     margin: 0;
     padding-top: 5px;
   }
 
-  header .nav-links a {
+  header .nav-links > li > a {
     display: block;
     color: #4b4b4b;
   }
 
-  header .nav-links a::after {
+  header .nav-links > li > a::after {
     content: "";
     position: absolute;
     left: 0;
@@ -659,13 +776,13 @@ header .nav-account .nav-icon-chevron-down {
     transition: opacity 0.2s;
   }
 
-  header .nav-links a:hover,
-  header .nav-links a:focus-visible {
+  header .nav-links > li > a:hover,
+  header .nav-links > li > a:focus-visible {
     color: #4b4b4b;
   }
 
-  header .nav-links a:hover::after,
-  header .nav-links a:focus-visible::after {
+  header .nav-links > li > a:hover::after,
+  header .nav-links > li > a:focus-visible::after {
     opacity: 1;
   }
 
@@ -688,10 +805,124 @@ header .nav-account .nav-icon-chevron-down {
     width: 11px;
     height: 11px;
   }
+
+  /* menu panels: full-width dropdown under the nav row */
+  header .nav-links > li.is-open > a {
+    padding-bottom: 13px;
+  }
+
+  header .nav-links > li.is-open > a::after {
+    opacity: 1;
+  }
+
+  header .nav-mega {
+    position: absolute;
+    top: 142px;
+    left: 0;
+    right: 0;
+    z-index: 98;
+    padding: 20px 3% 62px 4%;
+  }
+
+  header .nav-mega-head,
+  header .nav-mega-top {
+    display: none;
+  }
+
+  header .nav-mega-list {
+    min-height: 380px;
+    column-count: 3;
+    column-gap: 14px;
+  }
+
+  /* stands in for the "view all" cell so columns split as on www.3m.com */
+  header .nav-mega-list::after {
+    content: "";
+    display: block;
+    height: 170px;
+  }
+
+  header .nav-mega-list li {
+    height: 45px;
+    border: 0;
+    break-inside: avoid;
+  }
+
+  header .nav-mega-list a:any-link {
+    padding: 10px 20px;
+  }
+
+  header .nav-mega-all {
+    position: absolute;
+    right: calc(45px - 1%);
+    bottom: 20px;
+    display: block;
+    padding: 0;
+  }
+
+  header .nav-mega.has-feature {
+    padding: 30px 46% 170px 4%;
+  }
+
+  header .nav-mega.has-feature .nav-mega-list {
+    height: 280px;
+    min-height: 0;
+    column-count: 2;
+    column-fill: auto;
+  }
+
+  header .nav-mega.has-feature .nav-mega-list::after {
+    content: none;
+  }
+
+  header .nav-mega-feature {
+    position: absolute;
+    top: 24px;
+    right: calc(55px + 1%);
+    display: block;
+    width: 330px;
+    font-size: 14px;
+    line-height: 17.5px;
+  }
+
+  header .nav-mega-feature img {
+    display: block;
+    width: 330px;
+    height: 281px;
+    object-fit: cover;
+  }
+
+  header .nav-mega-feature p {
+    margin: 5.5px 0 0;
+  }
+}
+
+/* www.3m.com's Products panel runs wider than the 1200px page column */
+@media (1200px <= width < 1440px) {
+  header .nav-mega:not(.has-feature) {
+    padding-right: 23.9px;
+    padding-left: 48.5px;
+  }
+
+  header .nav-mega-all {
+    right: 20.4px;
+  }
 }
 
 @media (width >= 1440px) {
   header .nav-search {
     max-width: 60%;
+  }
+
+  header .nav-mega-list {
+    column-count: 4;
+  }
+
+  header .nav-mega.has-feature .nav-mega-list {
+    column-count: 3;
+  }
+
+  header .nav-mega-feature {
+    right: calc(70px + 1%);
   }
 }
