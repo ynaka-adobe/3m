@@ -1,257 +1,589 @@
-.rs-locator {
+/* desktop first version; the mobile layout follows later */
+.locator {
+  --locator-bg: #f7f7f7;
+  --locator-border: rgb(0 0 0 / 15%);
+  --locator-list-width: 400px; /* keep in sync with LIST_WIDTH in locator.js */
+  --locator-height: 640px;
+
+  position: relative;
   display: grid;
-  gap: 16px;
-  padding: 20px;
-  background: #f4f5f7;
-  border-radius: 12px;
+  background: var(--locator-bg);
+  color: #000;
+  font-family: var(--body-font-family);
+  font-size: 14px;
+  line-height: 1.25;
 }
 
-.rs-loc-header {
+.locator .locator-title {
+  margin: 0;
+  padding: 24px 24px 0;
+  font-size: var(--heading-font-size-m);
+}
+
+/* ---- filter bar ---- */
+.locator .locator-filters {
+  display: grid;
+  gap: 12px;
+  padding: 20px 24px 16px;
+}
+
+.locator .locator-filter-row {
   display: flex;
   gap: 12px;
   align-items: center;
-  justify-content: space-between;
 }
 
-.rs-loc-title {
+.locator .locator-search {
+  position: relative;
+  flex: 0 1 400px;
+}
+
+.locator input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
   margin: 0;
-  font-size: 22px;
-}
-
-.rs-loc-expand {
-  padding: 8px 14px;
-  border: 1px solid #cfd3d8;
-  border-radius: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--locator-border);
+  border-radius: 0;
   background: #fff;
-  color: #333;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
+  color: #000;
+  font-family: inherit;
+  font-size: 16px;
 }
 
-.rs-loc-expand:hover {
-  border-color: #111;
+.locator input:focus {
+  border-color: #000;
+  outline: none;
 }
 
-.rs-loc-toolbar {
+.locator .locator-where {
+  padding-right: 84px;
+}
+
+.locator .locator-name {
+  flex: 0 1 260px;
+}
+
+.locator .locator-radius {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
   gap: 10px;
   align-items: center;
 }
 
-.rs-loc-search {
-  flex: 1 1 220px;
-  min-width: 180px;
-  padding: 10px 14px;
-  border: 1px solid #cfd3d8;
-  border-radius: 8px;
+.locator .locator-radius-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.locator .locator-radius-input {
+  width: 160px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.locator .locator-radius-value {
+  min-width: 52px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.locator .locator-go,
+.locator .locator-near {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #000;
+  cursor: pointer;
+}
+
+.locator .locator-go {
+  right: 0;
+}
+
+.locator .locator-near {
+  right: 40px;
+}
+
+.locator .locator-go:hover,
+.locator .locator-near:hover {
+  color: var(--accent);
+}
+
+.locator .locator-go svg,
+.locator .locator-near svg {
+  width: 22px;
+  height: 22px;
+  fill: currentcolor;
+}
+
+.locator .locator-count {
+  margin: 0 0 0 auto;
+  color: var(--muted);
   font-size: 14px;
 }
 
-.rs-loc-filters {
+.locator .locator-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px 12px;
+  align-items: center;
 }
 
-.rs-loc-chip {
-  padding: 6px 12px;
-  border: 1px solid #cfd3d8;
-  border-radius: 16px;
-  background: #fff;
-  color: #444;
-  font-size: 12px;
-  cursor: pointer;
+.locator .locator-chip-row[hidden] {
+  display: none;
 }
 
-.rs-loc-chip.is-active {
-  border-color: #111;
-  background: #111;
-  color: #fff;
+.locator .locator-chips-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.rs-loc-body {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 16px;
-  min-height: 420px;
-}
-
-@media (width <= 700px) {
-  .rs-loc-body {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---- stylized map ---- */
-.rs-loc-map {
-  position: relative;
-  overflow: hidden;
-  border-radius: 10px;
-  background:
-    radial-gradient(circle at 70% 30%, rgb(120 170 200 / 25%) 0 12%, rgb(0 0 0 / 0%) 13%),
-    radial-gradient(circle at 25% 70%, rgb(150 190 140 / 30%) 0 16%, rgb(0 0 0 / 0%) 17%),
-    repeating-linear-gradient(0deg, rgb(0 0 0 / 5%) 0 1px, rgb(0 0 0 / 0%) 1px 40px),
-    repeating-linear-gradient(90deg, rgb(0 0 0 / 5%) 0 1px, rgb(0 0 0 / 0%) 1px 40px),
-    #e9ecef;
-  min-height: 320px;
-}
-
-.rs-loc-pin {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  padding: 0;
-  border: 2px solid #fff;
-  border-radius: 50% 50% 50% 0;
-  background: #e00;
-  box-shadow: 0 2px 4px rgb(0 0 0 / 30%);
-  transform: rotate(-45deg);
-  cursor: pointer;
-}
-
-.rs-loc-pin.is-active {
-  z-index: 3;
-  background: #111;
-  transform: rotate(-45deg) scale(1.4);
-}
-
-/* ---- list ---- */
-.rs-loc-list {
-  max-height: 460px;
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  list-style: none;
-}
-
-.rs-loc-card {
-  padding: 12px 14px;
-  border: 1px solid #e2e5e9;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.rs-loc-card.is-active {
-  border-color: #e00;
-  box-shadow: 0 0 0 2px rgb(238 0 0 / 25%);
-}
-
-.rs-loc-card-head {
+.locator .locator-chips {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.rs-loc-card-head strong {
-  font-size: 15px;
+.locator .locator-chip {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--locator-border);
+  border-radius: 16px;
+  background: #fff;
+  color: #000;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
 }
 
-.rs-loc-dist {
-  flex: none;
-  color: #e00;
-  font-size: 12px;
+.locator .locator-chip:hover {
+  border-color: #000;
+}
+
+.locator .locator-chip[aria-pressed="true"] {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+.locator .locator-clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #000;
+  font-family: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.locator .locator-clear[hidden] {
+  display: none;
+}
+
+.locator .locator-status {
+  margin: 0;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.locator .locator-note {
+  margin: 0;
+  padding: 8px 12px;
+  border-left: 4px solid #f0a000;
+  background: #fff8e5;
+  font-size: 13px;
+}
+
+.locator .locator-status:empty,
+.locator .locator-note:empty {
+  display: none;
+}
+
+.locator .locator-more:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ---- tabs ---- */
+.locator .locator-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--locator-border);
+  background: #fff;
+}
+
+.locator .locator-tab {
+  position: relative;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px;
   font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
-.rs-loc-addr {
-  margin: 4px 0 2px;
-  color: #555;
+.locator .locator-tab[aria-selected="true"] {
+  color: #000;
+}
+
+.locator .locator-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  background: var(--accent);
+}
+
+/* ---- results: list floating over the map ---- */
+.locator .locator-results {
+  position: relative;
+  height: var(--locator-height);
+}
+
+.locator .locator-map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #f0f0f0;
+}
+
+.locator .locator-list-wrap {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 1;
+  box-sizing: border-box;
+  width: var(--locator-list-width);
+  padding: 10px 20px 10px 10px;
+  overflow-y: auto;
+}
+
+.locator .locator-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.locator .locator-results.is-list-view {
+  height: auto;
+}
+
+.locator .locator-results.is-list-view .locator-map {
+  display: none;
+}
+
+.locator .locator-results.is-list-view .locator-list-wrap {
+  position: static;
+  width: auto;
+  padding: 20px 24px;
+  overflow: visible;
+}
+
+.locator .locator-results.is-list-view .locator-list {
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.locator .locator-message {
+  padding: 20px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.locator .locator-map .locator-message {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+
+/* ---- cards ---- */
+.locator .locator-card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  padding: 16px 16px 16px 0;
+  border: 1px solid var(--locator-border);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.locator .locator-card:hover {
+  box-shadow: 0 0 5px rgb(0 0 0 / 10%);
+}
+
+.locator .locator-card.is-active {
+  box-shadow: inset 5px 0 0 var(--accent), 0 0 5px rgb(0 0 0 / 10%);
+}
+
+.locator .locator-card-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.locator .locator-card-pin svg {
+  width: 22px;
+  height: 27px;
+}
+
+.locator .locator-card-pin path {
+  fill: var(--muted);
+}
+
+.locator .locator-card-pin circle {
+  fill: #fff;
+}
+
+.locator .locator-card:hover .locator-card-pin path,
+.locator .locator-card.is-active .locator-card-pin path {
+  fill: var(--accent);
+}
+
+.locator .locator-card-dist {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.locator .locator-card-main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  justify-items: start;
+}
+
+.locator .locator-card-name {
+  margin: 0;
+  font-size: 16px;
+  line-height: 19px;
+}
+
+.locator .locator-card-select {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.locator .locator-card-addr {
+  margin: 0;
   font-size: 13px;
+  line-height: 17px;
 }
 
-.rs-loc-svc {
-  margin: 0 0 6px;
-  color: #888;
-  font-size: 12px;
-}
-
-.rs-loc-phone {
-  color: #0a5;
+.locator .locator-card-phone,
+.locator .locator-card-directions {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: #666;
   font-size: 13px;
-  font-weight: 600;
   text-decoration: none;
 }
 
-.rs-loc-empty {
-  padding: 16px;
-  color: #888;
+.locator .locator-card-directions {
+  color: #000;
+  font-weight: 700;
 }
 
-/* ---- takeover modal ---- */
-.rs-loc-close {
+.locator .locator-card-phone:hover,
+.locator .locator-card-directions:hover {
+  color: var(--accent);
+}
+
+.locator .locator-card-phone svg,
+.locator .locator-card-directions svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: #666;
+}
+
+.locator .locator-card-products {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.locator .locator-card-products li {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #f0f0f0;
+  color: #333;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.locator .locator-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+}
+
+.locator .locator-card-quote {
+  display: none;
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.locator .locator-card-quote:hover {
+  border-color: var(--accent-dark);
+  background: var(--accent-dark);
+}
+
+.locator .locator-card.is-active .locator-card-quote,
+.locator .is-list-view .locator-card-quote {
+  display: inline-block;
+}
+
+/* ---- show more ---- */
+.locator .locator-more {
+  display: block;
+  min-width: 160px;
+  height: 40px;
+  margin: 16px auto 24px;
+  padding: 0 20px;
+  border: 1px solid #000;
+  border-radius: 20px;
+  background: #000;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.locator .locator-more:hover {
+  background: var(--ink);
+}
+
+.locator .locator-more[hidden] {
+  display: none;
+}
+
+.locator .locator-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---- map pins and clusters ---- */
+.locator .locator-pin {
+  border: 0;
+  background: none;
+}
+
+.locator .locator-pin svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 30%));
+}
+
+.locator .locator-pin path {
+  fill: var(--accent);
+}
+
+.locator .locator-pin circle {
+  fill: #fff;
+}
+
+.locator .locator-cluster {
+  display: grid;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  color: #fff;
+  font-family: var(--body-font-family);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.locator .leaflet-container {
+  font-family: var(--body-font-family);
+}
+
+/* muted, light-grey base map so the red pins stand out */
+.locator .leaflet-tile-pane {
+  filter: grayscale(1) contrast(0.85) brightness(1.08);
+}
+
+.locator .leaflet-container a {
+  color: inherit;
+}
+
+/* ---- modal (opened from other blocks, e.g. the visualizer) ---- */
+.locator.locator-modal {
+  --locator-height: calc(100vh - 260px);
+
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  align-content: start;
+  overflow: auto;
+}
+
+.locator .locator-close {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 2;
-  display: none;
   width: 40px;
   height: 40px;
   padding: 0;
-  border: 1px solid #cfd3d8;
-  border-radius: 50%;
-  background: #fff;
-  color: #333;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-}
-
-.rs-locator-takeover {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  padding: 24px 24px 32px;
-  border-radius: 0;
-  overflow: auto;
-}
-
-.rs-locator-takeover .rs-loc-close {
-  display: block;
-}
-
-.rs-locator-takeover .rs-loc-expand {
-  display: none;
-}
-
-.rs-locator-takeover .rs-loc-body {
-  min-height: calc(100vh - 200px);
-}
-
-.rs-locator-takeover .rs-loc-list {
-  max-height: calc(100vh - 220px);
 }
 
 body.rs-locator-lock {
   overflow: hidden;
 }
 
-/* ---- get a quote ---- */
-.rs-loc-quote {
-  display: none;
-  margin-top: 10px;
-  padding: 9px 18px;
-  border: 0;
-  border-radius: 6px;
-  background: #e00;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.rs-loc-quote:hover {
-  background: #c00;
-}
-
-.rs-loc-card.is-active .rs-loc-quote {
-  display: inline-block;
-}
-
+/* ---- get a quote dialog (appended to body) ---- */
 .rs-quote-overlay {
   position: fixed;
   inset: 0;
