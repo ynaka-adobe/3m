@@ -69,14 +69,41 @@
 
   /* layout */
   --maxw: 1200px;
-  --nav-height: 70px;
+
+  /* page column, as on www.3m.com: fluid below 1200px, then fixed 1200/1440 and centered */
+  --page-width: 100vw;
+  --nav-height: 96px;
   --radius: 0px;
+}
+
+@media (width >= 768px) {
+  :root {
+    --nav-height: 106px;
+  }
 }
 
 @media (width >= 900px) {
   :root {
     --heading-font-size-xxl: 88px;
     --heading-font-size-xl: 46px;
+  }
+}
+
+@media (width >= 960px) {
+  :root {
+    --nav-height: 149px;
+  }
+}
+
+@media (width >= 1200px) {
+  :root {
+    --page-width: 1200px;
+  }
+}
+
+@media (width >= 1440px) {
+  :root {
+    --page-width: 1440px;
   }
 }
 
@@ -94,6 +121,13 @@ body {
 
 body.appear {
   display: block;
+}
+
+@media (width >= 1200px) {
+  body {
+    width: var(--page-width);
+    margin: 0 auto;
+  }
 }
 
 header {

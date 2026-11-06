@@ -1,17 +1,20 @@
 /**
- * breadcrumb — ancestor trail for deep L2/L3 pages. By default the trail is
- * derived from the current URL path, so authors drop the block in and it just
- * works; any segment can be relabelled or hidden by authoring a row.
+ * breadcrumb — ancestor trail (+ optional page title), styled like the
+ * www.3m.com breadcrumb strip under the header.
  *
  * Variants via block class:
- *   breadcrumb compact    tighter type, no top rule
+ *   breadcrumb compact    tighter spacing
  *
- * Authoring (optional — all rows are overrides):
+ * Authoring, option A — explicit trail:
+ *   a row holding a paragraph like "United States > Consumer > Car Personalization",
+ *   where linked items become crumb links (an unlinked first item links to the
+ *   site home); a row holding a heading is shown as the page title under the trail.
+ *
+ * Authoring, option B — derived from the URL path (all rows are overrides):
  *   1. path segment   the URL segment to relabel, e.g. "industrial-tapes"
  *                     or the literal "home" to rename the root crumb
  *   2. label          the text to show instead of the derived title
- *
- * A row whose label is blank removes that segment from the trail.
+ *   A row whose label is blank removes that segment from the trail.
  */
 const HOME_LABEL = 'Home';
 
@@ -23,7 +26,30 @@ function titleCase(segment) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function decorate(block) {
+// Site home: the locale root ("/en/") when the path starts with one, else "/".
+function homePath() {
+  const [first] = window.location.pathname.split('/').filter(Boolean);
+  return first && /^[a-z]{2}$/.test(first) ? `/${first}/` : '/';
+}
+
+// "A > <a>B</a> > C" -> [{ label, href }] (the last crumb is the current page).
+// innerHTML serializes a literal ">" in text as "&gt;", so tags are never split.
+function parseTrail(el) {
+  const crumbs = el.innerHTML.split('&gt;')
+    .map((part) => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = part;
+      const a = tmp.querySelector('a');
+      const label = tmp.textContent.trim();
+      return label ? { label, href: a ? a.getAttribute('href') : null } : null;
+    })
+    .filter(Boolean);
+  if (crumbs.length && !crumbs[0].href) crumbs[0].href = homePath();
+  if (crumbs.length) crumbs[crumbs.length - 1].current = true;
+  return crumbs;
+}
+
+function derivedTrail(block) {
   // author overrides: segment -> label ("" means drop the crumb)
   const overrides = new Map();
   [...block.children].forEach((row) => {
@@ -35,7 +61,6 @@ export default function decorate(block) {
   });
 
   const segments = window.location.pathname.split('/').filter(Boolean);
-
   const crumbs = [];
   const homeLabel = overrides.has('home') ? overrides.get('home') : HOME_LABEL;
   if (homeLabel) crumbs.push({ label: homeLabel, href: '/' });
@@ -49,34 +74,47 @@ export default function decorate(block) {
     if (!label) return;
     crumbs.push({ label, href: path, current: i === segments.length - 1 });
   });
+  return crumbs;
+}
 
-  if (crumbs.length < 2) {
-    // nothing meaningful to show (e.g. the home page itself)
-    block.replaceChildren();
-    return;
+export default function decorate(block) {
+  const rows = [...block.children];
+  const trailRow = rows.find((row) => row.children.length === 1 && row.textContent.includes('>'));
+  const heading = block.querySelector('h1, h2, h3, h4, h5, h6');
+
+  const crumbs = trailRow ? parseTrail(trailRow.querySelector('p') || trailRow.firstElementChild) : derivedTrail(block);
+
+  const content = [];
+  if (crumbs.length >= 2 || (trailRow && crumbs.length)) {
+    const nav = document.createElement('nav');
+    nav.className = 'breadcrumb-nav';
+    nav.setAttribute('aria-label', 'Breadcrumb');
+    const ol = document.createElement('ol');
+    crumbs.forEach((crumb) => {
+      const li = document.createElement('li');
+      if (crumb.current || !crumb.href) {
+        const span = document.createElement('span');
+        span.textContent = crumb.label;
+        if (crumb.current) span.setAttribute('aria-current', 'page');
+        li.append(span);
+      } else {
+        const a = document.createElement('a');
+        a.href = crumb.href;
+        a.textContent = crumb.label;
+        li.append(a);
+      }
+      ol.append(li);
+    });
+    nav.append(ol);
+    content.push(nav);
   }
 
-  const nav = document.createElement('nav');
-  nav.className = 'breadcrumb-nav';
-  nav.setAttribute('aria-label', 'Breadcrumb');
+  if (trailRow && heading) {
+    heading.classList.add('breadcrumb-title');
+    heading.textContent = heading.textContent.trim();
+    content.push(heading);
+  }
 
-  const ol = document.createElement('ol');
-  crumbs.forEach((crumb) => {
-    const li = document.createElement('li');
-    if (crumb.current) {
-      const span = document.createElement('span');
-      span.textContent = crumb.label;
-      span.setAttribute('aria-current', 'page');
-      li.append(span);
-    } else {
-      const a = document.createElement('a');
-      a.href = crumb.href;
-      a.textContent = crumb.label;
-      li.append(a);
-    }
-    ol.append(li);
-  });
-
-  nav.append(ol);
-  block.replaceChildren(nav);
+  // nothing meaningful to show (e.g. the home page itself)
+  block.replaceChildren(...content);
 }
