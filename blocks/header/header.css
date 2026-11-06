@@ -349,9 +349,12 @@ header .nav-panel {
   display: none;
   box-sizing: border-box;
   height: calc(100vh - 50px);
-  padding: 32px 16px 30px;
+  padding: 30px 15px;
+  border: solid #fff;
+  border-width: 2px 1px 0;
   overflow-y: auto;
   background: #f2f2f2;
+  box-shadow: 2px 2px 6px 0 rgb(204 204 204 / 35%);
 }
 
 header .nav-3m.is-open .nav-panel {
@@ -497,9 +500,10 @@ header .nav-account .nav-icon-chevron-down {
     height: 24px;
   }
 
+  /* tablet: the menu is a right-half drawer, as on www.3m.com */
   header .nav-panel {
-    top: 62px;
-    height: calc(100vh - 62px);
+    top: 70px;
+    left: 50%;
   }
 
   header .nav-account {
@@ -623,8 +627,10 @@ header .nav-account .nav-icon-chevron-down {
     display: block;
     height: auto;
     padding: 15px 15px 0 calc(5% - 15px);
+    border: 0;
     overflow: visible;
     background: #fff;
+    box-shadow: none;
   }
 
   header .nav-links {
