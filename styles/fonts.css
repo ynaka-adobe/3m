@@ -1,2 +1,26 @@
-/* Brand fonts (3MCircular) are self-hosted in styles.css with a metric-matched
-   fallback. This file is intentionally empty; the boilerplate loads it lazily. */
+/*
+ * Self-hosted 3MCircular brand font (proprietary — see styles/fonts/LICENSING.md).
+ * Loaded after the page's largest paint (straight away on desktop and repeat
+ * visits); until then text uses the metric-matched "3MCircular-fallback" from
+ * styles.css, so the swap doesn't shift the layout.
+ */
+@font-face {
+  font-family: "3MCircular";
+  font-weight: 300;
+  font-display: swap;
+  src: url("/styles/fonts/3MCircularWeb-Light.woff") format("woff");
+}
+
+@font-face {
+  font-family: "3MCircular";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/styles/fonts/3MCircularWeb-Book.woff") format("woff");
+}
+
+@font-face {
+  font-family: "3MCircular";
+  font-weight: 700;
+  font-display: swap;
+  src: url("/styles/fonts/3MCircularWeb-Bold.woff") format("woff");
+}
