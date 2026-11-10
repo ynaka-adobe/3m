@@ -40,6 +40,10 @@ export const STUDIO_I18N = {
     finaleTitle: 'Let’s turn that dream into reality',
     restart: 'Start a new design',
     moreInfo: 'Product info:',
+    views: { side: 'Side', front: 'Front', rear: 'Rear' },
+    lightBg: 'Light background',
+    darkBg: 'Dark background',
+    close: 'Close',
   },
   de: {
     changeVehicle: 'Fahrzeug wechseln',
@@ -64,6 +68,10 @@ export const STUDIO_I18N = {
     finaleTitle: 'Lassen Sie Ihren Traum wahr werden',
     restart: 'Starten Sie ein neues Design',
     moreInfo: 'Produktinfos:',
+    views: { side: 'Seite', front: 'Vorne', rear: 'Hinten' },
+    lightBg: 'Heller Hintergrund',
+    darkBg: 'Dunkler Hintergrund',
+    close: 'Schließen',
   },
   jp: {
     changeVehicle: '車種を変える',
@@ -88,6 +96,10 @@ export const STUDIO_I18N = {
     finaleTitle: '夢のデザインを現実に！',
     restart: 'デザインを始める',
     moreInfo: '製品情報：',
+    views: { side: 'サイド', front: 'フロント', rear: 'リア' },
+    lightBg: '明るい背景',
+    darkBg: '暗い背景',
+    close: '閉じる',
   },
 };
 
@@ -118,6 +130,7 @@ export const SHARE_I18N = {
   en: {
     button: 'Share',
     title: 'Share your design',
+    close: 'Close',
     copy: 'Copy Link',
     copied: 'Copied!',
     download: 'Download',
@@ -137,6 +150,7 @@ export const SHARE_I18N = {
   de: {
     button: 'Teilen',
     title: 'Teilen Sie Ihr Design',
+    close: 'Schließen',
     copy: 'Link kopieren',
     copied: 'Kopiert!',
     download: 'Herunterladen',
@@ -156,6 +170,7 @@ export const SHARE_I18N = {
   jp: {
     button: 'シェア',
     title: 'デザインをシェアする',
+    close: '閉じる',
     copy: 'リンクをコピー',
     copied: 'コピーされました！',
     download: 'ダウンロード',

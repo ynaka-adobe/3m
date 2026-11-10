@@ -4,6 +4,7 @@ import {
 } from './strings.js';
 import { VEHICLES, DEFAULT_VEHICLE } from './vehicles.js';
 import { PRESET_LOOK, FILM_LOOK } from './looks.js';
+import { ORIGINAL_WRAPS, ORIGINAL_TINTS, ORIGINAL_FILMS } from './share-codes.js';
 
 // three.js is loaded lazily from a CDN so it never weighs down first paint.
 const THREE_VER = '0.160.0';
@@ -130,6 +131,15 @@ const FINISH_ICON = {
   Gloss: 'gloss', 'High Gloss': 'gloss', Matte: 'matte', Satin: 'satin',
 };
 
+// the original's coverage shields: one outline, filled more for more coverage
+const SHIELD_OUTLINE = 'M19.01,50.05l-0.48-0.21C17.78,49.51,0,41.67,0,27.47V3.18l1.44,0.28c0.08,0.01,7.83,1.41,17.04-3.19L19.01,0 l0.54,0.27c9.21,4.6,16.97,3.2,17.04,3.19l1.43-0.27l0,24.29c0,14.2-17.78,22.04-18.54,22.37L19.01,50.05z M2.41,6.01v21.46 c0,11.41,13.83,18.61,16.6,19.93c2.77-1.33,16.6-8.53,16.6-19.93V6.01c-2.76,0.23-9.16,0.25-16.6-3.32 C11.57,6.26,5.17,6.24,2.41,6.01z';
+const SHIELD_FILL = {
+  silver: 'M13.26,16.01v11.46c0,2.32,2.69,5.15,5.76,7.38c3.07-2.23,5.76-5.06,5.76-7.38V16.01 c-1.82-0.38-3.75-0.9-5.76-1.6C17.01,15.12,15.08,15.63,13.26,16.01z',
+  gold: 'M11.05,14.18v13.29c0,3.8,4.18,7.59,7.97,10.06c3.79-2.47,7.97-6.26,7.97-10.06V14.18 c-2.43-0.4-5.12-1.06-7.97-2.12C16.17,13.12,13.48,13.78,11.05,14.18z',
+  platinum: 'M7.84,11.37v16.1c0,6.41,7.17,11.46,11.18,13.79c4.01-2.33,11.18-7.37,11.18-13.79v-16.1 c-3.13-0.29-6.98-1.04-11.18-2.75C14.81,10.33,10.96,11.08,7.84,11.37z',
+};
+const shieldIcon = (tier) => `<svg class="rs-chip-shield" viewBox="0 0 38.03 50.05" aria-hidden="true" fill="currentColor"><path d="${SHIELD_OUTLINE}"/><path d="${SHIELD_FILL[tier]}"/></svg>`;
+
 // Two-tone flip films: at glancing angles the colour blends toward the film's
 // start/end colours (the original's two-colour shader), added to the
 // physical material's fragment shader.
@@ -179,15 +189,51 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([bytes], { type: mime });
 }
 
-// The original studio's analytics events (its Tealium tags), sent through the
-// site's consent-gated analytics, which is loaded on first use.
-const VEHICLE_EVENT_NAME = {
-  luxury: 'Luxury Car', tuner: 'Tuner Car', 'sports-car': 'Sports Car', 'muscle-car': 'Muscle Car', truck: 'Truck',
+// The original studio's analytics events (its 2026-06-19 spec: name, type and
+// id), sent through the site's consent-gated analytics, loaded on first use.
+const STUDIO_EVENTS = {
+  toggle: ['RS_Toggle updated', 'Select', '1.2.1'],
+  category: ['RS_Product Category', 'Select', '1.2.2'],
+  wrap: ['RS_Wrap Films Application', 'Select', '1.2.3'],
+  accent: ['RS_Accents Application', 'Select', '1.2.4'],
+  tint: ['RS_Tints Application', 'Select', '1.2.5'],
+  ppf: ['RS_Paint Protection Film Application', 'Select', '1.2.6'],
+  pwf: ['RS_Protection Wrap Film Application', 'Select', '1.2.7'],
+  vehicle: ['RS_Vehicle Class updated', 'Button Click', '1.2.9'],
+  done: ['RS_Studio completion', 'Button Click', '1.2.10'],
+  installer: ['RS_Studio Find an Installer', 'Link Click', '2.3'],
+  search: ['RS_Studio Installer Search', 'Button Click', '2.4'],
+  results: ['RS_Studio Installer Search results', 'Success', '2.5'],
+  shop: ['RS_Studio Installer shop interaction', 'Exit Link', '2.6'],
+  share: ['RS_Studio Share', 'Exit Link', '2.7'],
 };
+// English names the events report, whatever the page language
+const CATEGORY_EVENT_NAME = {
+  'Wrap Film': 'Wrap Films',
+  'Protection Wrap Film': 'Protection Wrap Film',
+  'Window Tint': 'Automotive Window Tints',
+  'Paint Protection Film': 'Paint Protection',
+};
+// the original's paint protection film codes: coverage, then M(atte) or G(loss)
+const PPF_EVENT_CODE = { silver: 'PF', gold: 'FF', platinum: 'FC' };
+const NO_SELECTION = 'NONE';
+const COORDS = /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/;
+let analyticsLoad;
 
-function studioEvent(name, detail = {}) {
-  import('../../scripts/analytics.js')
-    .then(({ track }) => track('restyling-studio', { studio: { eventName: name, ...detail } }))
+function studioEvent(key, { suffix, stage = 'studio', ...fields } = {}) {
+  const [name, type, id] = STUDIO_EVENTS[key];
+  const payload = {
+    event_name: suffix ? `${name}: ${suffix}` : name,
+    event_type: type,
+    event_id: `20260619_RS_${id}`,
+    funnel_stage: stage,
+    app_name: 'restyling_studio',
+    ...fields,
+  };
+  // one shared load keeps the events in the order they happened
+  analyticsLoad = analyticsLoad || import('../../scripts/analytics.js');
+  analyticsLoad
+    .then(({ track }) => track('restyling-studio', { studio: payload }))
     .catch(() => {});
 }
 
@@ -243,7 +289,7 @@ function showShareDialog({
 
   const closeBtn = el('button', 'rs-share-close', '×');
   closeBtn.type = 'button';
-  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.setAttribute('aria-label', s.close);
 
   const heading = el('h3', 'rs-share-heading', s.title);
   const preview = el('img', 'rs-share-image');
@@ -271,7 +317,7 @@ function showShareDialog({
     b.type = 'button';
     b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${SHARE_ICONS[key]}</svg><span>${label}</span>`;
     b.onclick = () => {
-      onEvent(`Link Click: Social Share: ${{ facebook: 'Facebook', x: 'Twitter', email: 'Email' }[key]}`);
+      onEvent(key);
       if (key === 'email') {
         // hand off to the mail app (detached link), and offer webmail in case
         // no app is registered for mailto: links
@@ -330,7 +376,6 @@ function showShareDialog({
   const downloadBtn = el('button', 'rs-share-download', s.download);
   downloadBtn.type = 'button';
   downloadBtn.onclick = () => {
-    onEvent('Link Click: Download');
     // a detached link: page-level click handlers never see this click
     const a = document.createElement('a');
     a.href = image;
@@ -356,6 +401,7 @@ function showShareDialog({
   closeBtn.onclick = close;
 
   copyBtn.onclick = async () => {
+    onEvent('copy_link');
     copyBtn.textContent = (await copyText(url, dialog)) ? s.copied : 'Ctrl+C';
     setTimeout(() => { copyBtn.textContent = s.copy; }, 2000);
   };
@@ -639,6 +685,8 @@ async function initStage(stage) {
   const backdropMat = new THREE.MeshBasicMaterial({
     map: texture(THEMES.light.backdrop, { color: true }),
   });
+  // loaded up front: every snapshot uses it
+  const nightBackdrop = texture(THEMES.dark.backdrop, { color: true });
   let backdrop = null;
   try {
     backdrop = (await loader.loadAsync(`${BASE}/backdrop.glb`)).scene;
@@ -734,7 +782,8 @@ async function initStage(stage) {
     // Capture the current view as a base64 data URL. WebGL clears the drawing
     // buffer after each frame, so force a fresh render and read it back in the
     // same call stack (no preserveDrawingBuffer needed).
-    // The snapshot uses the vehicle's own camera position, as the original does.
+    // The snapshot uses the vehicle's own camera position and, like the
+    // original, always the night backdrop (the lighting stays as it is).
     capture(type = 'image/png', quality = 0.92) {
       const before = camera.position.clone();
       const shot = car && (camera.aspect < 1 ? car.vehicle.shotPortrait : car.vehicle.shot);
@@ -742,8 +791,14 @@ async function initStage(stage) {
         camera.position.copy(fromOriginal(shot));
         camera.lookAt(controls.target);
       }
+      const { map } = backdropMat;
+      const bg = scene.background.clone();
+      backdropMat.map = nightBackdrop;
+      scene.background.set(THEMES.dark.bg);
       renderer.render(scene, camera);
       const url = renderer.domElement.toDataURL(type, quality);
+      backdropMat.map = map;
+      scene.background.copy(bg);
       camera.position.copy(before);
       camera.lookAt(controls.target);
       return url;
@@ -963,6 +1018,32 @@ function decodeDesign(code, byId) {
   return d;
 }
 
+// a link shared from the original studio: vehicle, tint, accent (2), D/N scene,
+// one wrap (2) per part in its order, then an optional paint protection film
+const ORIGINAL_HASH = /^#d\/([A-Z0-9-]{17,18})$/i;
+const ORIGINAL_PART_ORDER = ['front', 'hood', 'left', 'right', 'top', 'rear'];
+
+function decodeOriginal(code, byId, lang) {
+  const c = code.toUpperCase();
+  const vehicle = VEHICLES.find((v) => v.code === c[0]);
+  if (!vehicle) return null;
+  const d = emptyDesign();
+  const wrap = (key) => byId[ORIGINAL_WRAPS[key]];
+  d.tint = byId[(ORIGINAL_TINTS[lang] || ORIGINAL_TINTS.en)[c[1]]] || null;
+  if (wrap(c.slice(2, 4))) d.parts.accents = wrap(c.slice(2, 4));
+  ORIGINAL_PART_ORDER.forEach((p, i) => {
+    const film = wrap(c.slice(5 + 2 * i, 7 + 2 * i));
+    if (film) d.parts[p] = film;
+  });
+  const [coverage, ppf] = ORIGINAL_FILMS[c[17]] || [];
+  if (byId[ppf]) {
+    d.ppf = byId[ppf];
+    d.coverage = coverage;
+  }
+  // "P" marks a snapshot taken in the night scene
+  return { design: d, vehicle, theme: c[4] === 'D' ? 'light' : 'dark' };
+}
+
 // the original's share sentence: one, two or many wraps, plus the tint
 function designText(d, str) {
   const names = [...new Set([...BODY_PARTS, 'accents'].map((p) => d.parts[p]).filter(Boolean)
@@ -995,23 +1076,23 @@ export default async function decorate(block) {
   block.classList.add('rs-visualizer');
 
   const stage = el('div', 'rs-stage');
-  let activeTheme = 'light';
+  let activeTheme = 'dark'; // the original opens in its night scene
   const themeBar = el('div', 'rs-theme');
-  [['light', 'Light', '☀'], ['dark', 'Dark', '☾']].forEach(([mode, label, icon]) => {
+  [['light', ui.lightBg, '☀'], ['dark', ui.darkBg, '☾']].forEach(([mode, label, icon]) => {
     const b = el('button', `rs-theme-btn${mode === activeTheme ? ' is-active' : ''}`, icon);
     b.type = 'button';
     b.dataset.theme = mode;
-    b.title = `${label} background`;
-    b.setAttribute('aria-label', `${label} background`);
+    b.title = label;
+    b.setAttribute('aria-label', label);
     themeBar.append(b);
   });
   stage.append(themeBar);
 
   const viewbar = el('div', 'rs-viewbar');
-  ['Side', 'Front', 'Rear'].forEach((v, i) => {
-    const b = el('button', `rs-view${i === 0 ? ' is-active' : ''}`, v);
+  ['side', 'front', 'rear'].forEach((v, i) => {
+    const b = el('button', `rs-view${i === 0 ? ' is-active' : ''}`, ui.views[v]);
     b.type = 'button';
-    b.dataset.view = v.toLowerCase();
+    b.dataset.view = v;
     viewbar.append(b);
   });
   const caption = el('div', 'rs-caption', t.loading);
@@ -1031,11 +1112,24 @@ export default async function decorate(block) {
   cta.type = 'button';
   const openLocator = async () => {
     const { openLocatorModal } = await import('../locator/locator.js');
-    openLocatorModal({ source: cfg.installers, title: t.findInstaller });
+    openLocatorModal({
+      source: cfg.installers,
+      title: t.findInstaller,
+      // the locator's searches and shop clicks, as the original reports them
+      onEvent: (key, fields) => studioEvent(key, {
+        stage: 'service_locator',
+        ...(key === 'search' && { data_tracking_event: 'post_code_lookup' }),
+        ...fields,
+        // coordinates are never sent, only that a location was searched
+        ...(fields.Internal_search_term && {
+          Internal_search_term: COORDS.test(fields.Internal_search_term)
+            ? '[lat]/[lon]' : fields.Internal_search_term,
+        }),
+      }),
+    });
   };
   cta.onclick = () => {
-    // eslint-disable-next-line no-use-before-define
-    studioEvent('Link Click: Restyler', designDetail());
+    studioEvent('installer');
     openLocator();
   };
   // captures the current 3D view, posts it to the Fusion share webhook and
@@ -1113,20 +1207,23 @@ export default async function decorate(block) {
   let tiers = [];
   const canHover = window.matchMedia('(hover: hover)').matches;
   // the design in the original's analytics format: vehicle plus each layer's film
-  function designDetail() {
-    const name = (f) => (f ? f.name.replace(/\s/g, '') : 'undefined');
-    return {
-      V: VEHICLE_EVENT_NAME[vehicle.key],
-      FB: name(design.parts.front),
-      H: name(design.parts.hood),
-      L: name(design.parts.left),
-      T: name(design.parts.top),
-      R: name(design.parts.right),
-      RB: name(design.parts.rear),
-      W: name(design.tint),
-      A: name(design.parts.accents),
-      PPF: name(design.ppf),
-    };
+  // the original's event for choosing (or clearing, film = null) a layer
+  function trackSelection(product, part, film) {
+    const details = { event_details: film ? film.code : NO_SELECTION };
+    const material = activeFinish === 'All' ? 'All Materials' : activeFinish;
+    if (product === 'Window Tint') studioEvent('tint', details);
+    else if (product === 'Paint Protection Film') {
+      studioEvent('ppf', {
+        suffix: film ? film.finish : NO_SELECTION,
+        event_details: film ? `${PPF_EVENT_CODE[design.coverage]}${film.finish[0]}` : NO_SELECTION,
+      });
+    } else if (part === 'accents') studioEvent('accent', { suffix: material, ...details });
+    else {
+      const placement = part === 'all' ? STUDIO_I18N.en.entire : STUDIO_I18N.en.parts[part];
+      studioEvent(product === 'Protection Wrap Film' ? 'pwf' : 'wrap', {
+        suffix: `${placement} - ${material}`, ...details,
+      });
+    }
   }
   // touch screens pinch to zoom; mice scroll
   const dragHint = window.matchMedia('(pointer: coarse)').matches ? t.dragTouch : t.drag;
@@ -1140,13 +1237,18 @@ export default async function decorate(block) {
     } catch (e) {
       // malformed escape: match the raw hash
     }
-    const shared = hash.match(DESIGN_HASH);
-    if (!shared) return false;
-    design = decodeDesign(shared[1], byId);
-    design.coverage = shared[2] || design.coverage;
-    activeView = shared[3] || activeView;
-    activeTheme = shared[4] || activeTheme;
-    vehicle = VEHICLES.find((v) => v.code === shared[5]) || vehicle;
+    const original = hash.match(ORIGINAL_HASH);
+    const fromOriginal = original && decodeOriginal(original[1], byId, lang);
+    const shared = !fromOriginal && hash.match(DESIGN_HASH);
+    if (fromOriginal) {
+      ({ design, vehicle, theme: activeTheme } = fromOriginal);
+    } else if (shared) {
+      design = decodeDesign(shared[1], byId);
+      design.coverage = shared[2] || design.coverage;
+      activeView = shared[3] || activeView;
+      activeTheme = shared[4] || activeTheme;
+      vehicle = VEHICLES.find((v) => v.code === shared[5]) || vehicle;
+    } else return false;
     const first = [...BODY_PARTS, 'accents'].map((p) => design.parts[p]).find(Boolean)
       || design.tint || design.ppf;
     if (first) activeProduct = first.product;
@@ -1162,7 +1264,12 @@ export default async function decorate(block) {
   }
 
   function finishesFor(product) {
-    return ['All', ...new Set(films.filter((f) => f.product === product).map((f) => f.finish))];
+    const finishes = [...new Set(films.filter((f) => f.product === product).map((f) => f.finish))];
+    // wrap finishes are listed by their translated name, as in the original
+    // eslint-disable-next-line no-use-before-define
+    const byLabel = (a, b) => (finishLabel(a, product) < finishLabel(b, product) ? -1 : 1);
+    if (WRAP_PRODUCTS.includes(product)) finishes.sort(byLabel);
+    return ['All', ...finishes];
   }
 
   // Display labels come from the (translatable) sheet; logic uses stable keys.
@@ -1170,9 +1277,12 @@ export default async function decorate(block) {
     const f = films.find((x) => x.product === product);
     return (f && f.productLabel) || product;
   }
-  function finishLabel(finish) {
+  // a finish can be named differently per product (e.g. German "Gloss" for
+  // wraps but "Glänzend" for paint protection), so look it up in its tab
+  function finishLabel(finish, product = activeProduct) {
     if (finish === 'All') return t.all;
-    const f = films.find((x) => x.finish === finish);
+    const f = films.find((x) => x.finish === finish && x.product === product)
+      || films.find((x) => x.finish === finish);
     return (f && f.finishLabel) || finish;
   }
   const isWrapTab = () => WRAP_PRODUCTS.includes(activeProduct);
@@ -1260,6 +1370,7 @@ export default async function decorate(block) {
         x.type = 'button';
         x.setAttribute('aria-label', `${ui.remove}: ${label}`);
         x.onclick = () => {
+          trackSelection(film.product, key, null);
           if (key === 'all') BODY_PARTS.forEach((p) => { delete design.parts[p]; });
           else if (key === 'tint') design.tint = null;
           else if (key === 'ppf') design.ppf = null;
@@ -1290,6 +1401,8 @@ export default async function decorate(block) {
   }
 
   async function choose(film) {
+    // sent before any confirmation, as the original does
+    trackSelection(film.product, target, film);
     if (isWrapTab() && target === 'all') {
       // replacing different wraps on several parts needs a confirmation
       const current = new Set(BODY_PARTS.map((p) => design.parts[p]).filter(Boolean));
@@ -1314,7 +1427,15 @@ export default async function decorate(block) {
       const b = el('button', `rs-tab${p === activeProduct ? ' is-active' : ''}`, productLabel(p));
       b.type = 'button';
       // eslint-disable-next-line no-use-before-define
-      b.onclick = () => { activeProduct = p; activeFinish = 'All'; renderAll(); };
+      b.onclick = () => {
+        activeProduct = p;
+        activeFinish = 'All';
+        studioEvent('category', { event_details: CATEGORY_EVENT_NAME[p] || p });
+        // eslint-disable-next-line no-use-before-define
+        renderAll();
+        // the original turns to the windows when its tint panel opens
+        if (viewer && p === 'Window Tint') viewer.focusPart('windows');
+      };
       productTabs.append(b);
     });
   }
@@ -1371,7 +1492,14 @@ export default async function decorate(block) {
       const label = t[tier];
       const b = el('button', `rs-chip${tier === design.coverage ? ' is-active' : ''}`, label);
       b.type = 'button';
-      b.onclick = () => { design.coverage = tier; renderCoverage(); refresh(); };
+      b.insertAdjacentHTML('afterbegin', shieldIcon(tier));
+      b.onclick = () => {
+        design.coverage = tier;
+        // a new coverage is a new film in the original (e.g. FFM → FCM)
+        if (design.ppf) trackSelection(design.ppf.product, 'all', design.ppf);
+        renderCoverage();
+        refresh();
+      };
       coverageRow.append(b);
     });
   }
@@ -1423,8 +1551,12 @@ export default async function decorate(block) {
       img.alt = '';
       img.loading = 'lazy';
       b.append(img, el('span', '', ui.vehicles[v.key]));
-      // eslint-disable-next-line no-use-before-define
-      b.onclick = () => switchVehicle(v);
+      b.onclick = () => {
+        if (!viewer || v === vehicle) return;
+        studioEvent('vehicle', { event_details: STUDIO_I18N.en.vehicles[v.key] });
+        // eslint-disable-next-line no-use-before-define
+        switchVehicle(v);
+      };
       vehicleBar.append(b);
     });
   }
@@ -1464,13 +1596,13 @@ export default async function decorate(block) {
       themeBar.querySelectorAll('.rs-theme-btn').forEach((x) => x.classList.remove('is-active'));
       b.classList.add('is-active');
       if (viewer) viewer.setTheme(activeTheme);
-      studioEvent(`Link Click: ${activeTheme === 'dark' ? 'Night' : 'Day'}`);
+      studioEvent('toggle', { event_details: activeTheme === 'dark' ? 'Night' : 'Day' });
     };
   });
 
-  share.onclick = async () => {
+  // funnel: the stage share events report (the studio or its finale)
+  async function openShare(funnel) {
     if (!viewer) return;
-    studioEvent('Link Click: Share');
     share.disabled = true;
     const dataUrl = viewer.capture('image/png');
     const dialog = showShareDialog({
@@ -1478,7 +1610,7 @@ export default async function decorate(block) {
       image: dataUrl,
       url: designUrl(),
       text: designText(design, shareStr),
-      onEvent: studioEvent,
+      onEvent: (channel) => studioEvent('share', { event_context: channel, stage: funnel }),
     });
     try {
       const blob = dataUrlToBlob(dataUrl);
@@ -1498,12 +1630,13 @@ export default async function decorate(block) {
     } finally {
       share.disabled = false;
     }
-  };
+  }
+  share.onclick = () => openShare('studio');
 
   // "Done": the original's finale with the design and what to do next
   done.onclick = () => {
     if (!viewer) return;
-    studioEvent('Done', designDetail());
+    studioEvent('done', { stage: 'completed' });
     const image = viewer.capture('image/png');
     const overlay = el('div', 'rs-share-popup');
     const dialog = el('div', 'rs-share-dialog rs-finale');
@@ -1512,7 +1645,7 @@ export default async function decorate(block) {
     dialog.setAttribute('aria-label', ui.finaleTitle);
     const closeBtn = el('button', 'rs-share-close', '×');
     closeBtn.type = 'button';
-    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.setAttribute('aria-label', ui.close);
     const img = el('img', 'rs-share-image');
     img.src = image;
     img.alt = designText(design, shareStr);
@@ -1527,16 +1660,15 @@ export default async function decorate(block) {
     function onKey(e) { if (e.key === 'Escape') close(); }
     [
       ['download', shareStr.download, () => {
-        studioEvent('Link Click: Download');
         const a = document.createElement('a');
         a.href = image;
         a.download = 'my-3m-design.png';
         a.click();
       }],
-      ['share', shareStr.button, () => { close(); share.click(); }],
+      ['share', shareStr.button, () => { close(); openShare('completed'); }],
       ['installer', t.findInstaller, () => {
         close();
-        studioEvent('Link Click: Restyler', designDetail());
+        studioEvent('installer', { stage: 'completed' });
         openLocator();
       }],
       ['restart', ui.restart, () => {

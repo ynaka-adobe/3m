@@ -44,6 +44,7 @@ export const VEHICLES = [
       right: [-504, 325, -248],
       rear: [7, 267, -592],
       accents: [-7, 289, 582],
+      windows: [563, 323, 4],
     },
   },
   {
@@ -79,6 +80,7 @@ export const VEHICLES = [
       right: [-434, 260, -407],
       rear: [12, 185, -622],
       accents: [-7, 343, 551],
+      windows: [554, 339, 12],
     },
   },
   {
@@ -115,6 +117,7 @@ export const VEHICLES = [
       right: [-280, 193, -386],
       rear: [4, 178, -482],
       accents: [0, 290, 524],
+      windows: [446, 256, 1],
     },
   },
   {
@@ -150,6 +153,7 @@ export const VEHICLES = [
       right: [-551, 296, 173],
       rear: [2, 180, -624],
       accents: [-7, 296, 578],
+      windows: [554, 339, -2],
     },
   },
   {
@@ -185,6 +189,7 @@ export const VEHICLES = [
       right: [-522, 320, -215],
       rear: [7, 267, -592],
       accents: [455, 306, -347],
+      windows: [570, 311, -22],
     },
   },
 ];
