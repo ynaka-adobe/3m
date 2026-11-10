@@ -62,34 +62,6 @@
   padding-right: 84px;
 }
 
-.locator .locator-radius {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.locator .locator-radius-label {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.locator .locator-radius-input {
-  width: 160px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  background: none;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-.locator .locator-radius-value {
-  min-width: 52px;
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-}
 
 .locator .locator-go,
 .locator .locator-near {

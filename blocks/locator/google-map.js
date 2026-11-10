@@ -323,8 +323,9 @@ export async function createMap(maps, container, {
       pin.setActive(true);
       centerOn(pin.position, Math.max(map.getZoom(), SELECT_ZOOM));
     },
-    fit(dealers, point) {
-      lastFit = [dealers, point];
+    // `area` frames the whole search radius too, e.g. after widening it
+    fit(dealers, point, { area = false } = {}) {
+      lastFit = [dealers, point, { area }];
       const points = dealers.filter((d) => d.lat !== null).map((d) => ({ lat: d.lat, lng: d.lon }));
       if (point) points.push({ lat: point.lat, lng: point.lon });
       if (points.length < 2) {
@@ -333,7 +334,7 @@ export async function createMap(maps, container, {
         else if (points.length) centerOn(points[0], 13);
         return;
       }
-      const bounds = new LatLngBounds();
+      const bounds = area && circle ? circle.getBounds() : new LatLngBounds();
       points.forEach((p) => bounds.extend(p));
       fitBounds(bounds);
     },

@@ -8,9 +8,8 @@ import {
 // page with a `quote` config row on the block)
 const DEFAULT_QUOTE = 'https://engage-ab.marketo.com/?munchkinId=860-YON-741#/ds/mktform/3';
 const PAGE_SIZE = 10;
-const RADIUS = {
-  min: 10, max: 200, step: 10, value: 50,
-};
+// search radius in miles: "Show more" doubles it once all results are shown
+const RADIUS = { start: 50, max: 200 };
 const KM_PER_MILE = 1.609344;
 // width of the list floating over the map; keep in sync with locator.css
 const LIST_WIDTH = 400;
@@ -53,7 +52,6 @@ const STRINGS = {
     search: 'Search',
     nearMe: 'Show results based on my location',
     myLocation: 'My location',
-    radius: 'Radius',
     products: 'Product type',
     clear: 'Clear filters',
     mapView: 'Map view',
@@ -69,7 +67,7 @@ const STRINGS = {
     locationUnknown: 'Location unknown. Please enter a location or enable location in your browser or device.',
     defaultLocation: 'Your location is not available, so we are showing installers near a default location. Enter a ZIP or city to search.',
     notFound: 'We could not find that location. Please check the ZIP or city.',
-    empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location, increase the radius or change the filters.',
+    empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location or change the filters.',
     error: 'The service is currently not available. Please try again later.',
     sample: 'Sample data is shown, not real installers.',
     retry: 'Try again',
@@ -83,7 +81,6 @@ const STRINGS = {
     search: 'Suchen',
     nearMe: 'Ergebnisse in meiner Nähe anzeigen',
     myLocation: 'Mein Standort',
-    radius: 'Umkreis',
     products: 'Produkttyp',
     clear: 'Filter zurücksetzen',
     mapView: 'Kartenansicht',
@@ -99,7 +96,7 @@ const STRINGS = {
     locationUnknown: 'Standort unbekannt. Bitte geben Sie einen Ort ein oder aktivieren Sie die Standortfreigabe.',
     defaultLocation: 'Ihr Standort ist nicht verfügbar. Wir zeigen Fachbetriebe in der Nähe eines Standardorts. Geben Sie PLZ oder Ort ein, um zu suchen.',
     notFound: 'Wir konnten diesen Ort nicht finden. Bitte prüfen Sie PLZ oder Ort.',
-    empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort, vergrössern Sie den Umkreis oder ändern Sie die Filter.',
+    empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort oder ändern Sie die Filter.',
     error: 'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.',
     sample: 'Es werden Beispieldaten angezeigt, keine echten Fachbetriebe.',
     retry: 'Erneut versuchen',
@@ -113,7 +110,6 @@ const STRINGS = {
     search: '検索',
     nearMe: '現在地周辺の結果を表示',
     myLocation: '現在地',
-    radius: '半径',
     products: '製品タイプ',
     clear: 'フィルターをクリア',
     mapView: '地図表示',
@@ -129,7 +125,7 @@ const STRINGS = {
     locationUnknown: '現在地を特定できません。場所を入力するか、位置情報を有効にしてください。',
     defaultLocation: '現在地を取得できないため、既定の場所周辺の施工店を表示しています。郵便番号または都市名を入力して検索してください。',
     notFound: 'その場所が見つかりませんでした。郵便番号または都市名をご確認ください。',
-    empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、半径を広げるか、フィルターを変更してください。',
+    empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、フィルターを変更してください。',
     error: '現在サービスをご利用いただけません。しばらくしてから再度お試しください。',
     sample: 'サンプルデータを表示しています（実際の施工店ではありません）。',
     retry: '再試行',
@@ -468,23 +464,8 @@ async function buildLocator(root, opts) {
   });
   form.append(where, nearMe, go, suggestions.element);
 
-  // radius slider, in the page's unit
-  const radiusWrap = el('div', 'locator-radius');
-  const radiusLabel = text('label', 'locator-radius-label', t.radius);
-  const radius = el('input', 'locator-radius-input');
-  radius.type = 'range';
-  radius.id = `${uid}-radius`;
-  radiusLabel.htmlFor = radius.id;
-  radius.min = RADIUS.min;
-  radius.max = RADIUS.max;
-  radius.step = RADIUS.step;
-  const startRadius = num(opts.radius);
-  radius.value = startRadius !== null
-    ? Math.min(RADIUS.max, Math.max(RADIUS.min, startRadius))
-    : RADIUS.value;
-  const radiusOut = el('output', 'locator-radius-value');
-  radiusOut.htmlFor = radius.id;
-  radiusWrap.append(radiusLabel, radius, radiusOut);
+  // starting radius in miles: a `radius` row, capped at RADIUS.max
+  const startRadius = Math.min(RADIUS.max, Math.max(1, num(opts.radius) ?? RADIUS.start));
 
   const count = el('p', 'locator-count');
   const status = el('p', 'locator-status');
@@ -493,7 +474,7 @@ async function buildLocator(root, opts) {
   // sample data only when an author picks it (api: sample), never as a silent fallback
   if (api.sample) note.textContent = t.sample;
   const row = el('div', 'locator-filter-row');
-  row.append(form, radiusWrap, count);
+  row.append(form, count);
 
   const chipRow = el('div', 'locator-chip-row');
   const chips = el('div', 'locator-chips');
@@ -545,6 +526,7 @@ async function buildLocator(root, opts) {
     products: new Set(),
     selectedId: null,
     view: 'map',
+    radius: startRadius,
   };
   let mapApi = null;
   let maps = null;
@@ -552,12 +534,6 @@ async function buildLocator(root, opts) {
   let shown = [];
   let seq = 0;
   let controller = null;
-
-  const radiusMiles = () => (region.unit === 'km'
-    ? Number(radius.value) / KM_PER_MILE
-    : Number(radius.value));
-  const showRadius = () => { radiusOut.textContent = `${radius.value} ${region.unit}`; };
-  showRadius();
 
   function message(value) {
     list.textContent = '';
@@ -602,7 +578,10 @@ async function buildLocator(root, opts) {
     chipRow.hidden = !all.length;
   }
 
-  function render({ fit = true } = {}) {
+  // more within the radius, or a wider radius still to search
+  const canShowMore = () => state.hasMore || state.radius < RADIUS.max;
+
+  function render({ fit = true, area = false } = {}) {
     const filtering = state.products.size > 0;
     shown = state.dealers.filter(matches)
       .sort((a, b) => (a.distanceInMiles ?? Infinity) - (b.distanceInMiles ?? Infinity));
@@ -610,7 +589,7 @@ async function buildLocator(root, opts) {
 
     count.textContent = t.results(filtering ? shown.length : (state.total ?? shown.length));
     live.textContent = t.shown(shown.length);
-    more.hidden = !state.hasMore;
+    more.hidden = !canShowMore();
     clear.hidden = !filtering;
 
     list.textContent = '';
@@ -623,8 +602,8 @@ async function buildLocator(root, opts) {
 
     if (mapApi) {
       mapApi.setDealers(shown);
-      mapApi.setOrigin(state.origin, radiusMiles());
-      if (fit && state.view === 'map') mapApi.fit(shown, state.origin);
+      mapApi.setOrigin(state.origin, state.radius);
+      if (fit && state.view === 'map') mapApi.fit(shown, state.origin, { area });
     }
   }
 
@@ -639,10 +618,12 @@ async function buildLocator(root, opts) {
 
   /**
    * Queries the dealer API for the current location and radius. "Show more"
-   * asks for a larger `take`, so each response holds every result shown.
-   * A newer query aborts the one in flight, and only the latest may render.
+   * asks for a larger `take`, so each response holds every result shown, or,
+   * once all are shown, a doubled radius (`expand`); the radius only changes
+   * when that search succeeds. A newer query aborts the one in flight, and
+   * only the latest may render.
    */
-  async function query({ take = PAGE_SIZE } = {}) {
+  async function query({ take = PAGE_SIZE, radius = state.radius, expand = false } = {}) {
     if (!state.origin) return;
     seq += 1;
     const current = seq;
@@ -652,7 +633,7 @@ async function buildLocator(root, opts) {
       origin: state.origin,
       lat: state.origin.lat,
       lon: state.origin.lon,
-      radius: Math.round(radiusMiles()),
+      radius: Math.round(radius),
       skip: 0,
       take,
       region: opts.region || region.country.toUpperCase(),
@@ -696,18 +677,20 @@ async function buildLocator(root, opts) {
       showError(() => query({ take }));
       if (mapApi) {
         mapApi.setDealers([]);
-        mapApi.setOrigin(state.origin, radiusMiles());
+        mapApi.setOrigin(state.origin, state.radius);
         if (state.view === 'map') mapApi.fit([], state.origin);
       }
       return;
     }
 
     state.take = take;
+    state.radius = radius;
     state.dealers = res.dealers;
     state.total = res.total;
     state.hasMore = res.hasMore;
     buildChips();
-    render();
+    // a wider radius zooms the map out to the whole search area
+    render({ area: expand });
     if (take > PAGE_SIZE) {
       // move keyboard focus to the first newly loaded installer
       const next = list.querySelectorAll('.locator-card')[before];
@@ -717,6 +700,7 @@ async function buildLocator(root, opts) {
 
   function searchFrom(origin) {
     state.origin = origin;
+    state.radius = startRadius;
     suggester?.setBias(origin);
     return query();
   }
@@ -816,20 +800,19 @@ async function buildLocator(root, opts) {
 
   nearMe.addEventListener('click', () => useBrowserLocation());
 
-  let radiusTimer;
-  radius.addEventListener('input', () => {
-    showRadius();
-    clearTimeout(radiusTimer);
-    radiusTimer = setTimeout(() => query(), 350);
-  });
-
   clear.addEventListener('click', () => {
     state.products.clear();
     chips.querySelectorAll('.locator-chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
     render();
   });
 
-  more.addEventListener('click', () => query({ take: state.take + PAGE_SIZE }));
+  more.addEventListener('click', () => {
+    const take = state.dealers.length + PAGE_SIZE;
+    if (state.hasMore) query({ take });
+    else if (state.radius < RADIUS.max) {
+      query({ take, radius: Math.min(RADIUS.max, state.radius * 2), expand: true });
+    }
+  });
 
   setView('map');
   message(t.loading);
