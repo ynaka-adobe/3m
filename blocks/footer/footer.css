@@ -115,7 +115,9 @@ footer .footer-category-link {
 footer .footer-legal-row {
   display: flex;
   align-items: center;
-  height: 90px;
+
+  /* grows when the links wrap onto more (taller, tappable) lines */
+  min-height: 90px;
   margin-top: 5px;
   padding: 25px;
   font-weight: 200;
@@ -146,6 +148,14 @@ footer .footer-legal-link,
 footer .footer-legal-sep {
   margin-right: 5px;
   font-size: 13px;
+
+  /* 24px lines: every link is a tap target of at least 24px (WCAG 2.5.8) */
+  line-height: 24px;
+}
+
+footer .footer-legal-link {
+  display: inline-block;
+  min-height: 24px;
 }
 
 footer .footer-inner a.footer-legal-link:hover {

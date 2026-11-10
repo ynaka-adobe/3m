@@ -591,7 +591,13 @@ function addFooterEntryPoint() {
     if (!link) {
       link = document.createElement('a');
       link.textContent = 'Cookie Preferences';
-      legal.append(link);
+      // styled (and sized as a tap target) like the footer's other legal links
+      link.className = 'footer-legal-link';
+      const sep = document.createElement('span');
+      sep.className = 'footer-legal-sep';
+      sep.textContent = '|';
+      sep.setAttribute('aria-hidden', 'true');
+      legal.append(sep, link);
     }
     link.href = '#cookie-preferences';
     link.removeAttribute('target');
