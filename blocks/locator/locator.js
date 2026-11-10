@@ -1,5 +1,5 @@
 import { readBlockConfig, loadCSS, getMetadata } from '../../scripts/aem.js';
-import { createDealerApi, searchSample } from './dealer-api.js';
+import { createDealerApi } from './dealer-api.js';
 import {
   loadGoogleMaps, createMap, createSuggester, geocodeAddress,
 } from './google-map.js';
@@ -71,7 +71,8 @@ const STRINGS = {
     notFound: 'We could not find that location. Please check the ZIP or city.',
     empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location, increase the radius or change the filters.',
     error: 'The service is currently not available. Please try again later.',
-    sample: 'The installer service can\'t be reached from this site yet, so sample data is shown.',
+    sample: 'Sample data is shown, not real installers.',
+    retry: 'Try again',
     close: 'Close',
     map: 'Map of installers',
     mapUnavailable: 'The map is not available right now.',
@@ -100,7 +101,8 @@ const STRINGS = {
     notFound: 'Wir konnten diesen Ort nicht finden. Bitte prüfen Sie PLZ oder Ort.',
     empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort, vergrössern Sie den Umkreis oder ändern Sie die Filter.',
     error: 'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.',
-    sample: 'Der Fachbetriebe-Service ist von dieser Website noch nicht erreichbar. Es werden Beispieldaten angezeigt.',
+    sample: 'Es werden Beispieldaten angezeigt, keine echten Fachbetriebe.',
+    retry: 'Erneut versuchen',
     close: 'Schliessen',
     map: 'Karte der Fachbetriebe',
     mapUnavailable: 'Die Karte ist derzeit nicht verfügbar.',
@@ -129,7 +131,8 @@ const STRINGS = {
     notFound: 'その場所が見つかりませんでした。郵便番号または都市名をご確認ください。',
     empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、半径を広げるか、フィルターを変更してください。',
     error: '現在サービスをご利用いただけません。しばらくしてから再度お試しください。',
-    sample: '施工店サービスにまだ接続できないため、サンプルデータを表示しています。',
+    sample: 'サンプルデータを表示しています（実際の施工店ではありません）。',
+    retry: '再試行',
     close: '閉じる',
     map: '施工店の地図',
     mapUnavailable: '現在、地図を表示できません。',
@@ -161,13 +164,6 @@ function text(tag, cls, value) {
 function pageLang() {
   const seg = (window.location.pathname.split('/').filter(Boolean)[0] || '').toLowerCase();
   return REGIONS[seg] ? seg : 'en';
-}
-
-// sample data stands in for an unreachable API on every site, live included, until
-// the dealer API accepts browser requests from our domains; to stop showing it on
-// the live site, return !window.location.hostname.endsWith('.aem.live') here
-function allowSample() {
-  return true;
 }
 
 function num(value) {
@@ -434,7 +430,7 @@ async function buildLocator(root, opts) {
     ? { lat: num(opts.lat), lon: num(opts.lon) }
     : base.origin;
   const sample = opts.sample || region.sample;
-  const api = createDealerApi(opts.api);
+  const api = createDealerApi(opts.api, { sample });
   const uid = `locator-${Math.random().toString(36).slice(2, 8)}`;
 
   root.textContent = '';
@@ -494,6 +490,8 @@ async function buildLocator(root, opts) {
   const status = el('p', 'locator-status');
   status.setAttribute('role', 'status');
   const note = el('p', 'locator-note');
+  // sample data only when an author picks it (api: sample), never as a silent fallback
+  if (api.sample) note.textContent = t.sample;
   const row = el('div', 'locator-filter-row');
   row.append(form, radiusWrap, count);
 
@@ -532,7 +530,9 @@ async function buildLocator(root, opts) {
   more.hidden = true;
   const live = el('p', 'locator-live');
   live.setAttribute('aria-live', 'polite');
-  listWrap.append(list, more, live);
+  const moreError = el('p', 'locator-more-error');
+  moreError.setAttribute('role', 'alert');
+  listWrap.append(list, more, moreError, live);
   results.append(mapEl, listWrap);
   root.append(filters, tabs, results);
 
@@ -628,9 +628,19 @@ async function buildLocator(root, opts) {
     }
   }
 
+  // full error state with one manual retry; there are no automatic retries
+  function showError(retry) {
+    message(t.error);
+    const again = text('button', 'locator-retry', t.retry);
+    again.type = 'button';
+    again.addEventListener('click', retry);
+    list.firstElementChild.append(again);
+  }
+
   /**
    * Queries the dealer API for the current location and radius. "Show more"
    * asks for a larger `take`, so each response holds every result shown.
+   * A newer query aborts the one in flight, and only the latest may render.
    */
   async function query({ take = PAGE_SIZE } = {}) {
     if (!state.origin) return;
@@ -645,29 +655,25 @@ async function buildLocator(root, opts) {
       radius: Math.round(radiusMiles()),
       skip: 0,
       take,
-      region: opts.region || '',
+      region: opts.region || region.country.toUpperCase(),
     };
+    const loadingMore = take > PAGE_SIZE;
     const before = list.querySelectorAll('.locator-card').length;
-    if (take === PAGE_SIZE) message(t.loading);
+    moreError.textContent = '';
+    if (!loadingMore) {
+      message(t.loading);
+      count.textContent = '';
+    }
     more.disabled = true;
     more.setAttribute('aria-busy', 'true');
 
-    let res;
+    let res = null;
+    let failed = null;
     try {
       res = await api.search(search, { signal: controller.signal });
-      note.textContent = '';
     } catch (e) {
       if (e.name === 'AbortError') return;
-      // eslint-disable-next-line no-console
-      console.warn('locator: dealer API unavailable', e);
-      if (allowSample()) {
-        try {
-          res = await searchSample(sample, search);
-          note.textContent = t.sample;
-        } catch (err) {
-          res = null;
-        }
-      }
+      failed = e;
     } finally {
       if (current === seq) {
         more.disabled = false;
@@ -675,15 +681,23 @@ async function buildLocator(root, opts) {
       }
     }
     if (current !== seq) return;
-    if (!res) {
+    if (failed) {
+      // eslint-disable-next-line no-console
+      console.warn('locator: dealer search failed', failed.message, failed.stage || '', failed.upstreamStatus || '');
+      if (loadingMore) {
+        // keep the installers already shown; the button stays for another try
+        moreError.textContent = t.error;
+        return;
+      }
       state.dealers = [];
+      state.total = null;
       state.hasMore = false;
-      message(t.error);
       more.hidden = true;
-      count.textContent = '';
+      showError(() => query({ take }));
       if (mapApi) {
         mapApi.setDealers([]);
         mapApi.setOrigin(state.origin, radiusMiles());
+        if (state.view === 'map') mapApi.fit([], state.origin);
       }
       return;
     }
