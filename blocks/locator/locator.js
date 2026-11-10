@@ -215,20 +215,6 @@ function externalLink(cls, href, icon, label, t) {
   return a;
 }
 
-// resolves once the EDS delayed phase has started (scripts/delayed.js)
-// (with a fallback timer, so a missed signal, e.g. from an older cached
-// delayed.js, can't keep the map from loading)
-function whenDelayed(fallbackMs = 4000) {
-  return new Promise((resolve) => {
-    if (window.hlx?.delayed) {
-      resolve();
-      return;
-    }
-    window.addEventListener('aem:delayed', () => resolve(), { once: true });
-    setTimeout(resolve, fallbackMs);
-  });
-}
-
 const pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
 // resolves on the visitor's first scroll, tap, click or key press; with
@@ -1081,15 +1067,11 @@ async function buildLocator(root, opts) {
   status.textContent = t.startHint;
   searchFrom(fallbackOrigin, { radius: RADIUS.max });
 
-  // the map waits for the delayed phase, then for the visitor's first
-  // interaction (a mouse move counts) or a few more seconds, so it never weighs
-  // on the first view of the page; the pop-up opens on a click and loads it at once
+  // the map loads on the visitor's first interaction (a mouse move counts) or
+  // after 2 seconds at most, so it doesn't hold up the first view of the page;
+  // the pop-up opens on a click and loads it at once
   if (opts.onClose) ensureMaps();
-  else {
-    whenDelayed()
-      .then(() => Promise.race([firstInteraction({ pointer: true }), pause(5000)]))
-      .then(ensureMaps);
-  }
+  else Promise.race([firstInteraction({ pointer: true }), pause(2000)]).then(ensureMaps);
   // a visitor about to search needs the address service: load it right away
   where.addEventListener('focus', () => ensureMaps(), { once: true });
 
