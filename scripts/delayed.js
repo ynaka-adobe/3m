@@ -12,6 +12,11 @@ import { initTarget } from './target.js';
  * The insights panel is a consumer of the same data layer, and only mounts when
  * explicitly switched on with `?insights=1` — never for a normal visitor.
  */
+// tell blocks waiting for the delayed phase (e.g. the locator's map) it has started
+window.hlx = window.hlx || {};
+window.hlx.delayed = true;
+window.dispatchEvent(new Event('aem:delayed'));
+
 initAnalytics()
   .then(() => initInsights())
   .catch((e) => {

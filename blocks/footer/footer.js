@@ -3,7 +3,7 @@
  * a per-locale fragment (/{locale}/footer) so all copy is authored/translated
  * in DA. Fragment structure (one section each):
  *   1. tagline    a paragraph
- *   2. columns    repeated <h4> + <ul> of links
+ *   2. columns    repeated <h4> + <ul> of links (shown as <h2>, so headings stay in order)
  *   3. social     a <ul> of links
  *   4. legal      a <ul> of links + a copyright paragraph
  */
@@ -63,7 +63,7 @@ export default async function decorate(block) {
 
   const colsHTML = cols.map((c) => `
     <div class="footer-col">
-      <h4>${c.h}</h4>
+      <h2>${c.h}</h2>
       ${c.links.map((a) => linkHTML(a)).join('')}
     </div>`).join('');
 

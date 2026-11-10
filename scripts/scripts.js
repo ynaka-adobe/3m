@@ -126,14 +126,44 @@ export function decorateMain(main) {
  * Loads everything needed to get to LCP.
  * @param {Element} doc The container element
  */
+/**
+ * Car-personalization pages get a subnav from the header (lazy phase), inserted
+ * above the content. Reserving its slot now keeps the page from shifting when
+ * it arrives; blocks/header/header.js fills the slot.
+ * @param {Element} main The main element
+ */
+function reserveSubnavSlot(main) {
+  if (!window.location.pathname.split('/').includes('car-personalization')) return;
+  const slot = document.createElement('div');
+  slot.className = 'section subnav-slot';
+  slot.innerHTML = '<div class="fragment"></div>';
+  main.prepend(slot);
+}
+
+// first visit only: fetch the consent banner's code and styles alongside the
+// page, so the banner (shown in the lazy phase) doesn't wait for them. The CSS
+// is warmed into the HTTP cache with fetch(), not a <link>: loadCSS() skips any
+// URL that already has a <link>, which would leave the banner unstyled.
+function prefetchConsent() {
+  if (document.cookie.includes('threem_consent=')) return;
+  const js = document.createElement('link');
+  js.rel = 'modulepreload';
+  js.href = `${window.hlx.codeBasePath}/scripts/consent.js`;
+  document.head.append(js);
+  fetch(`${window.hlx.codeBasePath}/styles/consent.css`, { priority: 'low' }).catch(() => {});
+}
+
 async function loadEager(doc) {
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
+    const first = main.querySelector('.section');
+    reserveSubnavSlot(main);
+    prefetchConsent();
     document.body.classList.add('appear');
-    await loadSection(main.querySelector('.section'), waitForFirstImage);
+    await loadSection(first, waitForFirstImage);
   }
 
   try {
@@ -152,6 +182,12 @@ async function loadEager(doc) {
  */
 async function loadLazy(doc) {
   import('../tools/sidekick/aem-genai-variations.js');
+  // first visit: show the consent banner with the page, not in the delayed
+  // phase; analytics and Target still start in delayed.js, after the choice.
+  // It waits for the web fonts, so a font swap can't shift the banner.
+  document.fonts.ready
+    .then(() => import('./consent.js'))
+    .then(({ showBannerIfUndecided }) => showBannerIfUndecided());
 
   loadHeader(doc.querySelector('header'));
 

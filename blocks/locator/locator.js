@@ -81,6 +81,7 @@ const STRINGS = {
     locating: 'Getting location …',
     locationDenied: 'Please enable location in your browser or device.',
     locationUnknown: 'Location unknown. Please enter a location or enable location in your browser or device.',
+    startHint: 'Showing installers around the center of the country. Enter a ZIP or city, or use your location.',
     defaultLocation: 'Your location is not available, so we are showing installers around the center of the country. Enter a ZIP or city to search near you.',
     notFound: 'We could not find that location. Please check the ZIP or city.',
     empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location or change the filters.',
@@ -118,6 +119,7 @@ const STRINGS = {
     locating: 'Standort wird ermittelt …',
     locationDenied: 'Bitte aktivieren Sie die Standortfreigabe in Ihrem Browser oder Gerät.',
     locationUnknown: 'Standort unbekannt. Bitte geben Sie einen Ort ein oder aktivieren Sie die Standortfreigabe.',
+    startHint: 'Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein oder verwenden Sie Ihren Standort.',
     defaultLocation: 'Ihr Standort ist nicht verfügbar. Wir zeigen Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein, um in Ihrer Nähe zu suchen.',
     notFound: 'Wir konnten diesen Ort nicht finden. Bitte prüfen Sie PLZ oder Ort.',
     empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort oder ändern Sie die Filter.',
@@ -155,6 +157,7 @@ const STRINGS = {
     locating: '現在地を取得中…',
     locationDenied: 'ブラウザまたはデバイスで位置情報を有効にしてください。',
     locationUnknown: '現在地を特定できません。場所を入力するか、位置情報を有効にしてください。',
+    startHint: '国の中心付近の施工店を表示しています。郵便番号または都市名を入力するか、現在地を使用してください。',
     defaultLocation: '現在地を取得できないため、国の中心付近の施工店を表示しています。お近くを検索するには郵便番号または都市名を入力してください。',
     notFound: 'その場所が見つかりませんでした。郵便番号または都市名をご確認ください。',
     empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、フィルターを変更してください。',
@@ -210,6 +213,28 @@ function externalLink(cls, href, icon, label, t) {
   a.rel = 'noopener noreferrer';
   a.append(text('span', '', label), text('span', 'locator-sr', ` ${t.newWindow}`));
   return a;
+}
+
+// resolves once the EDS delayed phase has started (scripts/delayed.js)
+function whenDelayed() {
+  return new Promise((resolve) => {
+    if (window.hlx?.delayed) resolve();
+    else window.addEventListener('aem:delayed', () => resolve(), { once: true });
+  });
+}
+
+// resolves on the visitor's first scroll, tap, click or key press; with
+// `pointer`, moving the mouse counts too
+function firstInteraction({ pointer = false } = {}) {
+  const events = ['pointerdown', 'keydown', 'scroll', 'touchstart', 'wheel'];
+  if (pointer) events.push('pointermove');
+  return new Promise((resolve) => {
+    const run = () => {
+      events.forEach((type) => window.removeEventListener(type, run, true));
+      resolve();
+    };
+    events.forEach((type) => window.addEventListener(type, run, { capture: true, passive: true }));
+  });
 }
 
 function pageLang() {
@@ -489,7 +514,8 @@ function createCard(d, {
 
   card.append(aside, main);
   card.addEventListener('click', (e) => {
-    if (!e.target.closest('a, button:not(.locator-card-select)')) onSelect(d.id, 'list');
+    if (e.target.closest('a, button:not(.locator-card-select)')) return;
+    onSelect(d.id, e.target.closest('.locator-card-select') ? 'name' : 'list');
   });
   return { card, quote };
 }
@@ -609,14 +635,16 @@ async function buildLocator(root, opts) {
     const groupChips = el('div', 'locator-chips');
     groupChips.setAttribute('role', 'group');
     groupChips.setAttribute('aria-label', label);
+    // placeholder chips keep the row's height until the results arrive
+    groupChips.innerHTML = '<span class="locator-chip is-placeholder" aria-hidden="true"></span>'.repeat(3);
     groupRow.append(text('span', 'locator-chips-label', label), groupChips);
-    groupRow.hidden = true;
     return { row: groupRow, chips: groupChips };
   };
   const productGroup = chipGroup(t.products);
   const partnerGroup = chipGroup(t.partners);
   const clear = text('button', 'locator-clear', t.clear);
   clear.type = 'button';
+  clear.hidden = true;
   partnerGroup.row.append(clear);
   filters.append(row, productGroup.row, partnerGroup.row, status, note);
 
@@ -637,6 +665,7 @@ async function buildLocator(root, opts) {
   results.setAttribute('role', 'tabpanel');
 
   const mapEl = el('div', 'locator-map');
+  mapEl.setAttribute('role', 'region');
   mapEl.setAttribute('aria-label', t.map);
   const listWrap = el('div', 'locator-list-wrap');
   const list = el('ul', 'locator-list');
@@ -682,9 +711,16 @@ async function buildLocator(root, opts) {
       c.classList.toggle('is-active', c.dataset.id === id);
     });
     const card = list.querySelector(`.locator-card[data-id="${CSS.escape(id)}"]`);
+    const desktop = window.matchMedia(DESKTOP).matches;
     if (card && from === 'map') {
-      // bring the chosen card to the top of the floating list
-      listWrap.scrollTo({ top: card.offsetTop - list.offsetTop, behavior: 'smooth' });
+      // desktop: bring the card to the top of the floating list;
+      // phone and tablet: the list is below the map, so scroll the page to it
+      if (desktop) listWrap.scrollTo({ top: card.offsetTop - list.offsetTop, behavior: 'smooth' });
+      else card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    if (from === 'name' && !desktop && state.view === 'map') {
+      // phone and tablet: tapping a name shows the installer on the map above
+      mapEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
     if (mapApi && state.view === 'map') mapApi.select(id);
   }
@@ -693,7 +729,7 @@ async function buildLocator(root, opts) {
   const matches = (d) => matchesFilters(d, state);
 
   // chips come from the results loaded so far; selections are kept
-  function fillChips({ row: groupRow, chips }, values, selected) {
+  function fillChips({ chips }, values, selected) {
     const all = [...new Set([...values, ...selected])].filter(Boolean)
       .sort((a, b) => a.localeCompare(b, region.locale));
     chips.textContent = '';
@@ -712,7 +748,6 @@ async function buildLocator(root, opts) {
       };
       chips.append(chip);
     });
-    groupRow.hidden = !all.length;
   }
 
   // chip values come from the whole result list, not just the installers shown
@@ -861,9 +896,8 @@ async function buildLocator(root, opts) {
       await searchFrom(origin);
     } catch (err) {
       if (initial) {
-        // the centre of the country, wide enough to find installers there
+        // keep the results around the centre of the country
         status.textContent = t.defaultLocation;
-        await searchFrom(fallbackOrigin, { radius: RADIUS.max });
       } else {
         status.textContent = err.code === 1 ? t.locationDenied : t.locationUnknown;
       }
@@ -930,7 +964,9 @@ async function buildLocator(root, opts) {
       await useBrowserLocation();
       return;
     }
-    if (!maps) {
+    // a search before the delayed phase loads the map service straight away
+    // eslint-disable-next-line no-use-before-define
+    if (!maps && !(await ensureMaps())) {
       status.textContent = t.mapUnavailable;
       return;
     }
@@ -972,38 +1008,73 @@ async function buildLocator(root, opts) {
     mapEl.append(text('p', 'locator-message', t.mapUnavailable));
   }
 
-  if (opts.key) {
-    try {
-      maps = await loadGoogleMaps({
-        key: opts.key, language: region.geoLang, region: region.country,
-      });
-      mapApi = await createMap(maps, mapEl, {
-        onSelect: selectDealer,
-        mapId: opts.mapId,
-        // the list only floats over the map on desktop
-        listWidth: () => (window.matchMedia(DESKTOP).matches ? LIST_WIDTH : 0),
-        onAuthError: () => {
-          // eslint-disable-next-line no-console
-          console.warn('locator: Google Maps rejected the API key; check its restrictions and enabled APIs');
-          mapUnavailable();
-        },
-      });
-      suggester = await createSuggester(maps, {
-        country: region.country, language: region.geoLang,
-      }).catch(() => null);
-      suggestions.setSource(suggester);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('locator: Google Maps failed to load', e);
-      mapUnavailable();
-    }
-  } else {
-    // eslint-disable-next-line no-console
-    console.warn('locator: no Google Maps API key; add google-maps-key page metadata or a key row');
-    mapUnavailable();
+  // draws the current results on a map that has just loaded
+  function syncMap() {
+    if (!mapApi) return;
+    mapApi.setDealers(shown);
+    mapApi.setOrigin(state.origin, state.radius);
+    if (state.view === 'map') mapApi.fit(shown, state.origin);
   }
-  // don't hold up the rest of the page while the visitor answers the location prompt
-  useBrowserLocation({ initial: true });
+
+  /**
+   * Loads Google Maps once: in the EDS delayed phase, or straight away when the
+   * visitor needs it earlier (a typed search). The list works without it.
+   */
+  let mapsLoading = null;
+  function ensureMaps() {
+    if (mapsLoading) return mapsLoading;
+    if (!opts.key) {
+      // eslint-disable-next-line no-console
+      console.warn('locator: no Google Maps API key; add google-maps-key page metadata or a key row');
+      mapUnavailable();
+      mapsLoading = Promise.resolve(null);
+      return mapsLoading;
+    }
+    mapsLoading = (async () => {
+      try {
+        maps = await loadGoogleMaps({
+          key: opts.key, language: region.geoLang, region: region.country,
+        });
+        mapApi = await createMap(maps, mapEl, {
+          onSelect: selectDealer,
+          mapId: opts.mapId,
+          // the list only floats over the map on desktop
+          listWidth: () => (window.matchMedia(DESKTOP).matches ? LIST_WIDTH : 0),
+          onAuthError: () => {
+            // eslint-disable-next-line no-console
+            console.warn('locator: Google Maps rejected the API key; check its restrictions and enabled APIs');
+            mapUnavailable();
+          },
+        });
+        mapEl.classList.add('is-loaded');
+        syncMap();
+        suggester = await createSuggester(maps, {
+          country: region.country, language: region.geoLang,
+        }).catch(() => null);
+        suggester?.setBias(state.origin);
+        suggestions.setSource(suggester);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('locator: Google Maps failed to load', e);
+        mapUnavailable();
+      }
+      return maps;
+    })();
+    return mapsLoading;
+  }
+
+  // results start right away around the centre of the country
+  status.textContent = t.startHint;
+  searchFrom(fallbackOrigin, { radius: RADIUS.max });
+
+  // the map waits for the delayed phase and the visitor's first interaction
+  // (including a mouse move), so it never weighs on the first view of the page;
+  // the pop-up opens on a click and loads it at once
+  if (opts.onClose) ensureMaps();
+  else Promise.all([whenDelayed(), firstInteraction({ pointer: true })]).then(ensureMaps);
+
+  // ask for the visitor's location on their first interaction, never on load
+  firstInteraction().then(() => useBrowserLocation({ initial: true }));
 }
 
 // the Google Maps key and optional map ID: a block row wins over page metadata

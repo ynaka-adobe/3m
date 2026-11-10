@@ -424,3 +424,20 @@ body.mds main > .section.center > .default-content-wrapper > * {
     line-height: 45px;
   }
 }
+
+/* space for the car-personalization subnav until the header fills it (scripts.js) */
+main > .section.subnav-slot > .fragment {
+  min-height: 68px;
+}
+
+@media (width <= 480px) {
+  main > .section.subnav-slot > .fragment {
+    min-height: 81px;
+  }
+}
+
+/* breadcrumb links in the subnav are underlined, not told apart by colour alone */
+main > .section.subnav p a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

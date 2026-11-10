@@ -135,24 +135,32 @@
   text-transform: uppercase;
 }
 
-/* small screens: one row per filter group that scrolls sideways */
+/* one row per filter group that scrolls sideways, so its height never changes
+   when the chips arrive (no layout shift) */
 .locator .locator-chips {
   display: flex;
   flex: 1 1 100%;
   gap: 8px;
+  min-width: 0;
+  min-height: 32px;
   margin: 0 -16px;
   padding: 0 16px 4px;
   overflow-x: auto;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+}
+
+.locator .locator-chip.is-placeholder {
+  display: block;
+  width: 140px;
+  border: 0;
+  background: #e9e9e9;
 }
 
 @media (width >= 600px) {
   .locator .locator-chips {
-    flex: 0 1 auto;
-    flex-wrap: wrap;
+    flex: 1 1 0;
     margin: 0;
-    padding: 0;
-    overflow: visible;
+    padding: 0 0 4px;
   }
 }
 
@@ -195,6 +203,7 @@
 }
 
 .locator .locator-status {
+  min-height: 1.25em; /* reserved even when empty: no layout shift */
   margin: 0;
   color: var(--accent);
   font-size: 14px;
@@ -208,7 +217,6 @@
   font-size: 13px;
 }
 
-.locator .locator-status:empty,
 .locator .locator-note:empty {
   display: none;
 }
@@ -290,7 +298,8 @@
     padding: 16px 24px;
   }
 
-  .locator .locator-results.is-list-view .locator-list {
+  /* tablet: two cards per row, under the map and in list view */
+  .locator .locator-list {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
   }
@@ -301,10 +310,11 @@
     height: var(--locator-height);
   }
 
+  /* full height even when Google Maps sets position: relative inline */
   .locator .locator-map {
     position: absolute;
     inset: 0;
-    height: auto;
+    height: 100%;
   }
 
   /* stops above the map's bottom edge so the Google logo stays visible */
@@ -315,6 +325,12 @@
     width: var(--locator-list-width);
     padding: 10px 20px 10px 10px;
     overflow-y: auto;
+  }
+
+  /* the floating list over the map has one column */
+  .locator .locator-results:not(.is-list-view) .locator-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
 
   .locator .locator-results.is-list-view {
@@ -787,6 +803,12 @@ a.locator-card-addr {
   z-index: 9999;
   align-content: start;
   overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* keep the title clear of the close button */
+.locator.locator-modal .locator-title {
+  padding-right: 72px;
 }
 
 .locator .locator-close {
@@ -854,4 +876,48 @@ body.rs-locator-lock {
 
 body.rs-quote-lock {
   overflow: hidden;
+}
+
+/* phones: the quote form takes the whole screen */
+@media (width < 600px) {
+  .rs-quote-overlay {
+    padding: 0;
+  }
+
+  .rs-quote-dialog {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    padding: 24px 16px 8px;
+    border-radius: 0;
+  }
+}
+
+/* touch screens: finger-sized controls (44px) */
+@media (pointer: coarse) {
+  .locator .locator-chip,
+  .locator .locator-card-quote,
+  .locator .locator-more,
+  .locator .locator-retry {
+    min-height: 44px;
+  }
+
+  .locator .locator-chip,
+  .locator .locator-card-quote {
+    border-radius: 22px;
+  }
+
+  .locator .locator-chips {
+    min-height: 44px;
+  }
+
+  .locator .locator-card-reveal,
+  .locator .locator-card-phone,
+  .locator .locator-card-whatsapp,
+  .locator .locator-card-website,
+  .locator .locator-card-directions,
+  .locator .locator-clear {
+    min-height: 44px;
+  }
 }

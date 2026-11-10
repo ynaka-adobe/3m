@@ -177,11 +177,13 @@ export async function createMap(maps, container, {
     fontSize: active ? '15px' : '12px',
     fontWeight: '700',
   });
-  const clusterIcon = {
-    url: svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${CLUSTER_FILL}" stroke="#fff" stroke-width="2"/></svg>`),
+  // the count is drawn into the image itself: a labelled marker would add a
+  // 1x1 transparent tap image that audits flag as a low-resolution image
+  const clusterIcon = (count) => ({
+    url: svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${CLUSTER_FILL}" stroke="#fff" stroke-width="2"/><text x="20" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#fff">${count}</text></svg>`),
     scaledSize: new Size(40, 40),
     anchor: new Point(20, 20),
-  };
+  });
 
   // a pin numbered like its card in the list
   function makePin(d, number) {
@@ -234,12 +236,10 @@ export async function createMap(maps, container, {
     }
     return new markerLib.Marker({
       position,
-      icon: clusterIcon,
+      icon: clusterIcon(count),
+      optimized: false,
       zIndex: 900,
       title: String(count),
-      label: {
-        text: String(count), color: '#fff', fontSize: '14px', fontWeight: '700',
-      },
     });
   }
 
