@@ -3,8 +3,6 @@ import {
   I18N, STUDIO_I18N, INFO_LINKS, SHARE_I18N,
 } from './strings.js';
 import { VEHICLES, DEFAULT_VEHICLE } from './vehicles.js';
-import { PRESET_LOOK, FILM_LOOK } from './looks.js';
-import { ORIGINAL_WRAPS, ORIGINAL_TINTS, ORIGINAL_FILMS } from './share-codes.js';
 
 // three.js is loaded lazily from a CDN so it never weighs down first paint.
 const THREE_VER = '0.160.0';
@@ -278,20 +276,45 @@ async function copyText(text, host) {
  * hosted image link is added to the email.
  * @returns {{ uploaded: Function, failed: Function }}
  */
+// A native modal <dialog>: the browser keeps focus inside, makes the page
+// behind it inert, closes it on Esc and returns focus to the opener. A click
+// on the backdrop closes it too (closedby="any"; Safari needs the fallback).
+// Named by its heading; onClose gets the dialog's returnValue.
+let modalCount = 0;
+function openModal(className, heading, { role, onClose = () => {} } = {}) {
+  const dialog = el('dialog', className);
+  if (role) dialog.setAttribute('role', role);
+  modalCount += 1;
+  heading.id = `rs-dialog-title-${modalCount}`;
+  dialog.setAttribute('aria-labelledby', heading.id);
+  dialog.setAttribute('closedby', 'any');
+  if (!('closedBy' in HTMLDialogElement.prototype)) {
+    dialog.addEventListener('click', (e) => {
+      if (e.target !== dialog) return;
+      const r = dialog.getBoundingClientRect();
+      const inside = r.top <= e.clientY && e.clientY <= r.bottom
+        && r.left <= e.clientX && e.clientX <= r.right;
+      if (!inside) dialog.close();
+    });
+  }
+  dialog.addEventListener('close', () => {
+    dialog.remove();
+    onClose(dialog.returnValue);
+  });
+  return dialog;
+}
+
 function showShareDialog({
   s, image, url, text, onEvent = () => {},
 }) {
-  const overlay = el('div', 'rs-share-popup');
-  const dialog = el('div', 'rs-share-dialog');
-  dialog.setAttribute('role', 'dialog');
-  dialog.setAttribute('aria-modal', 'true');
-  dialog.setAttribute('aria-label', s.title);
+  const heading = el('h3', 'rs-share-heading', s.title);
+  const dialog = openModal('rs-share-dialog', heading);
 
   const closeBtn = el('button', 'rs-share-close', '×');
   closeBtn.type = 'button';
   closeBtn.setAttribute('aria-label', s.close);
+  closeBtn.autofocus = true;
 
-  const heading = el('h3', 'rs-share-heading', s.title);
   const preview = el('img', 'rs-share-image');
   preview.src = image;
   preview.alt = text;
@@ -385,20 +408,8 @@ function showShareDialog({
   actions.append(copyBtn, downloadBtn);
 
   dialog.append(closeBtn, heading, preview, social, mailAlt, field, actions, status);
-  overlay.append(dialog);
-  document.body.append(overlay);
-
-  function close() {
-    overlay.remove();
-    // eslint-disable-next-line no-use-before-define
-    document.removeEventListener('keydown', onKey);
-  }
-  function onKey(e) {
-    if (e.key === 'Escape') close();
-  }
-  document.addEventListener('keydown', onKey);
-  overlay.onclick = (e) => { if (e.target === overlay) close(); };
-  closeBtn.onclick = close;
+  document.body.append(dialog);
+  closeBtn.onclick = () => dialog.close();
 
   copyBtn.onclick = async () => {
     onEvent('copy_link');
@@ -406,7 +417,7 @@ function showShareDialog({
     setTimeout(() => { copyBtn.textContent = s.copy; }, 2000);
   };
 
-  closeBtn.focus();
+  dialog.showModal();
   return {
     // hosted snapshot from the share webhook: link it from the email
     uploaded(link) {
@@ -465,6 +476,7 @@ function warmStage(vehicle) {
     vehicle.ppf,
     `colormaps/${vehicle.colorMap}`,
   ].forEach((file) => prefetch(`${BASE}/${file}`));
+  prefetch(new URL('./looks.js', import.meta.url).href);
 }
 
 // name → meshes: a named node and every mesh under it (a node whose mesh has
@@ -643,10 +655,12 @@ async function prepareVehicle(THREE, loader, vehicle) {
 }
 
 // Build the 3D scene and return a small API the UI drives.
-async function initStage(stage) {
-  const {
+// label: what screen readers announce for the 3D picture
+async function initStage(stage, label) {
+  // the film looks only matter for the 3D scene, so they load with it
+  const [{
     THREE, GLTFLoader, OrbitControls, RoomEnvironment,
-  } = await loadThree();
+  }, { PRESET_LOOK, FILM_LOOK }] = await Promise.all([loadThree(), import('./looks.js')]);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -654,6 +668,10 @@ async function initStage(stage) {
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // the 3D view is a picture to assistive tech; the view and part buttons
+  // are its keyboard controls
+  renderer.domElement.setAttribute('role', 'img');
+  renderer.domElement.setAttribute('aria-label', label);
   stage.append(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -666,7 +684,9 @@ async function initStage(stage) {
   camera.position.set(...VIEWS.side);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
+  // visitors who ask for less motion get no glide and instant camera moves
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  controls.enableDamping = !reduceMotion.matches;
   controls.enablePan = false;
   controls.maxPolarAngle = Math.PI / 2.05;
 
@@ -701,7 +721,10 @@ async function initStage(stage) {
   controls.addEventListener('start', () => { flight = null; });
   function flyTo(target, ms = 700) {
     flight = {
-      from: camera.position.clone(), to: target, t0: performance.now(), ms,
+      from: camera.position.clone(),
+      to: target,
+      t0: performance.now(),
+      ms: reduceMotion.matches ? 0 : ms,
     };
     invalidate();
   }
@@ -710,7 +733,7 @@ async function initStage(stage) {
     frame = 0;
     let moving = false;
     if (flight) {
-      const k = Math.min(1, (performance.now() - flight.t0) / flight.ms);
+      const k = flight.ms ? Math.min(1, (performance.now() - flight.t0) / flight.ms) : 1;
       const e = k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
       const dir = flight.from.clone().normalize()
         .lerp(flight.to.clone().normalize(), e).normalize();
@@ -1000,12 +1023,12 @@ function confirmDialog({
   title, text, confirm, cancel,
 }) {
   return new Promise((resolve) => {
-    const overlay = el('div', 'rs-share-popup');
-    const dialog = el('div', 'rs-share-dialog rs-confirm');
-    dialog.setAttribute('role', 'alertdialog');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('aria-label', title);
-    dialog.append(el('h3', 'rs-share-heading', title), el('p', 'rs-confirm-text', text));
+    const heading = el('h3', 'rs-share-heading', title);
+    // Esc or a click outside leave returnValue empty: the same as Cancel
+    const dialog = openModal('rs-share-dialog rs-confirm', heading, {
+      role: 'alertdialog', onClose: (value) => resolve(value === 'confirm'),
+    });
+    dialog.append(heading, el('p', 'rs-confirm-text', text));
     const actions = el('div', 'rs-share-actions');
     const no = el('button', 'rs-share-copy', cancel);
     const yes = el('button', 'rs-share-download', confirm);
@@ -1013,20 +1036,11 @@ function confirmDialog({
     yes.type = 'button';
     actions.append(no, yes);
     dialog.append(actions);
-    overlay.append(dialog);
-    document.body.append(overlay);
-    const done = (answer) => {
-      overlay.remove();
-      // eslint-disable-next-line no-use-before-define
-      document.removeEventListener('keydown', onKey);
-      resolve(answer);
-    };
-    function onKey(e) { if (e.key === 'Escape') done(false); }
-    document.addEventListener('keydown', onKey);
-    no.onclick = () => done(false);
-    yes.onclick = () => done(true);
-    overlay.onclick = (e) => { if (e.target === overlay) done(false); };
-    yes.focus();
+    document.body.append(dialog);
+    no.onclick = () => dialog.close('cancel');
+    yes.onclick = () => dialog.close('confirm');
+    yes.autofocus = true;
+    dialog.showModal();
   });
 }
 
@@ -1088,7 +1102,8 @@ function decodeDesign(code, byId) {
 const ORIGINAL_HASH = /^#d\/([A-Z0-9-]{17,18})$/i;
 const ORIGINAL_PART_ORDER = ['front', 'hood', 'left', 'right', 'top', 'rear'];
 
-function decodeOriginal(code, byId, lang) {
+function decodeOriginal(code, byId, lang, codes) {
+  const { ORIGINAL_WRAPS, ORIGINAL_TINTS, ORIGINAL_FILMS } = codes;
   const c = code.toUpperCase();
   const vehicle = VEHICLES.find((v) => v.code === c[0]);
   if (!vehicle) return null;
@@ -1145,6 +1160,7 @@ export default async function decorate(block) {
   const themeBar = el('div', 'rs-theme');
   [['light', ui.lightBg, '☀'], ['dark', ui.darkBg, '☾']].forEach(([mode, label, icon]) => {
     const b = el('button', `rs-theme-btn${mode === activeTheme ? ' is-active' : ''}`, icon);
+    b.setAttribute('aria-pressed', String(mode === activeTheme));
     b.type = 'button';
     b.dataset.theme = mode;
     b.title = label;
@@ -1156,6 +1172,7 @@ export default async function decorate(block) {
   const viewbar = el('div', 'rs-viewbar');
   ['side', 'front', 'rear'].forEach((v, i) => {
     const b = el('button', `rs-view${i === 0 ? ' is-active' : ''}`, ui.views[v]);
+    b.setAttribute('aria-pressed', String(i === 0));
     b.type = 'button';
     b.dataset.view = v;
     viewbar.append(b);
@@ -1293,17 +1310,27 @@ export default async function decorate(block) {
   // touch screens pinch to zoom; mice scroll
   const dragHint = window.matchMedia('(pointer: coarse)').matches ? t.dragTouch : t.drag;
 
+  // the location hash, as shared (apps that re-encode links turn "~" into "%7E")
+  function sharedHash() {
+    try {
+      return decodeURIComponent(window.location.hash);
+    } catch (e) {
+      return window.location.hash; // malformed escape: match the raw hash
+    }
+  }
+  // the original studio's share codes, loaded only when such a link is opened
+  let originalCodes = null;
+  async function loadOriginalCodes() {
+    if (!originalCodes && ORIGINAL_HASH.test(sharedHash())) {
+      originalCodes = await import('./share-codes.js');
+    }
+  }
+
   // a shared design link (#d/…) restores its layers, coverage, view and theme
   function readSharedLink() {
-    let { hash } = window.location;
-    try {
-      // apps that re-encode shared links turn "~" into "%7E"
-      hash = decodeURIComponent(hash);
-    } catch (e) {
-      // malformed escape: match the raw hash
-    }
-    const original = hash.match(ORIGINAL_HASH);
-    const fromOriginal = original && decodeOriginal(original[1], byId, lang);
+    const hash = sharedHash();
+    const original = originalCodes && hash.match(ORIGINAL_HASH);
+    const fromOriginal = original && decodeOriginal(original[1], byId, lang, originalCodes);
     const shared = !fromOriginal && hash.match(DESIGN_HASH);
     if (fromOriginal) {
       ({ design, vehicle, theme: activeTheme } = fromOriginal);
@@ -1320,6 +1347,7 @@ export default async function decorate(block) {
     target = 'all';
     return true;
   }
+  await loadOriginalCodes();
   readSharedLink();
 
   function designUrl() {
@@ -1384,7 +1412,9 @@ export default async function decorate(block) {
   function markActive() {
     const film = assigned();
     grid.querySelectorAll('.rs-swatch').forEach((sEl) => {
-      sEl.classList.toggle('is-active', !!film && sEl.dataset.id === film.id);
+      const on = !!film && sEl.dataset.id === film.id;
+      sEl.classList.toggle('is-active', on);
+      sEl.setAttribute('aria-pressed', String(on));
     });
   }
 
@@ -1490,6 +1520,7 @@ export default async function decorate(block) {
     productTabs.textContent = '';
     products.forEach((p) => {
       const b = el('button', `rs-tab${p === activeProduct ? ' is-active' : ''}`, productLabel(p));
+      b.setAttribute('aria-pressed', String(p === activeProduct));
       b.type = 'button';
       // eslint-disable-next-line no-use-before-define
       b.onclick = () => {
@@ -1511,6 +1542,7 @@ export default async function decorate(block) {
     if (!isWrapTab()) return;
     ['all', 'front', 'hood', 'left', 'top', 'right', 'rear', 'accents'].forEach((p) => {
       const b = el('button', `rs-part${p === target ? ' is-active' : ''}`, partLabel(p));
+      b.setAttribute('aria-pressed', String(p === target));
       b.type = 'button';
       b.onclick = () => {
         target = p;
@@ -1534,6 +1566,7 @@ export default async function decorate(block) {
     finishRow.style.display = finishes.length > 2 ? '' : 'none';
     finishes.forEach((f) => {
       const b = el('button', `rs-chip${f === activeFinish ? ' is-active' : ''}`, finishLabel(f));
+      b.setAttribute('aria-pressed', String(f === activeFinish));
       b.type = 'button';
       if (FINISH_ICON[f]) {
         const icon = el('img', 'rs-chip-icon');
@@ -1556,6 +1589,7 @@ export default async function decorate(block) {
     TIER_ORDER.filter((tier) => tiers.includes(tier)).forEach((tier) => {
       const label = t[tier];
       const b = el('button', `rs-chip${tier === design.coverage ? ' is-active' : ''}`, label);
+      b.setAttribute('aria-pressed', String(tier === design.coverage));
       b.type = 'button';
       b.insertAdjacentHTML('afterbegin', shieldIcon(tier));
       b.onclick = () => {
@@ -1648,8 +1682,10 @@ export default async function decorate(block) {
 
   viewbar.querySelectorAll('.rs-view').forEach((b) => {
     b.onclick = () => {
-      viewbar.querySelectorAll('.rs-view').forEach((x) => x.classList.remove('is-active'));
-      b.classList.add('is-active');
+      viewbar.querySelectorAll('.rs-view').forEach((x) => {
+        x.classList.toggle('is-active', x === b);
+        x.setAttribute('aria-pressed', String(x === b));
+      });
       activeView = b.dataset.view;
       if (viewer) viewer.setView(activeView);
     };
@@ -1658,8 +1694,10 @@ export default async function decorate(block) {
   themeBar.querySelectorAll('.rs-theme-btn').forEach((b) => {
     b.onclick = () => {
       activeTheme = b.dataset.theme;
-      themeBar.querySelectorAll('.rs-theme-btn').forEach((x) => x.classList.remove('is-active'));
-      b.classList.add('is-active');
+      themeBar.querySelectorAll('.rs-theme-btn').forEach((x) => {
+        x.classList.toggle('is-active', x === b);
+        x.setAttribute('aria-pressed', String(x === b));
+      });
       if (viewer) viewer.setTheme(activeTheme);
       studioEvent('toggle', { event_details: activeTheme === 'dark' ? 'Night' : 'Day' });
     };
@@ -1668,7 +1706,8 @@ export default async function decorate(block) {
   // funnel: the stage share events report (the studio or its finale)
   async function openShare(funnel) {
     if (!viewer) return;
-    share.disabled = true;
+    // no need to disable Share meanwhile: the open dialog makes the page inert
+    // (disabling it would drop its focus, which the dialog returns to on close)
     const dataUrl = viewer.capture('image/png');
     const dialog = showShareDialog({
       s: shareStr,
@@ -1692,8 +1731,6 @@ export default async function decorate(block) {
       dialog.uploaded(data.downloadlink);
     } catch (e) {
       dialog.failed();
-    } finally {
-      share.disabled = false;
     }
   }
   share.onclick = () => openShare('studio');
@@ -1703,26 +1740,19 @@ export default async function decorate(block) {
     if (!viewer) return;
     studioEvent('done', { stage: 'completed' });
     const image = viewer.capture('image/png');
-    const overlay = el('div', 'rs-share-popup');
-    const dialog = el('div', 'rs-share-dialog rs-finale');
-    dialog.setAttribute('role', 'dialog');
-    dialog.setAttribute('aria-modal', 'true');
-    dialog.setAttribute('aria-label', ui.finaleTitle);
+    const heading = el('h3', 'rs-share-heading', ui.finaleTitle);
+    const dialog = openModal('rs-share-dialog rs-finale', heading);
     const closeBtn = el('button', 'rs-share-close', '×');
     closeBtn.type = 'button';
     closeBtn.setAttribute('aria-label', ui.close);
+    closeBtn.autofocus = true;
     const img = el('img', 'rs-share-image');
     img.src = image;
     img.alt = designText(design, shareStr);
     const summary = el('div', 'rs-design rs-finale-design');
     renderDesign(summary, false);
     const buttons = el('div', 'rs-finale-actions');
-    const close = () => {
-      overlay.remove();
-      // eslint-disable-next-line no-use-before-define
-      document.removeEventListener('keydown', onKey);
-    };
-    function onKey(e) { if (e.key === 'Escape') close(); }
+    const close = () => dialog.close();
     [
       ['download', shareStr.download, () => {
         const a = document.createElement('a');
@@ -1749,28 +1779,28 @@ export default async function decorate(block) {
       b.onclick = action;
       buttons.append(b);
     });
-    dialog.append(closeBtn, el('h3', 'rs-share-heading', ui.finaleTitle), img, summary, buttons);
-    overlay.append(dialog);
-    document.body.append(overlay);
-    document.addEventListener('keydown', onKey);
-    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    dialog.append(closeBtn, heading, img, summary, buttons);
+    document.body.append(dialog);
     closeBtn.onclick = close;
-    closeBtn.focus();
+    dialog.showModal();
   };
 
   // reflect the theme and view (e.g. from a shared link) in the controls
   function syncControls() {
     themeBar.querySelectorAll('.rs-theme-btn').forEach((b) => {
       b.classList.toggle('is-active', b.dataset.theme === activeTheme);
+      b.setAttribute('aria-pressed', String(b.dataset.theme === activeTheme));
     });
     viewbar.querySelectorAll('.rs-view').forEach((b) => {
       b.classList.toggle('is-active', b.dataset.view === activeView);
+      b.setAttribute('aria-pressed', String(b.dataset.view === activeView));
     });
   }
 
   // a design link pasted into a tab already showing the studio
-  window.addEventListener('hashchange', () => {
+  window.addEventListener('hashchange', async () => {
     const before = vehicle;
+    await loadOriginalCodes();
     if (!readSharedLink()) return;
     syncControls();
     renderAll();
@@ -1783,6 +1813,11 @@ export default async function decorate(block) {
         return;
       }
       viewer.setView(activeView);
+    } else {
+      // the 3D isn't up yet: show the link's car, and start it for the design
+      renderVehicles();
+      // eslint-disable-next-line no-use-before-define
+      start();
     }
     refresh();
   });
@@ -1794,14 +1829,22 @@ export default async function decorate(block) {
 
   async function startStage() {
     try {
-      viewer = await initStage(stage);
-      tiers = await viewer.loadVehicle(vehicle);
+      viewer = await initStage(stage, ui.stageLabel);
+      const loaded = vehicle;
+      tiers = await viewer.loadVehicle(loaded);
       fitCoverage();
       viewer.setTheme(activeTheme);
       viewer.setView(activeView, false);
       caption.textContent = dragHint;
       renderCoverage();
       refresh();
+      // a design link opened while the stage loaded may ask for another car
+      if (vehicle !== loaded) {
+        const next = vehicle;
+        vehicle = loaded;
+        // eslint-disable-next-line no-use-before-define
+        switchVehicle(next);
+      }
     } catch (e) {
       stage.classList.add('rs-stage-error');
       caption.textContent = t.notLoaded;

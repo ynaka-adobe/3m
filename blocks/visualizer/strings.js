@@ -43,6 +43,7 @@ export const STUDIO_I18N = {
     views: { side: 'Side', front: 'Front', rear: 'Rear' },
     lightBg: 'Light background',
     darkBg: 'Dark background',
+    stageLabel: '3D preview of your vehicle design',
     close: 'Close',
   },
   de: {
@@ -71,6 +72,7 @@ export const STUDIO_I18N = {
     views: { side: 'Seite', front: 'Vorne', rear: 'Hinten' },
     lightBg: 'Heller Hintergrund',
     darkBg: 'Dunkler Hintergrund',
+    stageLabel: '3D-Vorschau Ihres Fahrzeugdesigns',
     close: 'Schließen',
   },
   jp: {
@@ -99,6 +101,7 @@ export const STUDIO_I18N = {
     views: { side: 'サイド', front: 'フロント', rear: 'リア' },
     lightBg: '明るい背景',
     darkBg: '暗い背景',
+    stageLabel: '車両デザインの3Dプレビュー',
     close: '閉じる',
   },
 };

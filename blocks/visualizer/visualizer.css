@@ -8,6 +8,14 @@
   border-radius: 12px;
 }
 
+/* keyboard focus: a blue ring that stands out on the light panel and the
+   dark night stage alike (3:1 or better against both) */
+.rs-visualizer :is(button, a, input):focus-visible,
+.rs-share-dialog :is(button, a, input):focus-visible {
+  outline: 2px solid #005fcc;
+  outline-offset: 2px;
+}
+
 @media (width >= 900px) {
   .rs-visualizer {
     grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
@@ -445,7 +453,8 @@
 }
 
 .rs-design-empty {
-  color: #888;
+  /* readable on the panel's light background (WCAG AA contrast) */
+  color: #666;
   font-size: 13px;
 }
 
@@ -496,28 +505,28 @@
   text-decoration: underline;
 }
 
-/* ---- share dialog (matches the studio panel: grey chips, red primary) ---- */
-.rs-share-popup {
-  position: fixed;
-  inset: 0;
-  z-index: 1100; /* above the consent banner (1000) */
-  display: grid;
-  place-items: center;
-  overflow-y: auto;
-  padding: 20px;
-  background: rgb(0 0 0 / 55%);
-}
-
+/* ---- share dialog (matches the studio panel: grey chips, red primary) ----
+   A native modal <dialog>: the browser shows it above everything (consent
+   banner included), keeps focus inside and dims the page via ::backdrop.
+   It is positioned (fixed, centred) by the browser: don't override that. */
 .rs-share-dialog {
-  position: relative;
   box-sizing: border-box;
-  width: 100%;
+  width: calc(100% - 40px);
   max-width: 460px;
+  max-height: calc(100dvh - 40px);
+  margin: auto;
   padding: 24px;
+  overflow-y: auto;
+  border: 0;
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 20px 60px rgb(0 0 0 / 30%);
+  color: inherit;
   font-family: var(--heading-font-family);
+}
+
+.rs-share-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
 }
 
 .rs-share-close {

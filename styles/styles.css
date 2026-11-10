@@ -3,27 +3,8 @@
  * Vanilla aem-boilerplate runtime. Brand tokens + self-hosted 3MCircular.
  */
 
-/* ── self-hosted brand font (proprietary — see styles/fonts/LICENSING.md) ── */
-@font-face {
-  font-family: "3MCircular";
-  font-weight: 300;
-  font-display: swap;
-  src: url("/styles/fonts/3MCircularWeb-Light.woff") format("woff");
-}
-
-@font-face {
-  font-family: "3MCircular";
-  font-weight: 400;
-  font-display: swap;
-  src: url("/styles/fonts/3MCircularWeb-Book.woff") format("woff");
-}
-
-@font-face {
-  font-family: "3MCircular";
-  font-weight: 700;
-  font-display: swap;
-  src: url("/styles/fonts/3MCircularWeb-Bold.woff") format("woff");
-}
+/* ── brand font: the 3MCircular @font-face rules live in fonts.css, which
+   loads after the largest paint so the font downloads don't compete with it ── */
 
 /* metric-matched fallback so the woff swap doesn't shift text */
 @font-face {

@@ -14,6 +14,6 @@ The woff files were lifted from the live 3M.com (already publicly served by
 webfont/embedding license is confirmed.**
 
 **Remove path:** delete the three `.woff` files and their `@font-face` rules
-in `styles/styles.css`. The stacks then fall back to
+in `styles/fonts.css`. The stacks then fall back to
 `"3MCircular-fallback", arial, sans-serif` (a metric-matched system face),
 so layout is preserved — only the brand letterforms change.
