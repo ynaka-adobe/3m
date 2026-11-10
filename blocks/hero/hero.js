@@ -26,16 +26,25 @@ const IMG_PATH = /^\/[\w./-]+\.(jpg|jpeg|png|webp|avif)$/i;
 export default function decorate(block) {
   block.closest('.section')?.classList.add('full');
 
+  // the page's first hero is its largest paint: fetch its image first
+  const isFirstHero = document.querySelector('.hero') === block;
   let picture = block.querySelector('picture, img');
   const cellsAll = [...block.querySelectorAll(':scope > div > div')];
   const pathCell = cellsAll.find((c) => IMG_PATH.test(c.textContent.trim()));
   if (!picture && pathCell) {
     const img = document.createElement('img');
+    // priority before the address: the download starts as soon as it is set
+    if (isFirstHero) img.fetchPriority = 'high';
     img.src = pathCell.textContent.trim();
     img.alt = '';
     img.loading = 'eager';
     pathCell.replaceChildren(img);
     picture = img;
+  }
+  const heroImg = picture && (picture.tagName === 'IMG' ? picture : picture.querySelector('img'));
+  if (heroImg && isFirstHero) {
+    heroImg.fetchPriority = 'high';
+    heroImg.loading = 'eager';
   }
 
   // banner variant: flat image (text baked in) rendered clean, optionally linked

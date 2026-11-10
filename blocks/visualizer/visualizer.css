@@ -445,7 +445,8 @@
 }
 
 .rs-design-empty {
-  color: #888;
+  /* readable on the panel's light background (WCAG AA contrast) */
+  color: #666;
   font-size: 13px;
 }
 

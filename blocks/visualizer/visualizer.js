@@ -3,8 +3,6 @@ import {
   I18N, STUDIO_I18N, INFO_LINKS, SHARE_I18N,
 } from './strings.js';
 import { VEHICLES, DEFAULT_VEHICLE } from './vehicles.js';
-import { PRESET_LOOK, FILM_LOOK } from './looks.js';
-import { ORIGINAL_WRAPS, ORIGINAL_TINTS, ORIGINAL_FILMS } from './share-codes.js';
 
 // three.js is loaded lazily from a CDN so it never weighs down first paint.
 const THREE_VER = '0.160.0';
@@ -465,6 +463,7 @@ function warmStage(vehicle) {
     vehicle.ppf,
     `colormaps/${vehicle.colorMap}`,
   ].forEach((file) => prefetch(`${BASE}/${file}`));
+  prefetch(new URL('./looks.js', import.meta.url).href);
 }
 
 // name → meshes: a named node and every mesh under it (a node whose mesh has
@@ -644,9 +643,10 @@ async function prepareVehicle(THREE, loader, vehicle) {
 
 // Build the 3D scene and return a small API the UI drives.
 async function initStage(stage) {
-  const {
+  // the film looks only matter for the 3D scene, so they load with it
+  const [{
     THREE, GLTFLoader, OrbitControls, RoomEnvironment,
-  } = await loadThree();
+  }, { PRESET_LOOK, FILM_LOOK }] = await Promise.all([loadThree(), import('./looks.js')]);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1088,7 +1088,8 @@ function decodeDesign(code, byId) {
 const ORIGINAL_HASH = /^#d\/([A-Z0-9-]{17,18})$/i;
 const ORIGINAL_PART_ORDER = ['front', 'hood', 'left', 'right', 'top', 'rear'];
 
-function decodeOriginal(code, byId, lang) {
+function decodeOriginal(code, byId, lang, codes) {
+  const { ORIGINAL_WRAPS, ORIGINAL_TINTS, ORIGINAL_FILMS } = codes;
   const c = code.toUpperCase();
   const vehicle = VEHICLES.find((v) => v.code === c[0]);
   if (!vehicle) return null;
@@ -1293,17 +1294,27 @@ export default async function decorate(block) {
   // touch screens pinch to zoom; mice scroll
   const dragHint = window.matchMedia('(pointer: coarse)').matches ? t.dragTouch : t.drag;
 
+  // the location hash, as shared (apps that re-encode links turn "~" into "%7E")
+  function sharedHash() {
+    try {
+      return decodeURIComponent(window.location.hash);
+    } catch (e) {
+      return window.location.hash; // malformed escape: match the raw hash
+    }
+  }
+  // the original studio's share codes, loaded only when such a link is opened
+  let originalCodes = null;
+  async function loadOriginalCodes() {
+    if (!originalCodes && ORIGINAL_HASH.test(sharedHash())) {
+      originalCodes = await import('./share-codes.js');
+    }
+  }
+
   // a shared design link (#d/…) restores its layers, coverage, view and theme
   function readSharedLink() {
-    let { hash } = window.location;
-    try {
-      // apps that re-encode shared links turn "~" into "%7E"
-      hash = decodeURIComponent(hash);
-    } catch (e) {
-      // malformed escape: match the raw hash
-    }
-    const original = hash.match(ORIGINAL_HASH);
-    const fromOriginal = original && decodeOriginal(original[1], byId, lang);
+    const hash = sharedHash();
+    const original = originalCodes && hash.match(ORIGINAL_HASH);
+    const fromOriginal = original && decodeOriginal(original[1], byId, lang, originalCodes);
     const shared = !fromOriginal && hash.match(DESIGN_HASH);
     if (fromOriginal) {
       ({ design, vehicle, theme: activeTheme } = fromOriginal);
@@ -1320,6 +1331,7 @@ export default async function decorate(block) {
     target = 'all';
     return true;
   }
+  await loadOriginalCodes();
   readSharedLink();
 
   function designUrl() {
@@ -1769,8 +1781,9 @@ export default async function decorate(block) {
   }
 
   // a design link pasted into a tab already showing the studio
-  window.addEventListener('hashchange', () => {
+  window.addEventListener('hashchange', async () => {
     const before = vehicle;
+    await loadOriginalCodes();
     if (!readSharedLink()) return;
     syncControls();
     renderAll();
@@ -1783,6 +1796,11 @@ export default async function decorate(block) {
         return;
       }
       viewer.setView(activeView);
+    } else {
+      // the 3D isn't up yet: show the link's car, and start it for the design
+      renderVehicles();
+      // eslint-disable-next-line no-use-before-define
+      start();
     }
     refresh();
   });
@@ -1795,13 +1813,21 @@ export default async function decorate(block) {
   async function startStage() {
     try {
       viewer = await initStage(stage);
-      tiers = await viewer.loadVehicle(vehicle);
+      const loaded = vehicle;
+      tiers = await viewer.loadVehicle(loaded);
       fitCoverage();
       viewer.setTheme(activeTheme);
       viewer.setView(activeView, false);
       caption.textContent = dragHint;
       renderCoverage();
       refresh();
+      // a design link opened while the stage loaded may ask for another car
+      if (vehicle !== loaded) {
+        const next = vehicle;
+        vehicle = loaded;
+        // eslint-disable-next-line no-use-before-define
+        switchVehicle(next);
+      }
     } catch (e) {
       stage.classList.add('rs-stage-error');
       caption.textContent = t.notLoaded;
