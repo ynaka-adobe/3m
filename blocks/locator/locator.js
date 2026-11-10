@@ -553,8 +553,9 @@ async function buildLocator(root, opts) {
     if (mapApi && state.view === 'map') mapApi.select(id);
   }
 
+  // an installer must offer every selected product type (AND)
   function matches(d) {
-    return !state.products.size || d.products.some((p) => state.products.has(p));
+    return [...state.products].every((p) => d.products.includes(p));
   }
 
   // product chips come from the results loaded so far; selections are kept
