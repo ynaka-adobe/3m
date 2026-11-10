@@ -76,20 +76,29 @@ async function loadCarPersonalizationSubnav() {
   const frag = await fetchFragment(subnavPath);
 
   const main = document.querySelector('main');
-  if (!frag || !main) return;
+  // the place scripts.js held for the strip from the first paint
+  const slot = main && main.querySelector(':scope > .subnav-slot');
+  const rows = frag ? [...frag.querySelectorAll(':scope > div > *')].map((el) => [el]) : [];
+  if (!main || !rows.length) {
+    if (slot) slot.remove();
+    return;
+  }
   // The subnav ("A > B > C" trail + page title) renders as a breadcrumb block
   // in its own first section, like the www.3m.com breadcrumb strip.
-  const rows = [...frag.querySelectorAll(':scope > div > *')].map((el) => [el]);
-  if (!rows.length) return;
   const block = buildBlock('breadcrumb', rows);
   const wrapper = document.createElement('div');
   wrapper.append(block);
-  const subnavSection = document.createElement('div');
-  subnavSection.className = 'section';
+  const subnavSection = slot || document.createElement('div');
+  if (!slot) {
+    subnavSection.className = 'section';
+    main.insertBefore(subnavSection, main.firstChild);
+  }
+  // shown once styled: unstyled, the strip is taller and would push the page
+  wrapper.hidden = true;
   subnavSection.append(wrapper);
-  main.insertBefore(subnavSection, main.firstChild);
   decorateBlock(block);
   await loadBlock(block);
+  wrapper.hidden = false;
 }
 
 // Read the menu-panel sections (3rd section onward) of the nav fragment, keyed by heading.

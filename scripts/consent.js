@@ -406,10 +406,13 @@ function modalHTML() {
 
 function render() {
   if (ui) return ui;
-  loadCSS(`${window.hlx.codeBasePath}/styles/consent.css`);
+  const styled = loadCSS(`${window.hlx.codeBasePath}/styles/consent.css`);
 
   const root = document.createElement('div');
   root.className = 'consent';
+  // Kept out of the layout until its stylesheet applies: unstyled, the banner
+  // would sit in the page flow for a moment and push the whole page down.
+  root.hidden = true;
   root.innerHTML = `${bannerHTML()}${modalHTML()}`;
 
   const banner = root.querySelector('.consent-banner');
@@ -549,8 +552,9 @@ function render() {
     }
   });
 
+  const ready = styled.catch(() => {}).then(() => { root.hidden = false; });
   ui = {
-    root, banner, onKeydown, openPreferences, closeBanner,
+    root, banner, onKeydown, openPreferences, closeBanner, ready,
   };
   // First in the DOM so keyboard users reach the choice before page content.
   document.body.prepend(root);
@@ -561,8 +565,9 @@ function render() {
  * Renders the consent experience.
  * @param {{mode?: 'banner'|'preferences'}} [options]
  */
-export function openConsent({ mode = 'banner' } = {}) {
+export async function openConsent({ mode = 'banner' } = {}) {
   const view = render();
+  await view.ready;
   if (mode === 'preferences') {
     // Revisiting from the footer: open the preference center on its own.
     if (state) view.closeBanner();

@@ -132,8 +132,18 @@ async function loadEager(doc) {
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
+    const first = main.querySelector('.section');
+    // car-personalization pages get their breadcrumb strip from the header
+    // (lazy phase); hold its place from the first paint so the page doesn't
+    // jump when it arrives (see loadCarPersonalizationSubnav in header.js)
+    if (window.location.pathname.split('/').includes('car-personalization')) {
+      const slot = document.createElement('div');
+      slot.className = 'section breadcrumb-container subnav-slot';
+      slot.dataset.sectionStatus = 'loaded';
+      main.prepend(slot);
+    }
     document.body.classList.add('appear');
-    await loadSection(main.querySelector('.section'), waitForFirstImage);
+    await loadSection(first, waitForFirstImage);
   }
 
   try {

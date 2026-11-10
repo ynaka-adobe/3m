@@ -417,19 +417,54 @@ function showShareDialog({
   };
 }
 
+const THREE_MODULES = [
+  '',
+  '/examples/jsm/loaders/GLTFLoader.js',
+  '/examples/jsm/controls/OrbitControls.js',
+  '/examples/jsm/environments/RoomEnvironment.js',
+];
+
 async function loadThree() {
-  const [THREE, gltfMod, ctrlMod, envMod] = await Promise.all([
-    import(/* webpackIgnore: true */ `${CDN}`),
-    import(/* webpackIgnore: true */ `${CDN}/examples/jsm/loaders/GLTFLoader.js`),
-    import(/* webpackIgnore: true */ `${CDN}/examples/jsm/controls/OrbitControls.js`),
-    import(/* webpackIgnore: true */ `${CDN}/examples/jsm/environments/RoomEnvironment.js`),
-  ]);
+  const [THREE, gltfMod, ctrlMod, envMod] = await Promise.all(
+    THREE_MODULES.map((path) => import(/* webpackIgnore: true */ `${CDN}${path}`)),
+  );
   return {
     THREE,
     GLTFLoader: gltfMod.GLTFLoader,
     OrbitControls: ctrlMod.OrbitControls,
     RoomEnvironment: envMod.RoomEnvironment,
   };
+}
+
+// Puts what the stage first needs (three.js, the backdrop, the opening car and
+// the night sky) in the browser cache at low priority, without running any of
+// it: downloads happen off the main thread, so the page stays responsive and
+// the stage starts quickly once it is wanted.
+function warmStage(vehicle) {
+  const prefetch = (href, crossOrigin) => {
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = href;
+    if (crossOrigin) link.crossOrigin = 'anonymous';
+    document.head.append(link);
+  };
+  // esm.sh entry points are one-line stubs naming the files that hold the code
+  THREE_MODULES.forEach((path) => {
+    fetch(`${CDN}${path}`, { priority: 'low' })
+      .then((res) => (res.ok ? res.text() : ''))
+      .then((src) => (src.match(/"\/[^"]+\.m?js"/g) || [])
+        .forEach((file) => prefetch(new URL(file.slice(1, -1), CDN).href, true)))
+      .catch(() => {});
+  });
+  [
+    'backdrop.glb',
+    `textures/${THEMES.light.backdrop}`,
+    `textures/${THEMES.dark.backdrop}`,
+    ...['px', 'nx', 'py', 'ny', 'pz', 'nz'].map((side) => `textures/night/${side}.webp`),
+    vehicle.model,
+    vehicle.ppf,
+    `colormaps/${vehicle.colorMap}`,
+  ].forEach((file) => prefetch(`${BASE}/${file}`));
 }
 
 // name → meshes: a named node and every mesh under it (a node whose mesh has
@@ -635,6 +670,61 @@ async function initStage(stage) {
   controls.enablePan = false;
   controls.maxPolarAngle = Math.PI / 2.05;
 
+  // Frames are drawn only when something changed (camera, design, textures,
+  // size) and the stage is on screen: an idle studio costs no CPU, which
+  // keeps the page responsive on slow phones.
+  let frame = 0;
+  let onScreen = true;
+  // eslint-disable-next-line no-use-before-define
+  const invalidate = () => { if (!frame && onScreen) frame = requestAnimationFrame(draw); };
+  controls.addEventListener('change', invalidate);
+  new IntersectionObserver(([entry]) => {
+    onScreen = entry.isIntersecting;
+    invalidate();
+  }).observe(stage);
+
+  function resize() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight || Math.round(w * 0.6);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    // resizing clears the canvas
+    invalidate();
+  }
+  resize();
+  new ResizeObserver(resize).observe(stage);
+
+  // camera flights: ease the direction and distance toward a target position
+  let flight = null;
+  controls.addEventListener('start', () => { flight = null; });
+  function flyTo(target, ms = 700) {
+    flight = {
+      from: camera.position.clone(), to: target, t0: performance.now(), ms,
+    };
+    invalidate();
+  }
+
+  function draw() {
+    frame = 0;
+    let moving = false;
+    if (flight) {
+      const k = Math.min(1, (performance.now() - flight.t0) / flight.ms);
+      const e = k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
+      const dir = flight.from.clone().normalize()
+        .lerp(flight.to.clone().normalize(), e).normalize();
+      const len = flight.from.length() + (flight.to.length() - flight.from.length()) * e;
+      camera.position.copy(dir.multiplyScalar(len));
+      if (k === 1) flight = null;
+      moving = true;
+    }
+    // true while the camera still glides (damping) after a drag
+    if (controls.update()) moving = true;
+    renderer.render(scene, camera);
+    if (moving) invalidate();
+  }
+
   const hemi = new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.6);
   scene.add(hemi);
   const key = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -665,7 +755,7 @@ async function initStage(stage) {
   function texture(file, { repeat = 1, stretch = 1, color = false } = {}) {
     const id = `${file}@${repeat}x${stretch}`;
     if (!textures[id]) {
-      const tex = texLoader.load(`${BASE}/textures/${file}`);
+      const tex = texLoader.load(`${BASE}/textures/${file}`, invalidate);
       // glTF texture coordinates: no vertical flip
       tex.flipY = false;
       tex.wrapS = THREE.RepeatWrapping;
@@ -710,41 +800,6 @@ async function initStage(stage) {
   let car = null;
   let dist = 6;
 
-  function resize() {
-    const w = stage.clientWidth;
-    const h = stage.clientHeight || Math.round(w * 0.6);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-  resize();
-  new ResizeObserver(resize).observe(stage);
-
-  // camera flights: ease the direction and distance toward a target position
-  let flight = null;
-  controls.addEventListener('start', () => { flight = null; });
-  function flyTo(target, ms = 700) {
-    flight = {
-      from: camera.position.clone(), to: target, t0: performance.now(), ms,
-    };
-  }
-
-  (function animate() {
-    requestAnimationFrame(animate);
-    if (flight) {
-      const k = Math.min(1, (performance.now() - flight.t0) / flight.ms);
-      const e = k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
-      const dir = flight.from.clone().normalize()
-        .lerp(flight.to.clone().normalize(), e).normalize();
-      const len = flight.from.length() + (flight.to.length() - flight.from.length()) * e;
-      camera.position.copy(dir.multiplyScalar(len));
-      if (k === 1) flight = null;
-    }
-    controls.update();
-    renderer.render(scene, camera);
-  }());
-
   let coverage = 'platinum';
   let ppfActive = false;
 
@@ -778,7 +833,7 @@ async function initStage(stage) {
     ));
   }
 
-  return {
+  const api = {
     // Capture the current view as a base64 data URL. WebGL clears the drawing
     // buffer after each frame, so force a fresh render and read it back in the
     // same call stack (no preserveDrawingBuffer needed).
@@ -928,6 +983,16 @@ async function initStage(stage) {
       if (cam) flyTo(fromOriginal(cam));
     },
   };
+  // every call changes what the stage shows: draw it (again once async work ends)
+  Object.entries(api).forEach(([name, fn]) => {
+    api[name] = (...args) => {
+      const out = fn(...args);
+      invalidate();
+      if (out instanceof Promise) out.then(invalidate, invalidate);
+      return out;
+    };
+  });
+  return api;
 }
 
 // Small yes/no dialog (styled like the share dialog); resolves true on confirm.
@@ -1727,17 +1792,53 @@ export default async function decorate(block) {
   renderAll();
   renderDesign();
 
-  try {
-    viewer = await initStage(stage);
-    tiers = await viewer.loadVehicle(vehicle);
-    fitCoverage();
-    viewer.setTheme(activeTheme);
-    viewer.setView(activeView, false);
-    caption.textContent = dragHint;
-    renderCoverage();
-    refresh();
-  } catch (e) {
-    stage.classList.add('rs-stage-error');
-    caption.textContent = t.notLoaded;
+  async function startStage() {
+    try {
+      viewer = await initStage(stage);
+      tiers = await viewer.loadVehicle(vehicle);
+      fitCoverage();
+      viewer.setTheme(activeTheme);
+      viewer.setView(activeView, false);
+      caption.textContent = dragHint;
+      renderCoverage();
+      refresh();
+    } catch (e) {
+      stage.classList.add('rs-stage-error');
+      caption.textContent = t.notLoaded;
+    }
+  }
+  // The panel is ready now; the 3D scene (three.js, the car models) loads in
+  // the background, so it never holds up the rest of the page. It starts as
+  // soon as the stage is on screen, a design link is opened, or the visitor
+  // first scrolls or touches the page (a head start before the stage shows).
+  const WAKE_EVENTS = ['scroll', 'wheel', 'pointerdown', 'touchstart', 'keydown'];
+  let started = false;
+  // eslint-disable-next-line no-use-before-define
+  const wake = () => start();
+  const onScreenStage = new IntersectionObserver((entries) => {
+    if (entries.some((e) => e.isIntersecting)) wake();
+  });
+  function start() {
+    if (started) return;
+    started = true;
+    onScreenStage.disconnect();
+    WAKE_EVENTS.forEach((type) => window.removeEventListener(type, wake));
+    startStage();
+  }
+  if (window.location.hash.startsWith('#d/')) start();
+  else {
+    onScreenStage.observe(stage);
+    WAKE_EVENTS.forEach((type) => window.addEventListener(type, wake, { passive: true }));
+    // meanwhile, once the page has loaded and gone quiet, fetch the stage's
+    // files into the cache (skipped when the visitor asks to save data)
+    const { connection } = navigator;
+    const frugal = connection && (connection.saveData || /2g/.test(connection.effectiveType));
+    const warm = () => {
+      if (started || frugal) return;
+      const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
+      setTimeout(() => idle(() => { if (!started) warmStage(vehicle); }, { timeout: 3000 }), 3000);
+    };
+    if (document.readyState === 'complete') warm();
+    else window.addEventListener('load', warm, { once: true });
   }
 }

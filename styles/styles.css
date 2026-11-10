@@ -275,6 +275,21 @@ main > .section:empty {
   display: none;
 }
 
+/* car-personalization pages: the place of the breadcrumb strip the header adds
+   later (blocks/breadcrumb sizes it the same), so the page doesn't jump */
+main > .section.subnav-slot {
+  display: block;
+  min-height: 72.5px;
+  padding: 0;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+@media (width >= 768px) {
+  main > .section.subnav-slot {
+    min-height: 94.75px;
+  }
+}
+
 main > .section > div {
   max-width: var(--maxw);
   margin: auto;
