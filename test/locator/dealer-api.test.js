@@ -23,6 +23,11 @@ const record = (overrides = {}) => ({
   lat: 44.884979248046875,
   lon: -93.417884826660156,
   deleted: false,
+  email: 'sales@example.com',
+  partnerType: 'Authorized Dealer',
+  certificationType: '3M™ Paint Protection Film Preferred Installer',
+  website: ' https://www.dentkraft.example ',
+  whatsApp: null,
   ...overrides,
 });
 
@@ -88,6 +93,10 @@ describe('locator dealer API (proxy)', () => {
       zip: '55344',
       country: 'United States',
       products: ['3M™ Automotive Window Film', '3M™ Paint Protection Film', '3M™ Ceramic Coating'],
+      partnerType: 'Authorized Dealer',
+      certifications: ['3M™ Paint Protection Film Preferred Installer'],
+      website: 'https://www.dentkraft.example',
+      whatsApp: '',
       lat: 44.884979248046875,
       lon: -93.417884826660156,
       distanceInMiles: 21.1,
@@ -183,6 +192,48 @@ describe('locator dealer API (proxy)', () => {
 
     await api.search(search({ take: 10, radius: 100 }));
     assert.equal(calls.length, 2, 'a different search asks the proxy again');
+  });
+
+  it('applies the display order to the whole list before paging', async () => {
+    mockFetch(json({
+      items: Array.from({ length: 12 }, (_, i) => record({
+        companyID: `${i}`,
+        distanceInMiles: i,
+        partnerType: i >= 9 ? '3M™ Pro Shop Dealer' : 'Authorized Dealer',
+      })),
+      skip: 0,
+      take: 10,
+      totalItemsCount: 12,
+    }));
+    const proFirst = (list) => [...list].sort((a, b) => (Number(b.partnerType.includes('Pro'))
+      - Number(a.partnerType.includes('Pro'))) || (a.distanceInMiles - b.distanceInMiles));
+    const res = await createDealerApi('', { order: proFirst }).search(search({ take: 4 }));
+    assert.deepEqual(res.dealers.map((d) => d.id), ['9', '10', '11', '0']);
+    assert.equal(res.hasMore, true);
+  });
+
+  it('filters the whole list and reports its filter values', async () => {
+    mockFetch(json({
+      items: Array.from({ length: 12 }, (_, i) => record({
+        companyID: `${i}`,
+        distanceInMiles: i,
+        partnerType: i < 10 ? '3M™ Pro Shop Dealer' : 'Authorized Dealer',
+        productType: i === 11 ? '3M™ Ceramic Coating' : '3M™ Automotive Window Film',
+      })),
+      skip: 0,
+      take: 10,
+      totalItemsCount: 12,
+    }));
+    const api = createDealerApi();
+    const authorized = await api.search(search({ take: 10 }), {
+      filter: (d) => d.partnerType === 'Authorized Dealer',
+    });
+    assert.deepEqual(authorized.dealers.map((d) => d.id), ['10', '11']);
+    assert.equal(authorized.total, 2);
+    assert.equal(authorized.hasMore, false);
+    assert.deepEqual(authorized.facets.partners.sort(), ['3M™ Pro Shop Dealer', 'Authorized Dealer']);
+    assert.deepEqual(authorized.facets.products.sort(), ['3M™ Automotive Window Film', '3M™ Ceramic Coating']);
+    assert.equal(calls.length, 1, 'changing the filter reuses the loaded list');
   });
 
   it('turns an error envelope into a DealerApiError with its details', async () => {

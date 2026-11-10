@@ -3,6 +3,10 @@ import { createDealerApi } from './dealer-api.js';
 import {
   loadGoogleMaps, createMap, createSuggester, geocodeAddress,
 } from './google-map.js';
+import {
+  COUNTRY_CENTERS, isProShop, sortDealers, matchesFilters, telHref, whatsAppHref,
+  websiteHref, websiteLabel, directionsHref, countryCode,
+} from './locator-utils.js';
 
 // default Marketo form design URL for the "Get a quote" modal (override per
 // page with a `quote` config row on the block)
@@ -11,19 +15,23 @@ const PAGE_SIZE = 10;
 // search radius in miles: "Show more" doubles it once all results are shown
 const RADIUS = { start: 50, max: 200 };
 const KM_PER_MILE = 1.609344;
-// width of the list floating over the map; keep in sync with locator.css
+// width of the list floating over the map on desktop; keep in sync with locator.css
 const LIST_WIDTH = 400;
-const DIRECTIONS = 'https://www.google.com/maps/dir/?api=1&destination=';
+const DESKTOP = '(width >= 900px)';
+// Pro Shop badge logo: the 3M logo until an official Pro Shop logo is set
+// with a `proshop-logo` row on the block
+const PRO_SHOP_LOGO = '/icons/3m-logo.svg';
 
-// per site language: units, address lookup country, the location used when the
-// browser's is not available, and the sample data used when the API is unreachable
+// per site language: units, address lookup country, the map centre used when the
+// browser's location is not available (centre of the country), and the sample data
+// for `api: sample`
 const REGIONS = {
   en: {
     unit: 'mi',
     country: 'us',
     locale: 'en-US',
     geoLang: 'en',
-    origin: { lat: 44.9508008, lon: -92.9960732 },
+    origin: COUNTRY_CENTERS.us,
     sample: '/data/dealers-us.json',
   },
   de: {
@@ -31,7 +39,7 @@ const REGIONS = {
     country: 'ch',
     locale: 'de-CH',
     geoLang: 'de',
-    origin: { lat: 47.3769, lon: 8.5417 },
+    origin: COUNTRY_CENTERS.ch,
     sample: '/data/dealers-ch.json',
   },
   jp: {
@@ -39,7 +47,7 @@ const REGIONS = {
     country: 'us',
     locale: 'ja-JP',
     geoLang: 'ja',
-    origin: { lat: 44.9508008, lon: -92.9960732 },
+    origin: COUNTRY_CENTERS.us,
     sample: '/data/dealers-us.json',
   },
 };
@@ -53,6 +61,14 @@ const STRINGS = {
     nearMe: 'Show results based on my location',
     myLocation: 'My location',
     products: 'Product type',
+    partners: 'Partner type',
+    proShop: 'Pro Shop',
+    proShopLabel: '3M™ Pro Shop Dealer',
+    certified: 'Certifications',
+    showPhone: 'Show phone number',
+    showWhatsApp: 'Show WhatsApp',
+    whatsApp: 'Chat on WhatsApp',
+    newWindow: '(opens in a new window)',
     clear: 'Clear filters',
     mapView: 'Map view',
     listView: 'List view',
@@ -65,7 +81,7 @@ const STRINGS = {
     locating: 'Getting location …',
     locationDenied: 'Please enable location in your browser or device.',
     locationUnknown: 'Location unknown. Please enter a location or enable location in your browser or device.',
-    defaultLocation: 'Your location is not available, so we are showing installers near a default location. Enter a ZIP or city to search.',
+    defaultLocation: 'Your location is not available, so we are showing installers around the center of the country. Enter a ZIP or city to search near you.',
     notFound: 'We could not find that location. Please check the ZIP or city.',
     empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location or change the filters.',
     error: 'The service is currently not available. Please try again later.',
@@ -82,6 +98,14 @@ const STRINGS = {
     nearMe: 'Ergebnisse in meiner Nähe anzeigen',
     myLocation: 'Mein Standort',
     products: 'Produkttyp',
+    partners: 'Partnertyp',
+    proShop: 'Pro Shop',
+    proShopLabel: '3M™ Pro Shop Dealer',
+    certified: 'Zertifizierungen',
+    showPhone: 'Telefonnummer anzeigen',
+    showWhatsApp: 'WhatsApp anzeigen',
+    whatsApp: 'Auf WhatsApp chatten',
+    newWindow: '(öffnet in einem neuen Fenster)',
     clear: 'Filter zurücksetzen',
     mapView: 'Kartenansicht',
     listView: 'Listenansicht',
@@ -94,7 +118,7 @@ const STRINGS = {
     locating: 'Standort wird ermittelt …',
     locationDenied: 'Bitte aktivieren Sie die Standortfreigabe in Ihrem Browser oder Gerät.',
     locationUnknown: 'Standort unbekannt. Bitte geben Sie einen Ort ein oder aktivieren Sie die Standortfreigabe.',
-    defaultLocation: 'Ihr Standort ist nicht verfügbar. Wir zeigen Fachbetriebe in der Nähe eines Standardorts. Geben Sie PLZ oder Ort ein, um zu suchen.',
+    defaultLocation: 'Ihr Standort ist nicht verfügbar. Wir zeigen Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein, um in Ihrer Nähe zu suchen.',
     notFound: 'Wir konnten diesen Ort nicht finden. Bitte prüfen Sie PLZ oder Ort.',
     empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort oder ändern Sie die Filter.',
     error: 'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.',
@@ -111,6 +135,14 @@ const STRINGS = {
     nearMe: '現在地周辺の結果を表示',
     myLocation: '現在地',
     products: '製品タイプ',
+    partners: 'パートナータイプ',
+    proShop: 'Pro Shop',
+    proShopLabel: '3M™ Pro Shop Dealer',
+    certified: '認定',
+    showPhone: '電話番号を表示',
+    showWhatsApp: 'WhatsAppを表示',
+    whatsApp: 'WhatsAppでチャット',
+    newWindow: '（新しいウィンドウで開きます）',
     clear: 'フィルターをクリア',
     mapView: '地図表示',
     listView: 'リスト表示',
@@ -123,7 +155,7 @@ const STRINGS = {
     locating: '現在地を取得中…',
     locationDenied: 'ブラウザまたはデバイスで位置情報を有効にしてください。',
     locationUnknown: '現在地を特定できません。場所を入力するか、位置情報を有効にしてください。',
-    defaultLocation: '現在地を取得できないため、既定の場所周辺の施工店を表示しています。郵便番号または都市名を入力して検索してください。',
+    defaultLocation: '現在地を取得できないため、国の中心付近の施工店を表示しています。お近くを検索するには郵便番号または都市名を入力してください。',
     notFound: 'その場所が見つかりませんでした。郵便番号または都市名をご確認ください。',
     empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、フィルターを変更してください。',
     error: '現在サービスをご利用いただけません。しばらくしてから再度お試しください。',
@@ -142,6 +174,8 @@ const ICONS = {
   locate: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 3 3 10.5v1l7 2.5 2.5 7h1z"/></svg>',
   phone: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>',
   route: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.7 11.3 12.7 2.3a1 1 0 0 0-1.4 0l-9 9a1 1 0 0 0 0 1.4l9 9a1 1 0 0 0 1.4 0l9-9a1 1 0 0 0 0-1.4zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5z"/></svg>',
+  globe: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.9a15.7 15.7 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8zM12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4zM4.3 14a8.2 8.2 0 0 1 0-4h3.4a16.5 16.5 0 0 0 0 4zm.8 2h2.9c.3 1.3.8 2.5 1.4 3.6A8 8 0 0 1 5.1 16zM8 8H5.1a8 8 0 0 1 4.3-3.6C8.8 5.5 8.3 6.7 8 8zm4 12c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4zm2.3-6H9.7a14.7 14.7 0 0 1 0-4h4.6a14.7 14.7 0 0 1 0 4zm.3 5.6c.6-1.1 1.1-2.3 1.4-3.6h2.9a8 8 0 0 1-4.3 3.6zm1.7-5.6a16.5 16.5 0 0 0 0-4h3.4a8.2 8.2 0 0 1 0 4z"/></svg>',
+  whatsApp: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .1-1.2c0-.2-.2-.3-.4-.5z"/></svg>',
 };
 
 function el(tag, cls, html) {
@@ -155,6 +189,27 @@ function text(tag, cls, value) {
   const n = el(tag, cls);
   n.textContent = value;
   return n;
+}
+
+// one tracked locator action, e.g. "phone-reveal"; analytics loads only when used
+function trackAction(action, d, position) {
+  import('../../scripts/analytics.js').then(({ track }) => track(`locator:${action}`, {
+    locator: {
+      action,
+      position,
+      installer: { id: d.id, name: d.name, partnerType: d.partnerType },
+    },
+  })).catch(() => {});
+}
+
+// a link that opens outside the site, in a new window
+function externalLink(cls, href, icon, label, t) {
+  const a = el('a', cls, icon);
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.append(text('span', '', label), text('span', 'locator-sr', ` ${t.newWindow}`));
+  return a;
 }
 
 function pageLang() {
@@ -310,11 +365,21 @@ function createSuggestions(input, { id, label, onPick }) {
   };
 }
 
-function createCard(d, { t, region, onSelect }) {
+/**
+ * One installer card, numbered like its pin on the map.
+ * @param {object} d dealer
+ * @param {object} ctx { t, region, number, proShopLogo, onSelect }
+ */
+function createCard(d, {
+  t, region, number, proShopLogo, onSelect,
+}) {
   const card = el('li', 'locator-card');
   card.dataset.id = d.id;
+  const pro = isProShop(d);
+  if (pro) card.classList.add('is-pro-shop');
+  const track = (action) => trackAction(action, d, number);
 
-  const aside = el('div', 'locator-card-aside', `<span class="locator-card-pin">${ICONS.pin}</span>`);
+  const aside = el('div', 'locator-card-aside', `<span class="locator-card-pin">${ICONS.pin}<span class="locator-card-number">${number}</span></span>`);
   if (d.distanceInMiles !== null) {
     const value = region.unit === 'km' ? d.distanceInMiles * KM_PER_MILE : d.distanceInMiles;
     const fmt = new Intl.NumberFormat(region.locale, { maximumFractionDigits: 1 });
@@ -322,49 +387,109 @@ function createCard(d, { t, region, onSelect }) {
   }
 
   const main = el('div', 'locator-card-main');
+  if (pro) {
+    const badge = el('p', 'locator-card-badge');
+    const logo = el('img');
+    logo.src = proShopLogo;
+    logo.alt = '';
+    logo.width = 34;
+    logo.height = 18;
+    badge.append(logo, text('span', '', t.proShop));
+    badge.title = t.proShopLabel;
+    main.append(badge);
+  }
   const heading = el('h3', 'locator-card-name');
   const select = text('button', 'locator-card-select', d.name);
   select.type = 'button';
   heading.append(select);
   main.append(heading);
 
-  const addr = el('p', 'locator-card-addr');
-  addressLines(d).forEach((line, i) => {
+  if (d.certifications.length) {
+    const certs = el('ul', 'locator-card-certs');
+    certs.setAttribute('aria-label', t.certified);
+    d.certifications.forEach((c) => certs.append(text('li', '', c)));
+    main.append(certs);
+  }
+
+  // the address opens directions in Google Maps
+  const lines = addressLines(d);
+  const directions = directionsHref(d);
+  const addr = el(directions ? 'a' : 'p', 'locator-card-addr');
+  lines.forEach((line, i) => {
     if (i) addr.append(el('br'));
     addr.append(line);
   });
-  main.append(addr);
-
-  if (d.phone) {
-    const phone = el('a', 'locator-card-phone', ICONS.phone);
-    phone.href = `tel:${d.phone.replace(/[^0-9+]/g, '')}`;
-    phone.append(text('span', '', d.phone));
-    main.append(phone);
+  if (directions) {
+    addr.href = directions;
+    addr.target = '_blank';
+    addr.rel = 'noopener noreferrer';
+    addr.append(text('span', 'locator-sr', ` ${t.newWindow}`));
+    addr.addEventListener('click', () => track('directions'));
   }
+  main.append(addr);
 
   if (d.products.length) {
     const products = el('ul', 'locator-card-products');
+    products.setAttribute('aria-label', t.products);
     d.products.forEach((p) => products.append(text('li', '', p)));
     main.append(products);
   }
 
+  // phone and WhatsApp stay behind a toggle, so their use can be tracked
+  const tel = telHref(d.phone);
+  const chat = whatsAppHref(d.whatsApp, countryCode(d.country) || region.country);
+  if (tel || chat) {
+    const contact = el('div', 'locator-card-contact');
+    const toggle = text('button', 'locator-card-reveal', tel ? t.showPhone : t.showWhatsApp);
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    const details = el('div', 'locator-card-contact-details');
+    details.hidden = true;
+    if (tel) {
+      const phone = el('a', 'locator-card-phone', ICONS.phone);
+      phone.href = tel;
+      phone.append(text('span', '', d.phone));
+      phone.addEventListener('click', () => track('phone-call'));
+      details.append(phone);
+    }
+    if (chat) {
+      const wa = externalLink('locator-card-whatsapp', chat, ICONS.whatsApp, t.whatsApp, t);
+      wa.addEventListener('click', () => track('whatsapp'));
+      details.append(wa);
+    }
+    toggle.addEventListener('click', () => {
+      details.hidden = false;
+      toggle.hidden = true;
+      toggle.setAttribute('aria-expanded', 'true');
+      details.querySelector('a')?.focus();
+      track('phone-reveal');
+    });
+    contact.append(toggle, details);
+    main.append(contact);
+  }
+
+  const site = websiteHref(d.website);
+  if (site) {
+    const link = externalLink('locator-card-website', site, ICONS.globe, websiteLabel(site), t);
+    link.addEventListener('click', () => track('website'));
+    main.append(link);
+  }
+
   const actions = el('div', 'locator-card-actions');
-  if (d.lat !== null) {
-    const dir = el('a', 'locator-card-directions', ICONS.route);
-    dir.href = `${DIRECTIONS}${d.lat},${d.lon}`;
-    dir.target = '_blank';
-    dir.rel = 'noopener noreferrer';
-    dir.append(text('span', '', t.directions));
+  if (directions) {
+    const dir = externalLink('locator-card-directions', directions, ICONS.route, t.directions, t);
+    dir.addEventListener('click', () => track('directions'));
     actions.append(dir);
   }
   const quote = text('button', 'locator-card-quote', t.quote);
   quote.type = 'button';
+  quote.addEventListener('click', () => track('quote'));
   actions.append(quote);
   main.append(actions);
 
   card.append(aside, main);
   card.addEventListener('click', (e) => {
-    if (!e.target.closest('a, .locator-card-quote')) onSelect(d.id, 'list');
+    if (!e.target.closest('a, button:not(.locator-card-select)')) onSelect(d.id, 'list');
   });
   return { card, quote };
 }
@@ -411,7 +536,7 @@ async function openQuote(d, { t, quote }) {
  * Build the locator UI into `root`. Shared by the block and the modal.
  * @param {Element} root container to render into
  * @param {object} opts block config: { key, mapId, api, region, radius, lat, lon, sample,
- *   title, quote, unit, country, onClose }
+ *   title, quote, unit, country, proShopLogo, onClose }
  */
 async function buildLocator(root, opts) {
   const lang = pageLang();
@@ -426,7 +551,9 @@ async function buildLocator(root, opts) {
     ? { lat: num(opts.lat), lon: num(opts.lon) }
     : base.origin;
   const sample = opts.sample || region.sample;
-  const api = createDealerApi(opts.api, { sample });
+  const proShopLogo = opts.proShopLogo || `${window.hlx?.codeBasePath || ''}${PRO_SHOP_LOGO}`;
+  // Pro Shops first, then by distance, across the whole result list
+  const api = createDealerApi(opts.api, { sample, order: sortDealers });
   const uid = `locator-${Math.random().toString(36).slice(2, 8)}`;
 
   root.textContent = '';
@@ -476,15 +603,22 @@ async function buildLocator(root, opts) {
   const row = el('div', 'locator-filter-row');
   row.append(form, count);
 
-  const chipRow = el('div', 'locator-chip-row');
-  const chips = el('div', 'locator-chips');
-  chips.setAttribute('role', 'group');
-  chips.setAttribute('aria-label', t.products);
+  // two filter groups, both built from the data: product types and partner types
+  const chipGroup = (label) => {
+    const groupRow = el('div', 'locator-chip-row');
+    const groupChips = el('div', 'locator-chips');
+    groupChips.setAttribute('role', 'group');
+    groupChips.setAttribute('aria-label', label);
+    groupRow.append(text('span', 'locator-chips-label', label), groupChips);
+    groupRow.hidden = true;
+    return { row: groupRow, chips: groupChips };
+  };
+  const productGroup = chipGroup(t.products);
+  const partnerGroup = chipGroup(t.partners);
   const clear = text('button', 'locator-clear', t.clear);
   clear.type = 'button';
-  chipRow.append(text('span', 'locator-chips-label', t.products), chips, clear);
-  chipRow.hidden = true;
-  filters.append(row, chipRow, status, note);
+  partnerGroup.row.append(clear);
+  filters.append(row, productGroup.row, partnerGroup.row, status, note);
 
   // ---- tabs + results ----
   const tabs = el('div', 'locator-tabs');
@@ -524,6 +658,8 @@ async function buildLocator(root, opts) {
     origin: null,
     take: PAGE_SIZE,
     products: new Set(),
+    partners: new Set(),
+    facets: { products: [], partners: [] },
     selectedId: null,
     view: 'map',
     radius: startRadius,
@@ -553,50 +689,59 @@ async function buildLocator(root, opts) {
     if (mapApi && state.view === 'map') mapApi.select(id);
   }
 
-  // an installer must offer every selected product type (AND)
-  function matches(d) {
-    return [...state.products].every((p) => d.products.includes(p));
-  }
+  // products: every selected type (AND); partner types: any selected (OR)
+  const matches = (d) => matchesFilters(d, state);
 
-  // product chips come from the results loaded so far; selections are kept
-  function buildChips() {
-    const all = [...new Set([...state.dealers.flatMap((d) => d.products), ...state.products])]
+  // chips come from the results loaded so far; selections are kept
+  function fillChips({ row: groupRow, chips }, values, selected) {
+    const all = [...new Set([...values, ...selected])].filter(Boolean)
       .sort((a, b) => a.localeCompare(b, region.locale));
     chips.textContent = '';
-    all.forEach((p) => {
-      const chip = text('button', 'locator-chip', p);
+    all.forEach((v) => {
+      const chip = text('button', 'locator-chip', v);
       chip.type = 'button';
-      chip.setAttribute('aria-pressed', String(state.products.has(p)));
+      chip.setAttribute('aria-pressed', String(selected.has(v)));
       chip.onclick = () => {
-        if (state.products.has(p)) state.products.delete(p);
-        else state.products.add(p);
-        chip.setAttribute('aria-pressed', String(state.products.has(p)));
+        if (selected.has(v)) selected.delete(v);
+        else selected.add(v);
+        chip.setAttribute('aria-pressed', String(selected.has(v)));
+        // filters apply to the whole result list, so search it again (no new
+        // request when the list is already loaded)
         // eslint-disable-next-line no-use-before-define
-        render();
+        query();
       };
       chips.append(chip);
     });
-    chipRow.hidden = !all.length;
+    groupRow.hidden = !all.length;
+  }
+
+  // chip values come from the whole result list, not just the installers shown
+  function buildChips() {
+    fillChips(productGroup, state.facets.products, state.products);
+    fillChips(partnerGroup, state.facets.partners, state.partners);
   }
 
   // more within the radius, or a wider radius still to search
   const canShowMore = () => state.hasMore || state.radius < RADIUS.max;
 
   function render({ fit = true, area = false } = {}) {
-    const filtering = state.products.size > 0;
-    shown = state.dealers.filter(matches)
-      .sort((a, b) => (a.distanceInMiles ?? Infinity) - (b.distanceInMiles ?? Infinity));
+    const filtering = state.products.size > 0 || state.partners.size > 0;
+    // already filtered and in order (Pro Shops first, then by distance) by the
+    // dealer API; the numbers follow this order
+    shown = state.dealers;
     state.selectedId = null;
 
-    count.textContent = t.results(filtering ? shown.length : (state.total ?? shown.length));
+    count.textContent = t.results(state.total ?? shown.length);
     live.textContent = t.shown(shown.length);
     more.hidden = !canShowMore();
     clear.hidden = !filtering;
 
     list.textContent = '';
     if (!shown.length) message(t.empty);
-    shown.forEach((d) => {
-      const { card, quote: quoteBtn } = createCard(d, { t, region, onSelect: selectDealer });
+    shown.forEach((d, i) => {
+      const { card, quote: quoteBtn } = createCard(d, {
+        t, region, number: i + 1, proShopLogo, onSelect: selectDealer,
+      });
       quoteBtn.onclick = () => openQuote(d, { t, quote: opts.quote });
       list.append(card);
     });
@@ -652,7 +797,7 @@ async function buildLocator(root, opts) {
     let res = null;
     let failed = null;
     try {
-      res = await api.search(search, { signal: controller.signal });
+      res = await api.search(search, { signal: controller.signal, filter: matches });
     } catch (e) {
       if (e.name === 'AbortError') return;
       failed = e;
@@ -689,6 +834,7 @@ async function buildLocator(root, opts) {
     state.dealers = res.dealers;
     state.total = res.total;
     state.hasMore = res.hasMore;
+    state.facets = res.facets || { products: [], partners: [] };
     buildChips();
     // a wider radius zooms the map out to the whole search area
     render({ area: expand });
@@ -699,9 +845,9 @@ async function buildLocator(root, opts) {
     }
   }
 
-  function searchFrom(origin) {
+  function searchFrom(origin, { radius = startRadius } = {}) {
     state.origin = origin;
-    state.radius = startRadius;
+    state.radius = radius;
     suggester?.setBias(origin);
     return query();
   }
@@ -715,8 +861,9 @@ async function buildLocator(root, opts) {
       await searchFrom(origin);
     } catch (err) {
       if (initial) {
+        // the centre of the country, wide enough to find installers there
         status.textContent = t.defaultLocation;
-        await searchFrom(fallbackOrigin);
+        await searchFrom(fallbackOrigin, { radius: RADIUS.max });
       } else {
         status.textContent = err.code === 1 ? t.locationDenied : t.locationUnknown;
       }
@@ -803,8 +950,9 @@ async function buildLocator(root, opts) {
 
   clear.addEventListener('click', () => {
     state.products.clear();
-    chips.querySelectorAll('.locator-chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
-    render();
+    state.partners.clear();
+    filters.querySelectorAll('.locator-chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
+    query();
   });
 
   more.addEventListener('click', () => {
@@ -832,7 +980,8 @@ async function buildLocator(root, opts) {
       mapApi = await createMap(maps, mapEl, {
         onSelect: selectDealer,
         mapId: opts.mapId,
-        listWidth: LIST_WIDTH,
+        // the list only floats over the map on desktop
+        listWidth: () => (window.matchMedia(DESKTOP).matches ? LIST_WIDTH : 0),
         onAuthError: () => {
           // eslint-disable-next-line no-console
           console.warn('locator: Google Maps rejected the API key; check its restrictions and enabled APIs');
@@ -913,5 +1062,6 @@ export default async function decorate(block) {
     quote: cfg.quote,
     unit: cfg.unit,
     country: cfg.country,
+    proShopLogo: cfg['proshop-logo'],
   });
 }

@@ -14,7 +14,11 @@ const CALLBACK = 'locatorGoogleMapsReady';
 const SELECT_ZOOM = 15;
 const MAX_FIT_ZOOM = 14;
 const PIN_PATH = 'M11 0C4.9 0 0 4.9 0 11c0 8.2 11 16 11 16s11-7.8 11-16C22 4.9 17.1 0 11 0z';
-const PIN = `<svg viewBox="0 0 22 27" aria-hidden="true" focusable="false"><path d="${PIN_PATH}"/><circle cx="11" cy="11" r="4.5"/></svg>`;
+// numbered pin: the number sits in the round head of the pin
+const PIN = `<svg viewBox="0 0 22 27" aria-hidden="true" focusable="false"><path d="${PIN_PATH}"/></svg>`;
+const PIN_SIZE = { normal: [26, 32], active: [40, 49] };
+// clusters are dark, so their counts aren't mistaken for pin numbers
+const CLUSTER_FILL = '#202024';
 
 // muted grey map like the 3M Schweiz locator; used when no map ID is set
 // (with a map ID, the style comes from the map's cloud styling instead)
@@ -127,7 +131,8 @@ function svgUrl(svg) {
  * locator.css); without one it uses classic markers and the grey STYLES above.
  * @param {object} maps the `google.maps` namespace
  * @param {Element} container map element
- * @param {object} options { onSelect(id), mapId, listWidth, onAuthError }
+ * @param {object} options { onSelect(id), mapId, listWidth, onAuthError }; listWidth is
+ *   the width the list covers on the left of the map, or a function returning it
  */
 export async function createMap(maps, container, {
   onSelect, mapId, listWidth = 0, onAuthError,
@@ -158,27 +163,40 @@ export async function createMap(maps, container, {
   // 3M red pins, clusters and search radius (set in locator.css)
   const accent = getComputedStyle(container).getPropertyValue('--locator-pin').trim() || '#f00';
   const pinIcon = (active) => {
-    const [w, h] = active ? [42, 52] : [22, 27];
+    const [w, h] = active ? PIN_SIZE.active : PIN_SIZE.normal;
     return {
-      url: svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 27"><path fill="${accent}" d="${PIN_PATH}"/><circle fill="#fff" cx="11" cy="11" r="4.5"/></svg>`),
+      url: svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 27"><path fill="${accent}" stroke="#fff" stroke-width="1" d="${PIN_PATH}"/></svg>`),
       scaledSize: new Size(w, h),
       anchor: new Point(w / 2, h),
+      labelOrigin: new Point(w / 2, w * 0.42),
     };
   };
+  const pinLabel = (number, active) => ({
+    text: String(number),
+    color: '#fff',
+    fontSize: active ? '15px' : '12px',
+    fontWeight: '700',
+  });
   const clusterIcon = {
-    url: svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${accent}" stroke="#fff" stroke-width="2"/></svg>`),
+    url: svgUrl(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="${CLUSTER_FILL}" stroke="#fff" stroke-width="2"/></svg>`),
     scaledSize: new Size(40, 40),
     anchor: new Point(20, 20),
   };
 
-  function makePin(d) {
+  // a pin numbered like its card in the list
+  function makePin(d, number) {
     const position = { lat: d.lat, lng: d.lon };
+    const title = `${number}. ${d.name}`;
     if (advanced) {
       const content = document.createElement('div');
       content.className = 'locator-pin';
       content.innerHTML = PIN;
+      const label = document.createElement('span');
+      label.className = 'locator-pin-number';
+      label.textContent = number;
+      content.append(label);
       const marker = new markerLib.AdvancedMarkerElement({
-        position, content, title: d.name, gmpClickable: true,
+        position, content, title, gmpClickable: true,
       });
       marker.addEventListener('gmp-click', () => onSelect(d.id, 'map'));
       return {
@@ -191,7 +209,7 @@ export async function createMap(maps, container, {
       };
     }
     const marker = new markerLib.Marker({
-      position, title: d.name, icon: pinIcon(false), optimized: false,
+      position, title, icon: pinIcon(false), label: pinLabel(number, false), optimized: false,
     });
     marker.addListener('click', () => onSelect(d.id, 'map'));
     return {
@@ -199,6 +217,7 @@ export async function createMap(maps, container, {
       position,
       setActive(on) {
         marker.setIcon(pinIcon(on));
+        marker.setLabel(pinLabel(number, on));
         marker.setZIndex(on ? 1000 : undefined);
       },
     };
@@ -249,7 +268,10 @@ export async function createMap(maps, container, {
   let lastFit = null;
 
   // the list covers the left of the map, so keep pins clear of it
-  const leftPad = () => (container.closest('.is-list-view') ? 0 : listWidth);
+  const leftPad = () => {
+    if (container.closest('.is-list-view')) return 0;
+    return typeof listWidth === 'function' ? listWidth() : listWidth;
+  };
 
   function centerOn(position, zoom) {
     map.setZoom(zoom);
@@ -272,7 +294,10 @@ export async function createMap(maps, container, {
       else pins.forEach((p) => show(p.marker, false));
       pins.clear();
       activeId = null;
-      dealers.filter((d) => d.lat !== null).forEach((d) => pins.set(d.id, makePin(d)));
+      // numbers follow the list order, so pin 3 is the third card
+      dealers.forEach((d, i) => {
+        if (d.lat !== null) pins.set(d.id, makePin(d, i + 1));
+      });
       const markers = [...pins.values()].map((p) => p.marker);
       if (clusterer) clusterer.addMarkers(markers);
       else markers.forEach((m) => show(m, true));

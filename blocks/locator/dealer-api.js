@@ -12,6 +12,8 @@
  * its endpoint URL. `api: sample` searches the static sample data instead.
  * Records are mapped to the locator's dealer shape in `normalize()`.
  */
+import { splitList } from './locator-utils.js';
+
 export const PROXY_URL = 'https://personal-auto-locator-proxy.parallel-pictures-apps.workers.dev/api/locator';
 // the proxy accepts at most this many results per request
 export const MAX_TAKE = 100;
@@ -80,10 +82,36 @@ function normalize(d, i) {
     state: String(d.stateProvince || '').trim(),
     zip: String(d.zip || '').trim(),
     country: String(d.country || '').trim(),
-    products: String(d.productType || '').split(',').map((p) => p.trim()).filter(Boolean),
+    products: splitList(d.productType),
+    partnerType: String(d.partnerType || '').trim(),
+    certifications: splitList(d.certificationType),
+    website: String(d.website || '').trim(),
+    whatsApp: String(d.whatsApp || '').trim(),
+    // email is deliberately not mapped: it is never shown (Get a Quote instead)
     lat: d.lat !== null && d.lat !== '' && Number.isFinite(lat) ? lat : null,
     lon: d.lon !== null && d.lon !== '' && Number.isFinite(lon) ? lon : null,
     distanceInMiles: d.distanceInMiles !== null && Number.isFinite(dist) ? dist : null,
+  };
+}
+
+// the filter values found in a list of dealers, for the filter chips
+function facetsOf(dealers) {
+  return {
+    products: [...new Set(dealers.flatMap((d) => d.products))],
+    partners: [...new Set(dealers.map((d) => d.partnerType).filter(Boolean))],
+  };
+}
+
+// keeps the dealers that pass `filter`, in display `order`, as one page
+function toPage(dealers, {
+  start, wanted, filter, order,
+}) {
+  const matching = order(dealers.filter(filter));
+  return {
+    dealers: matching.slice(start, start + wanted),
+    total: matching.length,
+    hasMore: start + wanted < matching.length,
+    facets: facetsOf(dealers),
   };
 }
 
@@ -156,18 +184,21 @@ function listKey(url, query) {
  * path below takes over.
  * @param {string} url proxy endpoint
  * @param {object} query { origin, lat, lon, radius, skip, take, region }
- * @param {AbortSignal} [signal]
+ * @param {object} options { signal, filter, order }: an AbortSignal, a dealer
+ *   filter, and a sort for display
  * @param {object} memo { key, items } complete list of the last such search
- * @returns {Promise<{ dealers: object[], total: number|null, hasMore: boolean }>}
+ * @returns {Promise<{ dealers: object[], total: number|null, hasMore: boolean,
+ *   facets: { products: string[], partners: string[] } }>}
  */
-async function searchProxy(url, query, signal, memo) {
+async function searchProxy(url, query, { signal, filter, order }, memo) {
   const start = Math.max(0, toInt(query.skip, 0));
   const wanted = Math.max(0, toInt(query.take, MAX_TAKE));
   const key = listKey(url, query);
-  const fromList = (list) => ({
-    dealers: toDealers(list.slice(start, start + wanted), query.origin),
-    total: list.length,
-    hasMore: start + wanted < list.length,
+  // with the whole list at hand, filters and the display order apply before
+  // paging: filters cover every result, and e.g. every Pro Shop in the radius
+  // comes before the other installers
+  const fromList = (list) => toPage(toDealers(list, query.origin), {
+    start, wanted, filter, order,
   });
   if (memo.key === key) return fromList(memo.items);
 
@@ -190,11 +221,14 @@ async function searchProxy(url, query, signal, memo) {
   } while (items.length < wanted && lastPageFull
     && (total === null || start + items.length < total));
 
+  // a paged upstream: filters and order can only apply to the results loaded
+  const dealers = toDealers(items, query.origin);
   return {
-    dealers: toDealers(items, query.origin),
+    dealers: order(dealers.filter(filter)),
     total,
     // trust the upstream total; without one, a full last page may mean more
     hasMore: total !== null ? start + items.length < total : lastPageFull,
+    facets: facetsOf(dealers),
   };
 }
 
@@ -210,7 +244,7 @@ const sampleCache = {};
  * Searches a static JSON file in the backend's record format, for development:
  * applies radius, sorting and paging in the browser.
  */
-export async function searchSample(source, query) {
+export async function searchSample(source, query, { filter = () => true, order = (d) => d } = {}) {
   if (!sampleCache[source]) {
     sampleCache[source] = fetch(source).then((res) => {
       if (!res.ok) throw new DealerApiError(`${res.status} ${source}`, { status: res.status });
@@ -227,32 +261,33 @@ export async function searchSample(source, query) {
     }))
     .filter((d) => d.distanceInMiles <= radius)
     .sort((a, b) => a.distanceInMiles - b.distanceInMiles);
-  const skip = Math.max(0, toInt(query.skip, 0));
-  const page = inRange.slice(skip, skip + Math.max(0, toInt(query.take, MAX_TAKE)));
-  return {
-    dealers: toDealers(page, origin),
-    total: inRange.length,
-    hasMore: skip + page.length < inRange.length,
-  };
+  return toPage(toDealers(inRange, origin), {
+    start: Math.max(0, toInt(query.skip, 0)),
+    wanted: Math.max(0, toInt(query.take, MAX_TAKE)),
+    filter,
+    order,
+  });
 }
 
 /**
  * @param {string} [api] endpoint URL with the proxy's contract, `sample` for the
  *   sample data, or empty for the locator proxy
- * @param {object} [options] { sample } URL of the sample data
- * @returns {{ sample: boolean, search: Function }} search(query, { signal })
- *   resolves to { dealers, total, hasMore } or rejects with a DealerApiError
- *   (or an AbortError when cancelled)
+ * @param {object} [options] { sample, order } URL of the sample data, and a sort
+ *   for display that is applied to complete result lists before paging
+ * @returns {{ sample: boolean, search: Function }} search(query, { signal, filter })
+ *   resolves to { dealers, total, hasMore, facets } or rejects with a
+ *   DealerApiError (or an AbortError when cancelled); `filter` keeps dealers
  */
-export function createDealerApi(api, { sample } = {}) {
+export function createDealerApi(api, { sample, order = (dealers) => dealers } = {}) {
   const key = String(api || '').trim();
+  const options = ({ signal, filter = () => true } = {}) => ({ signal, filter, order });
   if (key.toLowerCase() === 'sample') {
-    return { sample: true, search: (query) => searchSample(sample, query) };
+    return { sample: true, search: (query, opts) => searchSample(sample, query, options(opts)) };
   }
   const url = key || PROXY_URL;
   const memo = {};
   return {
     sample: false,
-    search: (query, { signal } = {}) => searchProxy(url, query, signal, memo),
+    search: (query, opts) => searchProxy(url, query, options(opts), memo),
   };
 }
