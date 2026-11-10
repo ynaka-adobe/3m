@@ -193,6 +193,14 @@
   background: #8a8f95;
 }
 
+/* coverage shield: drawn in the text colour, so it turns white when active */
+.rs-chip-shield {
+  flex: none;
+  width: 11px;
+  height: 14px;
+  margin-left: -3px;
+}
+
 .rs-chip.is-active {
   border-color: #111;
   background: #111;

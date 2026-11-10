@@ -30,11 +30,12 @@ function matches(inst, query, service) {
 /**
  * Build the locator UI into `root`. Shared by the block and the modal.
  * @param {Element} root container to render into
- * @param {object} opts { source, title, showExpand, onClose }
+ * @param {object} opts { source, title, showExpand, onClose, quote, onEvent }
+ *   onEvent(name, fields) reports searches and shop interactions to the caller
  */
 async function buildLocator(root, opts) {
   const {
-    source, title, showExpand, onClose, quote,
+    source, title, showExpand, onClose, quote, onEvent,
   } = opts;
   root.textContent = '';
   root.classList.add('rs-locator');
@@ -173,9 +174,14 @@ async function buildLocator(root, opts) {
         <a class="rs-loc-phone" href="tel:${inst.phone.replace(/[^0-9]/g, '')}">${inst.phone}</a>
         <button class="rs-loc-quote" type="button">Get a quote</button>`;
       card.onclick = () => selectInstaller(inst.id);
+      const shop = (action) => onEvent && onEvent('shop', {
+        search_result_action: action, shop_id: String(inst.id), shop_name: inst.name,
+      });
+      card.querySelector('.rs-loc-phone').addEventListener('click', () => shop('phone_click'));
       const quoteBtn = card.querySelector('.rs-loc-quote');
       quoteBtn.onclick = (e) => {
         e.stopPropagation();
+        shop('get_quote');
         // eslint-disable-next-line no-use-before-define
         openQuote(inst);
       };
@@ -199,7 +205,20 @@ async function buildLocator(root, opts) {
     filters.append(b);
   });
 
-  search.addEventListener('input', () => { query = search.value; render(); });
+  // a search is reported once typing pauses, with whether it found anyone
+  let searchTimer;
+  search.addEventListener('input', () => {
+    query = search.value;
+    render();
+    clearTimeout(searchTimer);
+    const term = query.trim();
+    if (!onEvent || !term) return;
+    searchTimer = setTimeout(() => {
+      const found = installers.some((inst) => matches(inst, term, activeService));
+      onEvent('search', { Internal_search_term: term });
+      onEvent('results', { suffix: found ? 'Success' : 'Invalid', Internal_search_term: term });
+    }, 1000);
+  });
 
   // Esc closes the takeover (block-inline path; the modal wires its own too)
   if (showExpand) {
@@ -215,7 +234,9 @@ async function buildLocator(root, opts) {
  * Open the locator as a full-screen takeover modal, created on demand.
  * Usable from any block (e.g. the visualizer's "Find an installer" CTA).
  */
-export async function openLocatorModal({ source, title, quote } = {}) {
+export async function openLocatorModal({
+  source, title, quote, onEvent,
+} = {}) {
   await loadCSS(`${window.hlx?.codeBasePath || ''}/blocks/locator/locator.css`);
   const overlay = el('div', 'rs-locator rs-locator-takeover');
   document.body.append(overlay);
@@ -238,6 +259,7 @@ export async function openLocatorModal({ source, title, quote } = {}) {
     showExpand: false,
     onClose: close,
     quote,
+    onEvent,
   });
 }
 
