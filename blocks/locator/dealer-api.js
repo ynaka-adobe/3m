@@ -139,17 +139,38 @@ async function fetchPage(url, query, signal) {
   return { items: json.items, total: Number.isFinite(total) ? total : null };
 }
 
+// identifies a result list: the same search with any skip/take
+function listKey(url, query) {
+  const p = toParams(query);
+  return [url, p.get('lat'), p.get('lon'), p.get('radius'), p.get('region')].join('|');
+}
+
 /**
  * Searches the proxy. A `take` above MAX_TAKE is fetched in consecutive pages
  * (skip, skip + 100, ...), stopping early once the results run out.
+ *
+ * The upstream currently ignores skip and take and always returns the whole
+ * list (sorted by distance). When a page holds more items than requested, it is
+ * kept as the complete list in `memo` and paged here, so "Show more" for the
+ * same search needs no new request. If the upstream starts paging, the normal
+ * path below takes over.
  * @param {string} url proxy endpoint
  * @param {object} query { origin, lat, lon, radius, skip, take, region }
  * @param {AbortSignal} [signal]
+ * @param {object} memo { key, items } complete list of the last such search
  * @returns {Promise<{ dealers: object[], total: number|null, hasMore: boolean }>}
  */
-async function searchProxy(url, query, signal) {
+async function searchProxy(url, query, signal, memo) {
   const start = Math.max(0, toInt(query.skip, 0));
   const wanted = Math.max(0, toInt(query.take, MAX_TAKE));
+  const key = listKey(url, query);
+  const fromList = (list) => ({
+    dealers: toDealers(list.slice(start, start + wanted), query.origin),
+    total: list.length,
+    hasMore: start + wanted < list.length,
+  });
+  if (memo.key === key) return fromList(memo.items);
+
   const items = [];
   let total = null;
   let lastPageFull = true;
@@ -157,6 +178,12 @@ async function searchProxy(url, query, signal) {
     const take = Math.min(MAX_TAKE, wanted - items.length);
     // eslint-disable-next-line no-await-in-loop -- pages depend on the ones before
     const page = await fetchPage(url, { ...query, skip: start + items.length, take }, signal);
+    if (page.items.length > take) {
+      // paging was ignored: this is the whole list, from the first result
+      memo.key = key;
+      memo.items = page.items.filter((d) => d && !d.deleted);
+      return fromList(memo.items);
+    }
     items.push(...page.items);
     total = page.total ?? total;
     lastPageFull = page.items.length >= take && take > 0;
@@ -223,5 +250,9 @@ export function createDealerApi(api, { sample } = {}) {
     return { sample: true, search: (query) => searchSample(sample, query) };
   }
   const url = key || PROXY_URL;
-  return { sample: false, search: (query, { signal } = {}) => searchProxy(url, query, signal) };
+  const memo = {};
+  return {
+    sample: false,
+    search: (query, { signal } = {}) => searchProxy(url, query, signal, memo),
+  };
 }

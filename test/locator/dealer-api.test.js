@@ -159,6 +159,32 @@ describe('locator dealer API (proxy)', () => {
     assert.equal(res.hasMore, false);
   });
 
+  it('pages through the whole list itself when the upstream ignores skip and take', async () => {
+    // what the proxy does today: every request returns all results, skip/take echoed
+    mockFetch((url) => {
+      const p = new URL(url).searchParams;
+      return json({
+        items: Array.from({ length: 12 }, (_, i) => record({ companyID: `${i}`, distanceInMiles: i })),
+        skip: Number(p.get('skip')),
+        take: Number(p.get('take')),
+        totalItemsCount: 12,
+      });
+    });
+    const api = createDealerApi();
+    const first = await api.search(search({ take: 10 }));
+    assert.deepEqual(first.dealers.map((d) => d.id), ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    assert.equal(first.total, 12);
+    assert.equal(first.hasMore, true);
+
+    const more = await api.search(search({ take: 20 }));
+    assert.equal(calls.length, 1, '"Show more" for the same search reuses the list');
+    assert.equal(more.dealers.length, 12);
+    assert.equal(more.hasMore, false);
+
+    await api.search(search({ take: 10, radius: 100 }));
+    assert.equal(calls.length, 2, 'a different search asks the proxy again');
+  });
+
   it('turns an error envelope into a DealerApiError with its details', async () => {
     mockFetch(json({
       error: 'Upstream returned an unsuccessful status.', stage: 'token', upstreamStatus: 500,
