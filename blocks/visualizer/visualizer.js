@@ -8,9 +8,6 @@ import { VEHICLES, DEFAULT_VEHICLE } from './vehicles.js';
 const THREE_VER = '0.160.0';
 const CDN = `https://esm.sh/three@${THREE_VER}`;
 const BASE = '/blocks/visualizer/assets';
-// Fusion webhook that receives a shared snapshot as multipart/form-data.
-const SHARE_ENDPOINT = 'https://hook.fusion.adobe.com/dntcs3kickjm3pnjq1rkcha10co8qjp5';
-
 // Material name inside the models (from the FBX) that window tint colors.
 const GLASS_MAT = 'windowglass';
 
@@ -176,8 +173,8 @@ function el(tag, cls, html) {
   return n;
 }
 
-// Decode a base64 data URL ("data:image/png;base64,…") into a binary Blob so it
-// can be sent as a file in multipart/form-data.
+// Decode a base64 data URL ("data:image/png;base64,…") into a binary Blob, so
+// the snapshot can be handed to the device's share menu as an image file.
 function dataUrlToBlob(dataUrl) {
   const [head, b64] = dataUrl.split(',');
   const mime = (head.match(/data:(.*?);base64/) || [])[1] || 'image/png';
@@ -247,6 +244,7 @@ const SHARE_ICONS = {
   facebook: '<path d="M14 8h3V4h-3a4 4 0 0 0-4 4v2H7v4h3v6h4v-6h3l1-4h-4V8z"/>',
   x: '<path d="M4 4l6.5 8.6L4.3 20H6l5.3-6.1L15.8 20H20l-6.8-9.1L19 4h-1.7l-4.9 5.6L8.2 4H4z"/>',
   email: '<path d="M3 6h18v12H3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/>',
+  device: '<path d="M12 3l4.5 4.5-1.4 1.4L13 6.8V15h-2V6.8L8.9 8.9 7.5 7.5z"/><path d="M5 11h3v2H7v6h10v-6h-1v-2h3v10H5z"/>',
 };
 
 // Copy text even where the async clipboard API is unavailable (e.g. framed previews).
@@ -270,12 +268,6 @@ async function copyText(text, host) {
   }
 }
 
-/**
- * Share dialog: snapshot preview, Facebook / X / Email, the design link to
- * copy, and Download of the snapshot. Once the webhook upload finishes, the
- * hosted image link is added to the email.
- * @returns {{ uploaded: Function, failed: Function }}
- */
 // A native modal <dialog>: the browser keeps focus inside, makes the page
 // behind it inert, closes it on Esc and returns focus to the opener. A click
 // on the backdrop closes it too (closedby="any"; Safari needs the fallback).
@@ -304,6 +296,12 @@ function openModal(className, heading, { role, onClose = () => {} } = {}) {
   return dialog;
 }
 
+/**
+ * Share dialog: snapshot preview, the device's own share menu (with the
+ * snapshot file) where supported, Facebook / X / Email, the design link to
+ * copy, and Copy image / Download of the snapshot. Everything happens in the browser: like
+ * the original's, the email carries the caption and the design link.
+ */
 function showShareDialog({
   s, image, url, text, onEvent = () => {},
 }) {
@@ -322,7 +320,7 @@ function showShareDialog({
   status.setAttribute('aria-live', 'polite');
 
   const [hashtag] = s.hashtags.split(' ');
-  let mailBody = `${text}\n\n${url}`;
+  const mailBody = `${text}\n\n${url}`;
   const mailto = () => `mailto:?${new URLSearchParams({ subject: s.subject, body: mailBody }).toString().replace(/\+/g, '%20')}`;
   const networks = [
     ['facebook', 'Facebook', `https://www.facebook.com/sharer/sharer.php?${new URLSearchParams({ u: trackedUrl(url, 'facebook'), hashtag })}`],
@@ -358,6 +356,27 @@ function showShareDialog({
     };
     social.append(b);
   });
+
+  // The device's share menu (phones, Safari, some desktop Chrome) sends the
+  // snapshot itself, with the caption and design link, to any app; shown only
+  // where the browser can share files.
+  const file = new File([dataUrlToBlob(image)], 'my-3m-design.png', { type: 'image/png' });
+  const shareData = { files: [file], title: s.subject, text: `${text}\n${url}` };
+  let deviceBtn = null;
+  if (navigator.canShare && navigator.canShare(shareData)) {
+    deviceBtn = el('button', 'rs-share-net rs-share-device');
+    deviceBtn.type = 'button';
+    deviceBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${SHARE_ICONS.device}</svg><span>${s.shareImage}</span>`;
+    deviceBtn.onclick = async () => {
+      onEvent('native_share');
+      try {
+        await navigator.share(shareData);
+      } catch (e) {
+        // closing the menu without choosing an app is not an error
+        if (e.name !== 'AbortError') status.textContent = s.shareFailed;
+      }
+    };
+  }
 
   // webmail fallback, shown after Email is clicked
   const mailAlt = el('div', 'rs-share-mailalt');
@@ -405,9 +424,35 @@ function showShareDialog({
     a.download = 'my-3m-design.png';
     a.click();
   };
-  actions.append(copyBtn, downloadBtn);
+  actions.append(copyBtn);
 
-  dialog.append(closeBtn, heading, preview, social, mailAlt, field, actions, status);
+  // Facebook / X / email links can't carry a file, so offer the snapshot on
+  // the clipboard to paste into the email or post; shown where browsers can
+  // copy images.
+  if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem
+    && (!ClipboardItem.supports || ClipboardItem.supports('image/png'))) {
+    const copyImageBtn = el('button', 'rs-share-copy rs-share-copyimage', s.copyImage);
+    copyImageBtn.type = 'button';
+    copyImageBtn.onclick = async () => {
+      onEvent('copy_image');
+      try {
+        // the blob is ready, so this runs within the click as Safari requires
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': file })]);
+        copyImageBtn.textContent = s.copied;
+        status.textContent = s.imageCopied;
+      } catch (e) {
+        status.textContent = s.copyImageFailed;
+      }
+      setTimeout(() => { copyImageBtn.textContent = s.copyImage; }, 2000);
+    };
+    actions.classList.add('rs-share-actions-image');
+    actions.append(copyImageBtn);
+  }
+  actions.append(downloadBtn);
+
+  dialog.append(closeBtn, heading, preview);
+  if (deviceBtn) dialog.append(deviceBtn);
+  dialog.append(social, mailAlt, field, actions, status);
   document.body.append(dialog);
   closeBtn.onclick = () => dialog.close();
 
@@ -418,14 +463,6 @@ function showShareDialog({
   };
 
   dialog.showModal();
-  return {
-    // hosted snapshot from the share webhook: link it from the email
-    uploaded(link) {
-      mailBody = `${text}\n\n${url}\n\n${link}`;
-    },
-    // the design link and local download still work without the upload
-    failed() {},
-  };
 }
 
 const THREE_MODULES = [
@@ -1704,34 +1741,15 @@ export default async function decorate(block) {
   });
 
   // funnel: the stage share events report (the studio or its finale)
-  async function openShare(funnel) {
+  function openShare(funnel) {
     if (!viewer) return;
-    // no need to disable Share meanwhile: the open dialog makes the page inert
-    // (disabling it would drop its focus, which the dialog returns to on close)
-    const dataUrl = viewer.capture('image/png');
-    const dialog = showShareDialog({
+    showShareDialog({
       s: shareStr,
-      image: dataUrl,
+      image: viewer.capture('image/png'),
       url: designUrl(),
       text: designText(design, shareStr),
       onEvent: (channel) => studioEvent('share', { event_context: channel, stage: funnel }),
     });
-    try {
-      const blob = dataUrlToBlob(dataUrl);
-      const mimetype = blob.type || 'image/png';
-      const form = new FormData();
-      const filename = `A${Date.now()}`;
-      form.append('filename', filename);
-      form.append('mimetype', mimetype);
-      form.append('fileblob', blob, filename);
-      const res = await fetch(SHARE_ENDPOINT, { method: 'POST', body: form });
-      if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json();
-      if (!data || !data.downloadlink) throw new Error('no link');
-      dialog.uploaded(data.downloadlink);
-    } catch (e) {
-      dialog.failed();
-    }
   }
   share.onclick = () => openShare('studio');
 
