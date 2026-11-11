@@ -78,7 +78,6 @@ const STRINGS = {
     locating: 'Getting location …',
     locationDenied: 'Please enable location in your browser or device.',
     locationUnknown: 'Location unknown. Please enter a location or enable location in your browser or device.',
-    startHint: 'Showing installers around the center of the country. Enter a ZIP or city, or use your location.',
     defaultLocation: 'Enter a ZIP code or city to display installers near you.',
     notFound: 'Enter a ZIP code or city to display installers near you.',
     empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location or change the filters.',
@@ -114,7 +113,6 @@ const STRINGS = {
     locating: 'Standort wird ermittelt …',
     locationDenied: 'Bitte aktivieren Sie die Standortfreigabe in Ihrem Browser oder Gerät.',
     locationUnknown: 'Standort unbekannt. Bitte geben Sie einen Ort ein oder aktivieren Sie die Standortfreigabe.',
-    startHint: 'Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein oder verwenden Sie Ihren Standort.',
     defaultLocation: 'Geben Sie eine PLZ oder einen Ort ein, um Installateure in Ihrer Nähe anzuzeigen.',
     notFound: 'Geben Sie eine PLZ oder einen Ort ein, um Installateure in Ihrer Nähe anzuzeigen.',
     empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort oder ändern Sie die Filter.',
@@ -150,7 +148,6 @@ const STRINGS = {
     locating: '現在地を取得中…',
     locationDenied: 'ブラウザまたはデバイスで位置情報を有効にしてください。',
     locationUnknown: '現在地を特定できません。場所を入力するか、位置情報を有効にしてください。',
-    startHint: '国の中心付近の施工店を表示しています。郵便番号または都市名を入力するか、現在地を使用してください。',
     defaultLocation: '郵便番号または都市名を入力すると、お近くの施工業者が表示されます。',
     notFound: '郵便番号または都市名を入力すると、お近くの施工業者が表示されます。',
     empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、フィルターを変更してください。',
@@ -1106,7 +1103,6 @@ async function buildLocator(root, opts) {
   }
 
   // results start right away around the centre of the country
-  status.textContent = t.startHint;
   searchFrom(fallbackOrigin, { radius: RADIUS.max });
 
   // the map loads on the visitor's first interaction (a mouse move counts) or
