@@ -597,6 +597,16 @@
   height: 18px;
 }
 
+/* the device's share menu: full width above the network buttons */
+.rs-share-device {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.rs-share-device + .rs-share-social {
+  margin-top: 8px;
+}
+
 .rs-share-link {
   box-sizing: border-box;
   width: 100%;
@@ -614,6 +624,11 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 12px;
+}
+
+/* with Copy image: Copy Link | Copy image, then Download full width */
+.rs-share-actions-image .rs-share-download {
+  grid-column: 1 / -1;
 }
 
 .rs-share-copy,
