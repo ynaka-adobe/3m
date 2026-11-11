@@ -174,11 +174,26 @@ function addScale(map, { position, event, unit }) {
   event.addListener(map, 'zoom_changed', update);
 }
 
+// straight-line distance in miles
+function milesBetween(a, b) {
+  const rad = (v) => (v * Math.PI) / 180;
+  const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2
+    + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2;
+  return 2 * 3958.8 * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * @param {object} options
+ *   onSelect(id, 'map') when a pin is clicked;
+ *   popup(id) returns a pin's pop-up content as [header, body] elements, or null;
+ *   areaButton: an element shown on the map once the user has moved it, and
+ *   onAreaChange({ lat, lon, radius }) with the area now in view (radius in miles)
+ */
 export async function createMap(maps, container, {
-  onSelect, mapId, listWidth = 0, onAuthError, unit = 'mi',
+  onSelect, mapId, listWidth = 0, onAuthError, unit = 'mi', popup, areaButton, onAreaChange,
 }) {
   if (onAuthError) authListeners.add(onAuthError);
-  const [{ Map: GoogleMap, Circle }, core, markerLib] = await Promise.all([
+  const [{ Map: GoogleMap, Circle, InfoWindow }, core, markerLib] = await Promise.all([
     maps.importLibrary('maps'),
     maps.importLibrary('core'),
     maps.importLibrary('marker'),
@@ -195,12 +210,47 @@ export async function createMap(maps, container, {
     disableDefaultUI: true,
     zoomControl: true,
     zoomControlOptions: { position: ControlPosition.RIGHT_BOTTOM },
+    fullscreenControl: true,
+    fullscreenControlOptions: { position: ControlPosition.RIGHT_TOP },
     // inline on the page: zoom with ctrl/cmd + scroll, so the page still scrolls
     gestureHandling: 'cooperative',
     clickableIcons: false,
   });
   // in the corner column, under the zoom buttons
   addScale(map, { position: ControlPosition.RIGHT_BOTTOM, event, unit });
+
+  // moves made by this code (fitting results, selecting a pin) set `auto`, so
+  // only the user's own drags and zooms offer "search this area"
+  let auto = false;
+  let moved = false;
+  if (areaButton) {
+    areaButton.hidden = true;
+    map.controls[ControlPosition.TOP_CENTER].push(areaButton);
+  }
+  event.addListener(map, 'dragstart', () => { auto = false; moved = true; });
+  event.addListener(map, 'zoom_changed', () => { if (!auto) moved = true; });
+  event.addListener(map, 'idle', () => {
+    if (auto) {
+      auto = false;
+      return;
+    }
+    if (!moved || !onAreaChange) return;
+    moved = false;
+    const bounds = map.getBounds();
+    const center = map.getCenter();
+    if (!bounds || !center) return;
+    const c = { lat: center.lat(), lng: center.lng() };
+    const ne = bounds.getNorthEast();
+    onAreaChange({
+      lat: c.lat,
+      lon: c.lng,
+      // the visible area: from the centre to a corner
+      radius: milesBetween(c, { lat: ne.lat(), lng: ne.lng() }),
+    });
+  });
+
+  // one pop-up, moved from pin to pin
+  const info = popup ? new InfoWindow({ maxWidth: 280 }) : null;
 
   // 3M red pins, clusters and search radius (set in locator.css)
   const accent = getComputedStyle(container).getPropertyValue('--locator-pin').trim() || '#f00';
@@ -316,17 +366,22 @@ export async function createMap(maps, container, {
   };
 
   function centerOn(position, zoom) {
+    auto = true;
     map.setZoom(zoom);
     map.setCenter(position);
     map.panBy(-leftPad() / 2, 0);
   }
 
   function fitBounds(bounds) {
+    auto = true;
     map.fitBounds(bounds, {
       top: 48, right: 64, bottom: 48, left: leftPad() + 32,
     });
     event.addListenerOnce(map, 'idle', () => {
-      if (map.getZoom() > MAX_FIT_ZOOM) map.setZoom(MAX_FIT_ZOOM);
+      if (map.getZoom() > MAX_FIT_ZOOM) {
+        auto = true;
+        map.setZoom(MAX_FIT_ZOOM);
+      }
     });
   }
 
@@ -336,6 +391,7 @@ export async function createMap(maps, container, {
       else pins.forEach((p) => show(p.marker, false));
       pins.clear();
       activeId = null;
+      info?.close();
       // numbers follow the list order, so pin 3 is the third card
       dealers.forEach((d, i) => {
         if (d.lat !== null) pins.set(d.id, makePin(d, i + 1));
@@ -389,6 +445,23 @@ export async function createMap(maps, container, {
       if (!pin) return;
       pin.setActive(true);
       centerOn(pin.position, Math.max(map.getZoom(), SELECT_ZOOM));
+      const content = info && popup(id);
+      if (content) {
+        const [header, ...body] = content;
+        info.setOptions({ headerContent: header, content: body[0] });
+        info.open({ map, anchor: pin.marker, shouldFocus: false });
+      }
+    },
+    // hovering a card in the list: its pin stands out until the pointer leaves
+    highlight(id) {
+      pins.forEach((p, key) => {
+        if (key !== activeId) p.setActive(key === id);
+      });
+    },
+    // a search has run: the area button waits for the next move
+    hideAreaButton() {
+      if (areaButton) areaButton.hidden = true;
+      moved = false;
     },
     // `area` frames the whole search radius too, e.g. after widening it
     fit(dealers, point, { area = false } = {}) {

@@ -74,6 +74,7 @@ const STRINGS = {
     listView: 'List view',
     showMore: 'Show more',
     directions: 'Get Directions',
+    searchArea: 'Search this area',
     quote: 'Get a quote',
     results: (n) => (n === 1 ? '1 installer found' : `${n} installers found`),
     shown: (n) => `${n} results returned.`,
@@ -109,6 +110,7 @@ const STRINGS = {
     listView: 'Listenansicht',
     showMore: 'Mehr anzeigen',
     directions: 'Route berechnen',
+    searchArea: 'In diesem Gebiet suchen',
     quote: 'Angebot anfordern',
     results: (n) => (n === 1 ? '1 Fachbetrieb gefunden' : `${n} Fachbetriebe gefunden`),
     shown: (n) => `${n} Ergebnisse angezeigt.`,
@@ -144,6 +146,7 @@ const STRINGS = {
     listView: 'リスト表示',
     showMore: 'さらに表示',
     directions: '経路を表示',
+    searchArea: 'このエリアで検索',
     quote: '見積もりを依頼',
     results: (n) => `${n}件の施工店が見つかりました`,
     shown: (n) => `${n}件を表示しています。`,
@@ -404,6 +407,44 @@ function createSuggestions(input, { id, label, onPick }) {
  * @param {object} d dealer
  * @param {object} ctx { t, region, number, proShopLogo, onSelect }
  */
+// "12.5 mi" in the site's unit, or '' without a distance
+function distanceText(d, region) {
+  if (d.distanceInMiles === null) return '';
+  const value = region.unit === 'km' ? d.distanceInMiles * KM_PER_MILE : d.distanceInMiles;
+  const fmt = new Intl.NumberFormat(region.locale, { maximumFractionDigits: 1 });
+  return `${fmt.format(value)} ${region.unit}`;
+}
+
+/**
+ * The pop-up on a pin: [header, body] for the map's info window. The header
+ * names the installer; the body has the distance, address and the two actions.
+ */
+function createPopup(d, {
+  t, region, number, onQuote,
+}) {
+  const track = (action) => trackAction(action, d, number);
+  const header = text('p', 'locator-popup-name', `${number}. ${d.name}`);
+  const body = el('div', 'locator-popup');
+  const meta = [distanceText(d, region), addressLines(d).join(', ')].filter(Boolean).join(' · ');
+  if (meta) body.append(text('p', 'locator-popup-meta', meta));
+  const actions = el('div', 'locator-popup-actions');
+  const directions = directionsHref(d);
+  if (directions) {
+    const dir = externalLink('locator-popup-directions', directions, ICONS.route, t.directions, t);
+    dir.addEventListener('click', () => track('directions'));
+    actions.append(dir);
+  }
+  const quote = text('button', 'locator-popup-quote', t.quote);
+  quote.type = 'button';
+  quote.addEventListener('click', () => {
+    track('quote');
+    onQuote();
+  });
+  actions.append(quote);
+  body.append(actions);
+  return [header, body];
+}
+
 function createCard(d, {
   t, region, number, proShopLogo, onSelect,
 }) {
@@ -414,11 +455,8 @@ function createCard(d, {
   const track = (action) => trackAction(action, d, number);
 
   const aside = el('div', 'locator-card-aside', `<span class="locator-card-pin">${ICONS.pin}<span class="locator-card-number">${number}</span></span>`);
-  if (d.distanceInMiles !== null) {
-    const value = region.unit === 'km' ? d.distanceInMiles * KM_PER_MILE : d.distanceInMiles;
-    const fmt = new Intl.NumberFormat(region.locale, { maximumFractionDigits: 1 });
-    aside.append(text('span', 'locator-card-dist', `${fmt.format(value)} ${region.unit}`));
-  }
+  const dist = distanceText(d, region);
+  if (dist) aside.append(text('span', 'locator-card-dist', dist));
 
   const main = el('div', 'locator-card-main');
   if (pro) {
@@ -719,11 +757,10 @@ async function buildLocator(root, opts) {
     });
     const card = list.querySelector(`.locator-card[data-id="${CSS.escape(id)}"]`);
     const desktop = window.matchMedia(DESKTOP).matches;
-    if (card && from === 'map') {
-      // desktop: bring the card to the top of the floating list;
-      // phone and tablet: the list is below the map, so scroll the page to it
-      if (desktop) listWrap.scrollTo({ top: card.offsetTop - list.offsetTop, behavior: 'smooth' });
-      else card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (card && from === 'map' && desktop) {
+      // desktop: bring the card to the top of the floating list (phones and
+      // tablets stay on the map: the pin's pop-up shows the installer)
+      listWrap.scrollTo({ top: card.offsetTop - list.offsetTop, behavior: 'smooth' });
     }
     if (from === 'name' && !desktop && state.view === 'map') {
       // phone and tablet: tapping a name shows the installer on the map above
@@ -765,6 +802,7 @@ async function buildLocator(root, opts) {
   const canShowMore = () => state.hasMore || state.radius < RADIUS.max;
 
   const filtering = () => state.products.size > 0 || state.partners.size > 0;
+  const canHover = window.matchMedia('(hover: hover)');
 
   function render({ fit = true, area = false } = {}) {
     // in order (Pro Shops first, then by distance) from the dealer API; the
@@ -787,6 +825,10 @@ async function buildLocator(root, opts) {
         t, region, number: i + 1, proShopLogo, onSelect: selectDealer,
       });
       quoteBtn.onclick = () => openQuote(d, { t, quote: opts.quote });
+      if (canHover.matches) {
+        card.addEventListener('mouseenter', () => mapApi?.highlight?.(d.id));
+        card.addEventListener('mouseleave', () => mapApi?.highlight?.(null));
+      }
       list.append(card);
     });
 
@@ -901,6 +943,8 @@ async function buildLocator(root, opts) {
       return;
     }
 
+    // (guarded: an older cached map file has no area button)
+    if (newSearch) mapApi?.hideAreaButton?.();
     state.take = res.dealers.length;
     state.radius = area;
     state.dealers = res.dealers;
@@ -1082,10 +1126,36 @@ async function buildLocator(root, opts) {
         maps = await loadGoogleMaps({
           key: opts.key, language: region.geoLang, region: region.country,
         });
+        // after the user drags or zooms the map: search the area in view
+        const areaButton = text('button', 'locator-area-search', t.searchArea);
+        areaButton.type = 'button';
+        let viewArea = null;
+        areaButton.addEventListener('click', () => {
+          if (!viewArea) return;
+          areaButton.hidden = true;
+          where.value = '';
+          searchError.textContent = '';
+          searchFrom({ lat: viewArea.lat, lon: viewArea.lon }, {
+            radius: Math.round(Math.min(RADIUS.max, Math.max(5, viewArea.radius))),
+          });
+        });
         mapApi = await createMap(maps, mapEl, {
           onSelect: selectDealer,
           mapId: opts.mapId,
           unit: region.unit,
+          popup: (id) => {
+            const i = shown.findIndex((d) => d.id === id);
+            if (i < 0) return null;
+            const d = shown[i];
+            return createPopup(d, {
+              t, region, number: i + 1, onQuote: () => openQuote(d, { t, quote: opts.quote }),
+            });
+          },
+          areaButton,
+          onAreaChange: (area) => {
+            viewArea = area;
+            areaButton.hidden = false;
+          },
           // the list only floats over the map on desktop
           listWidth: () => (window.matchMedia(DESKTOP).matches ? LIST_WIDTH : 0),
           onAuthError: () => {

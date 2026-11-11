@@ -625,6 +625,94 @@ a.locator-card-addr {
   background: var(--accent-dark);
 }
 
+/* ---- map: "search this area" and the pin pop-up ---- */
+.locator .locator-area-search {
+  height: 40px;
+  margin-top: 12px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 25%);
+  color: #000;
+  font-family: var(--body-font-family);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.locator .locator-area-search:hover {
+  color: var(--accent);
+}
+
+.locator .locator-area-search[hidden] {
+  display: none;
+}
+
+.locator .locator-popup-name {
+  margin: 0;
+  font-family: var(--body-font-family);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.locator .locator-popup {
+  font-family: var(--body-font-family);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.locator .locator-popup-meta {
+  margin: 0 0 10px;
+  color: #555;
+}
+
+.locator .locator-popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+}
+
+.locator .locator-popup-directions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: #000;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.locator .locator-popup-directions:hover {
+  color: var(--accent);
+}
+
+.locator .locator-popup-directions svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: #666;
+}
+
+.locator .locator-popup-quote {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.locator .locator-popup-quote:hover {
+  border-color: var(--accent-dark);
+  background: var(--accent-dark);
+}
+
 /* ---- show more ---- */
 .locator .locator-more {
   display: block;
@@ -898,13 +986,17 @@ body.rs-quote-lock {
 @media (pointer: coarse) {
   .locator .locator-chip,
   .locator .locator-card-quote,
+  .locator .locator-popup-quote,
+  .locator .locator-area-search,
   .locator .locator-more,
   .locator .locator-retry {
     min-height: 44px;
   }
 
   .locator .locator-chip,
-  .locator .locator-card-quote {
+  .locator .locator-card-quote,
+  .locator .locator-popup-quote,
+  .locator .locator-area-search {
     border-radius: 22px;
   }
 
