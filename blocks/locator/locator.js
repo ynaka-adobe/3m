@@ -79,7 +79,7 @@ const STRINGS = {
     locationDenied: 'Please enable location in your browser or device.',
     locationUnknown: 'Location unknown. Please enter a location or enable location in your browser or device.',
     startHint: 'Showing installers around the center of the country. Enter a ZIP or city, or use your location.',
-    defaultLocation: 'Your location is not available, so we are showing installers around the center of the country. Enter a ZIP or city to search near you.',
+    defaultLocation: 'Enter a ZIP code or city to display installers near you.',
     notFound: 'Enter a ZIP code or city to display installers near you.',
     empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location or change the filters.',
     error: 'The service is currently not available. Please try again later.',
@@ -115,7 +115,7 @@ const STRINGS = {
     locationDenied: 'Bitte aktivieren Sie die Standortfreigabe in Ihrem Browser oder Gerät.',
     locationUnknown: 'Standort unbekannt. Bitte geben Sie einen Ort ein oder aktivieren Sie die Standortfreigabe.',
     startHint: 'Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein oder verwenden Sie Ihren Standort.',
-    defaultLocation: 'Ihr Standort ist nicht verfügbar. Wir zeigen Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein, um in Ihrer Nähe zu suchen.',
+    defaultLocation: 'Geben Sie eine PLZ oder einen Ort ein, um Installateure in Ihrer Nähe anzuzeigen.',
     notFound: 'Geben Sie eine PLZ oder einen Ort ein, um Installateure in Ihrer Nähe anzuzeigen.',
     empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort oder ändern Sie die Filter.',
     error: 'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.',
@@ -151,7 +151,7 @@ const STRINGS = {
     locationDenied: 'ブラウザまたはデバイスで位置情報を有効にしてください。',
     locationUnknown: '現在地を特定できません。場所を入力するか、位置情報を有効にしてください。',
     startHint: '国の中心付近の施工店を表示しています。郵便番号または都市名を入力するか、現在地を使用してください。',
-    defaultLocation: '現在地を取得できないため、国の中心付近の施工店を表示しています。お近くを検索するには郵便番号または都市名を入力してください。',
+    defaultLocation: '郵便番号または都市名を入力すると、お近くの施工業者が表示されます。',
     notFound: '郵便番号または都市名を入力すると、お近くの施工業者が表示されます。',
     empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、フィルターを変更してください。',
     error: '現在サービスをご利用いただけません。しばらくしてから再度お試しください。',
@@ -931,8 +931,10 @@ async function buildLocator(root, opts) {
       await searchFrom(origin);
     } catch (err) {
       if (initial) {
-        // keep the results around the centre of the country
-        status.textContent = t.defaultLocation;
+        // keep the results around the centre of the country; the hint goes
+        // next to the search field
+        status.textContent = '';
+        searchError.textContent = t.defaultLocation;
       } else {
         status.textContent = err.code === 1 ? t.locationDenied : t.locationUnknown;
       }
