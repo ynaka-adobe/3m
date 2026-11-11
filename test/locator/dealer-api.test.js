@@ -339,21 +339,3 @@ describe('locator dealer API parameters', () => {
     assert.equal(calls.length, 0);
   });
 });
-
-describe('locator sample data', () => {
-  it('searches the sample file by radius with paging', async () => {
-    mockFetch(json([
-      record({ companyID: 'near', lat: 44.95, lon: -93.0 }),
-      record({ companyID: 'far', lat: 41.88, lon: -87.63 }),
-      record({
-        companyID: 'gone', deleted: true, lat: 44.95, lon: -93.0,
-      }),
-    ]));
-    const api = createDealerApi('sample', { sample: '/data/test-sample.json' });
-    assert.equal(api.sample, true);
-    const res = await api.search(search({ radius: 50 }));
-    assert.deepEqual(res.dealers.map((d) => d.id), ['near']);
-    assert.equal(res.total, 1);
-    assert.equal(res.hasMore, false);
-  });
-});

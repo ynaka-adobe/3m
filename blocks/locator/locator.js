@@ -24,9 +24,8 @@ const DESKTOP = '(width >= 900px)';
 // official 3M Pro Shop logo (a `proshop-logo` row on the block can replace it)
 const PRO_SHOP_LOGO = '/img/3m/car-personalization/pro-shop-badge.webp';
 
-// per site language: units, address lookup country, the map centre used when the
-// browser's location is not available (centre of the country), and the sample data
-// for `api: sample`
+// per site language: units, address lookup country, and the map centre used when
+// the browser's location is not available (centre of the country)
 const REGIONS = {
   en: {
     unit: 'mi',
@@ -34,7 +33,6 @@ const REGIONS = {
     locale: 'en-US',
     geoLang: 'en',
     origin: COUNTRY_CENTERS.us,
-    sample: '/data/dealers-us.json',
   },
   de: {
     unit: 'km',
@@ -42,7 +40,6 @@ const REGIONS = {
     locale: 'de-CH',
     geoLang: 'de',
     origin: COUNTRY_CENTERS.ch,
-    sample: '/data/dealers-ch.json',
   },
   jp: {
     unit: 'km',
@@ -50,7 +47,6 @@ const REGIONS = {
     locale: 'ja-JP',
     geoLang: 'ja',
     origin: COUNTRY_CENTERS.us,
-    sample: '/data/dealers-us.json',
   },
 };
 REGIONS.ja = REGIONS.jp;
@@ -88,7 +84,6 @@ const STRINGS = {
     notFound: 'Enter a ZIP code or city to display installers near you.',
     empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location or change the filters.',
     error: 'The service is currently not available. Please try again later.',
-    sample: 'Sample data is shown, not real installers.',
     retry: 'Try again',
     close: 'Close',
     map: 'Map of installers',
@@ -126,7 +121,6 @@ const STRINGS = {
     notFound: 'Geben Sie eine PLZ oder einen Ort ein, um Installateure in Ihrer Nähe anzuzeigen.',
     empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort oder ändern Sie die Filter.',
     error: 'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.',
-    sample: 'Es werden Beispieldaten angezeigt, keine echten Fachbetriebe.',
     retry: 'Erneut versuchen',
     close: 'Schliessen',
     map: 'Karte der Fachbetriebe',
@@ -164,7 +158,6 @@ const STRINGS = {
     notFound: '郵便番号または都市名を入力すると、お近くの施工業者が表示されます。',
     empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、フィルターを変更してください。',
     error: '現在サービスをご利用いただけません。しばらくしてから再度お試しください。',
-    sample: 'サンプルデータを表示しています（実際の施工店ではありません）。',
     retry: '再試行',
     close: '閉じる',
     map: '施工店の地図',
@@ -610,7 +603,7 @@ async function openQuote(d, { t, quote }) {
 /**
  * Build the locator UI into `root`. Shared by the block and the modal.
  * @param {Element} root container to render into
- * @param {object} opts block config: { key, mapId, api, region, radius, lat, lon, sample,
+ * @param {object} opts block config: { key, mapId, api, region, radius, lat, lon,
  *   title, quote, unit, country, proShopLogo, onClose }
  */
 async function buildLocator(root, opts) {
@@ -625,10 +618,9 @@ async function buildLocator(root, opts) {
   const fallbackOrigin = num(opts.lat) !== null && num(opts.lon) !== null
     ? { lat: num(opts.lat), lon: num(opts.lon) }
     : base.origin;
-  const sample = opts.sample || region.sample;
   const proShopLogo = opts.proShopLogo || `${window.hlx?.codeBasePath || ''}${PRO_SHOP_LOGO}`;
   // Pro Shops first, then by distance, across the whole result list
-  const api = createDealerApi(opts.api, { sample, order: sortDealers });
+  const api = createDealerApi(opts.api, { order: sortDealers });
   const uid = `locator-${Math.random().toString(36).slice(2, 8)}`;
 
   root.textContent = '';
@@ -670,9 +662,6 @@ async function buildLocator(root, opts) {
   const startRadius = Math.min(RADIUS.max, Math.max(1, num(opts.radius) ?? RADIUS.start));
 
   const count = el('p', 'locator-count');
-  const note = el('p', 'locator-note');
-  // sample data only when an author picks it (api: sample), never as a silent fallback
-  if (api.sample) note.textContent = t.sample;
   const row = el('div', 'locator-filter-row');
   // lookup and location messages ("location not found", "finding your
   // location") show right next to the search field
@@ -697,7 +686,7 @@ async function buildLocator(root, opts) {
   clear.type = 'button';
   clear.hidden = true;
   partnerGroup.row.append(clear);
-  filters.append(row, productGroup.row, partnerGroup.row, note);
+  filters.append(row, productGroup.row, partnerGroup.row);
 
   // ---- tabs + results ----
   const tabs = el('div', 'locator-tabs');
@@ -1301,7 +1290,6 @@ export default async function decorate(block) {
     radius: cfg.radius,
     lat: cfg.lat,
     lon: cfg.lon,
-    sample: cfg.sample,
     title: cfg.title,
     quote: cfg.quote,
     unit: cfg.unit,

@@ -9,7 +9,7 @@
  * *.aem.live; other origins need a change in the Worker's configuration.
  *
  * To use another backend with the same contract, set the block's `api` row to
- * its endpoint URL. `api: sample` searches the static sample data instead.
+ * its endpoint URL.
  * Records are mapped to the locator's dealer shape in `normalize()`.
  */
 import { splitList } from './locator-utils.js';
@@ -241,62 +241,20 @@ async function searchProxy(url, query, { signal, filter, order }, memo) {
   };
 }
 
-// accept a plain array or an { items } / { data } envelope
-function unwrap(json) {
-  if (Array.isArray(json)) return json;
-  return ['items', 'data'].map((k) => json?.[k]).find(Array.isArray) || [];
-}
-
-const sampleCache = {};
-
 /**
- * Searches a static JSON file in the backend's record format, for development:
- * applies radius, sorting and paging in the browser.
- */
-export async function searchSample(source, query, { filter = () => true, order = (d) => d } = {}) {
-  if (!sampleCache[source]) {
-    sampleCache[source] = fetch(source).then((res) => {
-      if (!res.ok) throw new DealerApiError(`${res.status} ${source}`, { status: res.status });
-      return res.json();
-    });
-    sampleCache[source].catch(() => { delete sampleCache[source]; });
-  }
-  const { origin, radius } = query;
-  const inRange = unwrap(await sampleCache[source])
-    .filter((d) => d && !d.deleted)
-    .map((d) => ({
-      ...d,
-      distanceInMiles: miles(origin, { lat: Number(d.lat), lon: Number(d.lon) }),
-    }))
-    .filter((d) => d.distanceInMiles <= radius)
-    .sort((a, b) => a.distanceInMiles - b.distanceInMiles);
-  return toPage(toDealers(inRange, origin), {
-    start: Math.max(0, toInt(query.skip, 0)),
-    wanted: Math.max(0, toInt(query.take, MAX_TAKE)),
-    filter,
-    order,
-  });
-}
-
-/**
- * @param {string} [api] endpoint URL with the proxy's contract, `sample` for the
- *   sample data, or empty for the locator proxy
- * @param {object} [options] { sample, order } URL of the sample data, and a sort
- *   for display that is applied to complete result lists before paging
- * @returns {{ sample: boolean, search: Function }} search(query, { signal, filter })
+ * @param {string} [api] endpoint URL with the proxy's contract, or empty for the
+ *   locator proxy
+ * @param {object} [options] { order } a sort for display that is applied to
+ *   complete result lists before paging
+ * @returns {{ search: Function }} search(query, { signal, filter })
  *   resolves to { dealers, total, hasMore, facets } or rejects with a
  *   DealerApiError (or an AbortError when cancelled); `filter` keeps dealers
  */
-export function createDealerApi(api, { sample, order = (dealers) => dealers } = {}) {
-  const key = String(api || '').trim();
+export function createDealerApi(api, { order = (dealers) => dealers } = {}) {
+  const url = String(api || '').trim() || PROXY_URL;
   const options = ({ signal, filter = () => true } = {}) => ({ signal, filter, order });
-  if (key.toLowerCase() === 'sample') {
-    return { sample: true, search: (query, opts) => searchSample(sample, query, options(opts)) };
-  }
-  const url = key || PROXY_URL;
   const memo = {};
   return {
-    sample: false,
     search: (query, opts) => searchProxy(url, query, options(opts), memo),
   };
 }
