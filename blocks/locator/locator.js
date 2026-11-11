@@ -604,7 +604,9 @@ async function openQuote(d, { t, quote }) {
  * Build the locator UI into `root`. Shared by the block and the modal.
  * @param {Element} root container to render into
  * @param {object} opts block config: { key, mapId, api, region, radius, lat, lon,
- *   title, quote, unit, country, proShopLogo, onClose }
+ *   title, quote, unit, country, proShopLogo, onClose, onEvent }; onEvent(name,
+ *   fields) reports searches ('search', then 'results') and shop clicks ('shop')
+ *   to the caller, e.g. the visualizer's analytics
  */
 async function buildLocator(root, opts) {
   const lang = pageLang();
@@ -621,6 +623,21 @@ async function buildLocator(root, opts) {
   const proShopLogo = opts.proShopLogo || `${window.hlx?.codeBasePath || ''}${PRO_SHOP_LOGO}`;
   // Pro Shops first, then by distance, across the whole result list
   const api = createDealerApi(opts.api, { order: sortDealers });
+  // reports to the caller; its errors never break the locator
+  const report = (name, fields) => {
+    try {
+      opts.onEvent?.(name, fields);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('locator: onEvent failed', e);
+    }
+  };
+  // the typed or picked place of the search in flight, reported with its result
+  let pendingTerm = null;
+  const reportSearch = (term, found) => {
+    report('search', { Internal_search_term: term });
+    report('results', { suffix: found ? 'Success' : 'Invalid', Internal_search_term: term });
+  };
   const uid = `locator-${Math.random().toString(36).slice(2, 8)}`;
 
   root.textContent = '';
@@ -822,7 +839,14 @@ async function buildLocator(root, opts) {
       const { card, quote: quoteBtn } = createCard(d, {
         t, region, number: i + 1, proShopLogo, onSelect: selectDealer,
       });
-      quoteBtn.onclick = () => openQuote(d, { t, quote: opts.quote });
+      const shop = (action) => report('shop', {
+        search_result_action: action, shop_id: String(d.id), shop_name: d.name,
+      });
+      card.querySelector('.locator-card-phone')?.addEventListener('click', () => shop('phone_click'));
+      quoteBtn.onclick = () => {
+        shop('get_quote');
+        openQuote(d, { t, quote: opts.quote });
+      };
       if (canHover.matches) {
         card.addEventListener('mouseenter', () => mapApi?.highlight?.(d.id));
         card.addEventListener('mouseleave', () => mapApi?.highlight?.(null));
@@ -866,6 +890,9 @@ async function buildLocator(root, opts) {
     controller = new AbortController();
     const loadingMore = !refresh && take > PAGE_SIZE;
     const newSearch = !loadingMore && !refresh;
+    // this search's typed or picked place, reported with its own result
+    const term = newSearch ? pendingTerm : null;
+    if (newSearch) pendingTerm = null;
     const before = list.querySelectorAll('.locator-card').length;
     moreError.textContent = '';
     if (!loadingMore && !refresh) {
@@ -953,6 +980,7 @@ async function buildLocator(root, opts) {
     buildChips();
     // a wider radius zooms the map out to the whole search area
     render({ area: expand || area > radius });
+    if (term) reportSearch(term, (filtering() ? matched : res.total ?? res.dealers.length) > 0);
     if (loadingMore) {
       // move keyboard focus to the first newly loaded installer
       const next = list.querySelectorAll('.locator-card')[before];
@@ -1077,10 +1105,14 @@ async function buildLocator(root, opts) {
 
   async function pickSuggestion(item) {
     searchError.textContent = '';
+    const term = where.value.trim();
     try {
-      await searchFrom(await suggester.resolve(item));
+      const origin = await suggester.resolve(item);
+      pendingTerm = term;
+      await searchFrom(origin);
     } catch (err) {
       searchError.textContent = t.notFound;
+      if (term) reportSearch(term, false);
     }
   }
 
@@ -1103,8 +1135,10 @@ async function buildLocator(root, opts) {
       const origin = await lookup(value);
       if (!origin) {
         searchError.textContent = t.notFound;
+        reportSearch(value, false);
         return;
       }
+      pendingTerm = value;
       await searchFrom(origin);
     } catch (err) {
       searchError.textContent = t.error;
@@ -1190,7 +1224,13 @@ async function buildLocator(root, opts) {
             if (i < 0) return null;
             const d = shown[i];
             return createPopup(d, {
-              t, region, number: i + 1, onQuote: () => openQuote(d, { t, quote: opts.quote }),
+              t,
+              region,
+              number: i + 1,
+              onQuote: () => {
+                report('shop', { search_result_action: 'get_quote', shop_id: String(d.id), shop_name: d.name });
+                openQuote(d, { t, quote: opts.quote });
+              },
             });
           },
           areaButton,
@@ -1251,7 +1291,9 @@ function mapsConfig(cfg = {}) {
  * Open the locator as a full-screen modal, created on demand.
  * Usable from any block (e.g. the visualizer's "Find an installer" CTA).
  */
-export async function openLocatorModal({ api, title, quote } = {}) {
+export async function openLocatorModal({
+  api, title, quote, onEvent,
+} = {}) {
   await loadCSS(`${window.hlx?.codeBasePath || ''}/blocks/locator/locator.css`);
   const overlay = el('div', 'locator locator-modal');
   overlay.setAttribute('role', 'dialog');
@@ -1277,6 +1319,7 @@ export async function openLocatorModal({ api, title, quote } = {}) {
     api,
     title: title || t.title,
     quote,
+    onEvent,
     onClose: close,
   });
 }

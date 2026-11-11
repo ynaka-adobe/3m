@@ -122,6 +122,29 @@ export function decorateMain(main) {
   decorateButtons(main);
 }
 
+// same rule as blocks/hero: an image authored as a plain path in a hero cell
+const HERO_IMG_PATH = /^\/[\w./-]+\.(jpg|jpeg|png|webp|avif)$/i;
+
+/**
+ * The first section's hero is usually the page's largest paint, but an image
+ * authored as a path only becomes an <img> once the hero block's code has
+ * loaded. Start that download now, at high priority, instead.
+ * @param {Element} section The first section
+ */
+function preloadHeroImage(section) {
+  const hero = section && section.querySelector('.hero');
+  if (!hero || hero.querySelector('picture, img')) return;
+  const cell = [...hero.querySelectorAll(':scope > div > div')]
+    .find((c) => HERO_IMG_PATH.test(c.textContent.trim()));
+  if (!cell) return;
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.fetchPriority = 'high';
+  link.href = cell.textContent.trim();
+  document.head.append(link);
+}
+
 /**
  * Loads everything needed to get to LCP.
  * @param {Element} doc The container element
@@ -132,8 +155,19 @@ async function loadEager(doc) {
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
+    const first = main.querySelector('.section');
+    preloadHeroImage(first);
+    // car-personalization pages get their breadcrumb strip from the header
+    // (lazy phase); hold its place from the first paint so the page doesn't
+    // jump when it arrives (see loadCarPersonalizationSubnav in header.js)
+    if (window.location.pathname.split('/').includes('car-personalization')) {
+      const slot = document.createElement('div');
+      slot.className = 'section breadcrumb-container subnav-slot';
+      slot.dataset.sectionStatus = 'loaded';
+      main.prepend(slot);
+    }
     document.body.classList.add('appear');
-    await loadSection(main.querySelector('.section'), waitForFirstImage);
+    await loadSection(first, waitForFirstImage);
   }
 
   try {

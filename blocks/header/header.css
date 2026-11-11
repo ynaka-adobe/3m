@@ -1,141 +1,1035 @@
+/* Measurements match www.3m.com; its layout switches at 768px and 960px.
+   Side spacing is 5% of the page column (see --page-width in styles.css). */
 header .header {
   padding: 0;
 }
 
 header .nav-3m {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 0 24px;
-  height: 70px;
-  border-bottom: 1px solid var(--line);
+  position: relative;
   background: #fff;
+  border-bottom: 1px solid #f2f2f2;
+  color: #4b4b4b;
+  font-family: var(--body-font-family);
+  font-size: 16px;
+  line-height: 20px;
 }
 
-header .nav-logo {
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
+header .nav-3m a {
+  text-decoration: none;
 }
 
-header .nav-logo img {
-  display: block;
-  height: 32px;
-  width: auto;
-}
-
-header .nav-panel {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  flex: 1;
-}
-
-header .nav-links {
-  display: flex;
-  gap: 26px;
+header .nav-3m ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-header .nav-links a {
-  display: inline-block;
-  font-family: var(--heading-font-family);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--ink);
-  padding: 6px 0;
-  border-bottom: 2px solid transparent;
+header .nav-icon {
+  display: block;
+  flex-shrink: 0;
 }
 
-header .nav-links a:hover {
-  color: var(--ink);
-  border-color: var(--accent);
-}
-
-header .nav-actions {
-  margin-left: auto;
+/* ── top row: logo, search, locale / burger ── */
+header .nav-top {
   display: flex;
   align-items: center;
-  gap: 22px;
-  font-weight: 700;
-  font-size: 14px;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 50px;
+  padding: 10px 15px;
+  background: #fff;
 }
 
-header .nav-actions a {
-  color: var(--ink);
+header .nav-logo {
+  display: block;
+  flex-shrink: 0;
+  margin-right: 15px;
+  line-height: 0;
 }
 
+header .nav-logo-full {
+  display: none;
+}
+
+header .nav-logo-mark {
+  display: block;
+  width: 55px;
+  height: 30px;
+}
+
+header .nav-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  margin: 0 30px 0 0;
+}
+
+header .nav-search input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 6px 30px 5px 15px;
+  border: 1px solid #979797;
+  border-radius: 15px;
+  background: #fafafa;
+  color: #4b4b4b;
+  font-family: var(--body-font-family);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 16px;
+  appearance: none;
+}
+
+header .nav-search input::placeholder {
+  color: #838383;
+  opacity: 1;
+}
+
+header .nav-search input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+header .nav-search button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0 15px 15px 0;
+  background: #4b4b4b;
+  cursor: pointer;
+}
+
+header .nav-icon-search-3m {
+  width: 12px;
+  height: 12px;
+  margin-top: -2px;
+}
+
+header .nav-top-end {
+  display: none;
+}
+
+header .nav-burger {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+header .nav-icon-menu {
+  width: 17px;
+  height: 14px;
+  margin-top: -2px;
+}
+
+header .nav-icon-close {
+  display: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -2px;
+}
+
+header .nav-3m.is-open .nav-icon-menu {
+  display: none;
+}
+
+header .nav-3m.is-open .nav-icon-close {
+  display: block;
+}
+
+/* ── locale switcher ── */
 header .nav-locale {
-  color: var(--muted);
-  font: inherit;
-  font-weight: 700;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 5px 8px;
+  position: relative;
+}
+
+header .nav-locale-toggle {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #4b4b4b;
+  font-family: var(--body-font-family);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+header .nav-locale-toggle .nav-icon-globe {
+  position: relative;
+  top: -2px;
+  width: 18px;
+  height: 18px;
+  margin-left: 8px;
+}
+
+header .nav-locale-toggle .nav-icon-chevron-down {
+  position: relative;
+  top: -1.5px;
+  width: 11px;
+  height: 11px;
+  margin-left: 13px;
+}
+
+/* popup: centered over a dimmed page below 960px, anchored to the toggle above */
+header .nav-locale-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  display: none;
+  background: rgb(0 0 0 / 25%);
+}
+
+header .nav-locale-popup {
+  position: fixed;
+  top: 66px;
+  left: 50%;
+  z-index: 105;
+  display: none;
+  width: 70%;
+  max-width: 265px;
+  padding: 15px 15px 30px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 5px 10px 0 #4b4b4b;
+  color: #4b4b4b;
+  font-size: 16px;
+  line-height: 20px;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+header .nav-3m.is-locale-open .nav-locale-overlay,
+header .nav-3m.is-locale-open .nav-locale-popup {
+  display: block;
+}
+
+header .nav-locale-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  height: 19px;
+  padding: 1px 6px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+header .nav-locale-close .nav-icon-close {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  opacity: 0.34;
+}
+
+header .nav-locale-title {
+  margin: 50px 0 20px;
+}
+
+header .nav-locale-options {
+  margin: 0 20px 30px;
+  padding: 20px;
+  border-top: 2px solid #f2f2f2;
+  border-bottom: 2px solid #f2f2f2;
+  text-align: left;
+}
+
+header .nav-locale-options label {
+  display: flex;
+  align-items: flex-start;
+  height: 22px;
+  cursor: pointer;
+}
+
+header .nav-locale-options input {
+  position: relative;
+  flex-shrink: 0;
+  width: 16px;
+  height: 19px;
+  margin: 0;
+  appearance: none;
+  cursor: pointer;
+}
+
+header .nav-locale-options input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 1px;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #4b4b4b;
+  border-radius: 8px;
+  background: #fff;
+}
+
+header .nav-locale-options input:checked::after {
+  left: 0;
+  border: 3px solid #09f;
+  box-shadow: 0 0 0 1px #000;
+}
+
+header .nav-locale-options input:focus-visible {
+  outline: 2px solid #09f;
+  outline-offset: 1px;
+}
+
+header .nav-locale-options span {
+  position: relative;
+  top: 2px;
+  margin-left: 9px;
+}
+
+header .nav-locale-change:any-link {
+  border-bottom: 1px solid rgb(0 51 204 / 25%);
+  color: #03c;
+  font-size: 14px;
+  line-height: 17.5px;
+}
+
+header .nav-locale-change:hover {
+  border-bottom-color: #03c;
+  color: #03c;
+}
+
+header .nav-locale-save {
+  display: block;
+  box-sizing: border-box;
+  width: 110px;
+  margin: 30px auto 40px;
+  padding: 10px;
+  border: 0;
+  border-radius: 2px;
+  background: #f00;
+  color: #fff;
+  font-family: var(--body-font-family);
+  font-size: 14px;
+  font-weight: 300;
+  line-height: normal;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+header .nav-locale-save:hover,
+header .nav-locale-save:focus-visible {
+  background: #c80000;
+}
+
+/* ── bottom row: account bar (mobile) / primary nav + account (desktop) ── */
+header .nav-bottom {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #ccc;
+  background: #fff;
+}
+
+header .nav-panel {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: none;
+  box-sizing: border-box;
+  height: calc(100vh - 50px);
+  padding: 30px 15px;
+  border: solid #fff;
+  border-width: 2px 1px 0;
+  overflow-y: auto;
+  background: #f2f2f2;
+  box-shadow: 2px 2px 6px 0 rgb(204 204 204 / 35%);
+}
+
+header .nav-3m.is-open .nav-panel {
+  display: block;
+}
+
+header .nav-links > li {
+  margin-bottom: 15px;
+}
+
+header .nav-links > li > a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-radius: 2px;
+  background: #fff;
+  color: #000;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+  transition: all 0.2s;
+}
+
+header .nav-links .nav-link-arrow {
+  width: 16px;
+  height: 16px;
+  transform: rotate(-90deg);
+  filter: brightness(0);
+}
+
+/* ── menu panels (Products, Industries): drill-down view below 960px ── */
+header .nav-mega {
+  display: none;
+  background: #fff;
+  color: #4b4b4b;
+}
+
+header .nav-links > li.is-open > .nav-mega {
+  display: block;
+}
+
+@media (width < 960px) {
+  header .nav-panel.is-drilled {
+    padding: 0;
+    border-width: 1px;
+    border-color: #f2f2f2;
+    background: #fff;
+  }
+
+  header .nav-panel.is-drilled .nav-links > li:not(.is-open),
+  header .nav-panel.is-drilled .nav-links > li.is-open > a,
+  header .nav-panel.is-drilled .nav-locale-mobile {
+    display: none;
+  }
+
+  header .nav-panel.is-drilled .nav-links > li {
+    margin: 0;
+  }
+}
+
+header .nav-mega-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  border-bottom: 1px solid #ddd;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+header .nav-mega-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  width: 78px;
+  height: 47px;
+  padding: 1px 6px 1px 22px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+header .nav-mega-back .nav-icon {
+  width: 13.33px;
+  height: 13.33px;
+}
+
+header .nav-mega-list li {
+  border-bottom: 1px solid #ddd;
+}
+
+header .nav-mega-list a:any-link,
+header .nav-mega-all a:any-link {
+  display: block;
+  padding: 20px 25px;
+  color: #4b4b4b;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 25px;
+}
+
+header .nav-mega-list a:hover,
+header .nav-mega-list a:focus-visible {
+  color: #4b4b4b;
+  text-decoration: underline;
+}
+
+header .nav-mega-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 20px 25px 150px;
+}
+
+header .nav-mega-all a:any-link,
+header .nav-mega-all a:hover {
+  padding: 0;
+  color: #003ce6;
+  font-size: 18px;
+  line-height: 22.5px;
+  text-decoration: underline;
+}
+
+header .nav-mega-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 39px;
+  padding: 10px;
+  border: 1px solid #4b4b4b;
   background: #fff;
   cursor: pointer;
 }
 
-header .nav-burger {
+header .nav-mega-top .nav-icon {
+  width: 14px;
+  height: 14px;
+}
+
+header .nav-mega-feature {
   display: none;
 }
 
-@media (width <= 860px) {
-  header .nav-burger {
-    display: inline-flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 5px;
-    margin-left: auto;
-    width: 40px;
-    height: 40px;
-    background: none;
-    border: 0;
-    cursor: pointer;
+/* page tint behind an open menu; the nav becomes a stacking context so the
+   tint sits under the (white) header rows and the open menu */
+header .nav-overlay {
+  display: none;
+}
+
+header .nav-3m.is-account-open {
+  z-index: 100;
+}
+
+/* the account tint covers the page column only, as on www.3m.com */
+header .nav-3m.is-account-open .nav-overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: -1;
+  display: block;
+  width: var(--page-width, 100vw);
+  background: rgb(0 0 0 / 25%);
+  transform: translateX(-50%);
+}
+
+header .nav-locale-mobile {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 103px;
+  display: flex;
+  justify-content: center;
+}
+
+header .nav-locale-mobile .nav-locale-toggle {
+  font-size: 14px;
+  line-height: 14px;
+}
+
+header .nav-locale-mobile .nav-icon-globe {
+  top: 0;
+}
+
+header .nav-locale-mobile .nav-icon-chevron-down {
+  display: none;
+}
+
+header .nav-actions {
+  display: flex;
+}
+
+header .nav-account {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 10px;
+  color: #4b4b4b;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+header .nav-account:hover {
+  color: #4b4b4b;
+}
+
+header .nav-account span {
+  margin-left: 9px;
+}
+
+header .nav-account .nav-icon-user {
+  position: relative;
+  top: -1px;
+  width: 22px;
+  height: 22px;
+}
+
+header .nav-account .nav-icon-chevron-down,
+header .nav-account .nav-icon-chevron-up {
+  width: 14px;
+  height: 14px;
+  margin-left: 13.5px;
+}
+
+header .nav-account .nav-icon-chevron-up,
+header .nav-3m.is-account-open .nav-account .nav-icon-chevron-down {
+  display: none;
+}
+
+header .nav-3m.is-account-open .nav-account .nav-icon-chevron-up {
+  display: block;
+}
+
+/* ── account dropdown ── */
+header .nav-account-menu {
+  position: absolute;
+  top: 91px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: none;
+  background: #fff;
+  box-shadow: 0 7px 10px 0 #4b4b4b;
+  color: #4b4b4b;
+  font-size: 16px;
+  line-height: 20px;
+  text-align: center;
+}
+
+header .nav-3m.is-account-open .nav-account-menu {
+  display: block;
+}
+
+header .nav-account-primary,
+header .nav-account-secondary {
+  padding: 20px;
+}
+
+header .nav-account-secondary {
+  border-top: 1px solid #f4f4f4;
+}
+
+header .nav-account-primary a:any-link,
+header .nav-account-primary a:hover {
+  display: block;
+  width: 50%;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 3px;
+  color: #03c;
+  font-weight: 700;
+}
+
+header .nav-account-secondary a:any-link,
+header .nav-account-secondary a:hover {
+  color: #4b4b4b;
+}
+
+@media (width >= 768px) {
+  header .nav-top {
+    height: 62px;
+    padding: 13px 30px;
   }
 
-  header .nav-burger span {
+  header .nav-search {
+    flex: 0 1 auto;
+    width: calc(100% - 166px);
+    height: 36px;
+    margin-right: 40px;
+  }
+
+  header .nav-search input {
+    border-radius: 18px;
+  }
+
+  header .nav-search button {
+    width: 36px;
+    height: 36px;
+    border-radius: 0 18px 18px 0;
+  }
+
+  header .nav-icon-search-3m {
+    width: 15px;
+    height: 15px;
+    margin-top: -3px;
+  }
+
+  /* empty trailing flex item keeps space-between gaps identical to 3m.com */
+  header .nav-top-end {
     display: block;
-    height: 2px;
-    width: 22px;
-    background: var(--ink);
+    order: 1;
   }
 
-  header .nav-panel {
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0;
-    background: #fff;
-    border-bottom: 1px solid var(--line);
-    padding: 8px 24px 20px;
+  header .nav-locale-desktop {
     display: none;
   }
 
+  header .nav-burger {
+    width: 28px;
+    height: 36px;
+  }
+
+  header .nav-icon-menu {
+    width: 29.14px;
+    height: 24px;
+  }
+
+  header .nav-icon-close {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* tablet: the menu is a right-half drawer, as on www.3m.com */
+  header .nav-panel {
+    top: 70px;
+    left: 50%;
+  }
+
+  header .nav-account {
+    height: 42px;
+    padding-right: 34px;
+  }
+
+  header .nav-account .nav-icon-user {
+    top: -2px;
+  }
+
+  header .nav-account-menu {
+    top: 113px;
+    left: auto;
+    width: 40%;
+  }
+}
+
+@media (width >= 960px) {
+  header .nav-3m {
+    padding-bottom: 1px;
+  }
+
+  header .nav-top {
+    height: 70px;
+    padding: 15px 5%;
+  }
+
+  header .nav-logo {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  header .nav-logo-mark {
+    display: none;
+  }
+
+  header .nav-logo-full {
+    display: block;
+    width: 227px;
+    max-width: 100%;
+    height: 40px;
+  }
+
+  header .nav-search {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 56%;
+    height: 40px;
+    margin-right: 50px;
+  }
+
+  header .nav-search input {
+    padding: 6px 60px 5px 15px;
+    border-color: #d6d6d6;
+    border-radius: 20px;
+  }
+
+  header .nav-search button {
+    width: 55px;
+    height: 40px;
+    padding: 0 8px 0 4px;
+    border-radius: 0 20px 20px 0;
+  }
+
+  header .nav-icon-search-3m {
+    width: 20px;
+    height: 20px;
+    margin-top: -4px;
+  }
+
+  header .nav-top-end {
+    flex: 0 1 100px;
+    order: 0;
+  }
+
+  header .nav-locale-desktop {
+    display: block;
+    position: absolute;
+    top: 18px;
+    right: 5%;
+  }
+
+  header .nav-burger,
+  header .nav-locale-mobile,
+  header .nav-links .nav-link-arrow,
+  header .nav-locale-close {
+    display: none;
+  }
+
+  header .nav-locale-popup {
+    position: absolute;
+    top: 71px;
+    right: calc(5% - 4px);
+    left: auto;
+    width: 230px;
+    max-width: none;
+    padding: 0 0 6px;
+    transform: none;
+  }
+
+  header .nav-locale-popup::before {
+    content: "";
+    position: absolute;
+    top: -19px;
+    left: 210px;
+    border: 10px solid transparent;
+    border-bottom-color: #fff;
+  }
+
+  header .nav-locale-title {
+    margin: 30px 0;
+  }
+
+  header .nav-bottom {
+    justify-content: space-between;
+    align-items: flex-start;
+    height: 70px;
+    padding-bottom: 6px;
+    border-top: 1px solid #fff;
+  }
+
+  header .nav-panel,
   header .nav-3m.is-open .nav-panel {
-    display: flex;
+    position: static;
+    display: block;
+    height: auto;
+    padding: 15px 15px 0 calc(5% - 15px);
+    border: 0;
+    overflow: visible;
+    background: #fff;
+    box-shadow: none;
   }
 
   header .nav-links {
-    flex-direction: column;
-    gap: 0;
-    width: 100%;
+    display: flex;
   }
 
-  header .nav-links a {
+  header .nav-links > li {
+    margin: 0;
+    padding-top: 5px;
+  }
+
+  header .nav-links > li > a {
     display: block;
-    padding: 12px 0;
-    width: 100%;
+    color: #4b4b4b;
+  }
+
+  header .nav-links > li > a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: #c80000;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  header .nav-links > li > a:hover,
+  header .nav-links > li > a:focus-visible {
+    color: #4b4b4b;
+  }
+
+  header .nav-links > li > a:hover::after,
+  header .nav-links > li > a:focus-visible::after {
+    opacity: 1;
   }
 
   header .nav-actions {
-    margin: 8px 0 0;
+    margin-right: 5%;
+  }
+
+  header .nav-account {
+    height: 22px;
+    margin-top: 35px;
+    padding: 0;
+  }
+
+  header .nav-account .nav-icon-user {
+    position: relative;
+    top: -3px;
+  }
+
+  header .nav-account .nav-icon-chevron-down,
+  header .nav-account .nav-icon-chevron-up {
+    width: 11px;
+    height: 11px;
+  }
+
+  header .nav-account-menu {
+    top: 126px;
+    width: 300px;
+  }
+
+  header .nav-account-secondary a:any-link {
+    text-decoration: underline;
+  }
+
+  /* menu panels: full-width dropdown under the nav row; while one is open the
+     whole window is tinted */
+  header .nav-3m.is-mega-open {
+    z-index: 100;
+  }
+
+  header .nav-3m.is-mega-open .nav-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    display: block;
+    background: rgb(0 0 0 / 30%);
+  }
+
+  header .nav-links > li.is-open > a {
+    padding-bottom: 13px;
+  }
+
+  header .nav-links > li.is-open > a::after {
+    opacity: 1;
+  }
+
+  header .nav-mega {
+    position: absolute;
+    top: 142px;
+    left: 0;
+    right: 0;
+    z-index: 98;
+    padding: 20px 3% 62px 4%;
+  }
+
+  header .nav-mega-head,
+  header .nav-mega-top {
+    display: none;
+  }
+
+  header .nav-mega-list {
+    min-height: 380px;
+    column-count: 3;
+    column-gap: 14px;
+  }
+
+  /* stands in for the "view all" cell so columns split as on www.3m.com */
+  header .nav-mega-list::after {
+    content: "";
+    display: block;
+    height: 170px;
+  }
+
+  header .nav-mega-list li {
+    height: 45px;
+    border: 0;
+    break-inside: avoid;
+  }
+
+  header .nav-mega-list a:any-link {
+    padding: 10px 20px;
+  }
+
+  header .nav-mega-all {
+    position: absolute;
+    right: calc(45px - 1%);
+    bottom: 20px;
+    display: block;
+    padding: 0;
+  }
+
+  header .nav-mega.has-feature {
+    padding: 30px 46% 170px 4%;
+  }
+
+  header .nav-mega.has-feature .nav-mega-list {
+    height: 280px;
+    min-height: 0;
+    column-count: 2;
+    column-fill: auto;
+  }
+
+  header .nav-mega.has-feature .nav-mega-list::after {
+    content: none;
+  }
+
+  header .nav-mega-feature {
+    position: absolute;
+    top: 24px;
+    right: calc(55px + 1%);
+    display: block;
+    width: 330px;
+    font-size: 14px;
+    line-height: 17.5px;
+  }
+
+  header .nav-mega-feature img {
+    display: block;
+    width: 330px;
+    height: 281px;
+    object-fit: cover;
+  }
+
+  header .nav-mega-feature p {
+    margin: 5.5px 0 0;
+  }
+}
+
+/* www.3m.com's Products panel runs wider than the 1200px page column */
+@media (1200px <= width < 1440px) {
+  header .nav-mega:not(.has-feature) {
+    padding-right: 23.9px;
+    padding-left: 48.5px;
+  }
+
+  header .nav-mega-all {
+    right: 20.4px;
+  }
+}
+
+@media (width >= 1440px) {
+  header .nav-search {
+    max-width: 60%;
+  }
+
+  header .nav-mega-list {
+    column-count: 4;
+  }
+
+  header .nav-mega.has-feature .nav-mega-list {
+    column-count: 3;
+  }
+
+  header .nav-mega-feature {
+    right: calc(70px + 1%);
   }
 }

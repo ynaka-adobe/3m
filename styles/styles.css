@@ -3,27 +3,8 @@
  * Vanilla aem-boilerplate runtime. Brand tokens + self-hosted 3MCircular.
  */
 
-/* ── self-hosted brand font (proprietary — see styles/fonts/LICENSING.md) ── */
-@font-face {
-  font-family: "3MCircular";
-  font-weight: 300;
-  font-display: swap;
-  src: url("/styles/fonts/3MCircularWeb-Light.woff") format("woff");
-}
-
-@font-face {
-  font-family: "3MCircular";
-  font-weight: 400;
-  font-display: swap;
-  src: url("/styles/fonts/3MCircularWeb-Book.woff") format("woff");
-}
-
-@font-face {
-  font-family: "3MCircular";
-  font-weight: 700;
-  font-display: swap;
-  src: url("/styles/fonts/3MCircularWeb-Bold.woff") format("woff");
-}
+/* ── brand font: the 3MCircular @font-face rules live in fonts.css, which
+   loads after the largest paint so the font downloads don't compete with it ── */
 
 /* metric-matched fallback so the woff swap doesn't shift text */
 @font-face {
@@ -69,14 +50,41 @@
 
   /* layout */
   --maxw: 1200px;
-  --nav-height: 70px;
+
+  /* page column, as on www.3m.com: fluid below 1200px, then fixed 1200/1440 and centered */
+  --page-width: 100vw;
+  --nav-height: 96px;
   --radius: 0px;
+}
+
+@media (width >= 768px) {
+  :root {
+    --nav-height: 106px;
+  }
 }
 
 @media (width >= 900px) {
   :root {
     --heading-font-size-xxl: 88px;
     --heading-font-size-xl: 46px;
+  }
+}
+
+@media (width >= 960px) {
+  :root {
+    --nav-height: 149px;
+  }
+}
+
+@media (width >= 1200px) {
+  :root {
+    --page-width: 1200px;
+  }
+}
+
+@media (width >= 1440px) {
+  :root {
+    --page-width: 1440px;
   }
 }
 
@@ -94,6 +102,13 @@ body {
 
 body.appear {
   display: block;
+}
+
+@media (width >= 1200px) {
+  body {
+    width: var(--page-width);
+    margin: 0 auto;
+  }
 }
 
 header {
@@ -239,6 +254,21 @@ main > .section {
    collapse it so it adds no vertical space (e.g. above the hero) */
 main > .section:empty {
   display: none;
+}
+
+/* car-personalization pages: the place of the breadcrumb strip the header adds
+   later (blocks/breadcrumb sizes it the same), so the page doesn't jump */
+main > .section.subnav-slot {
+  display: block;
+  min-height: 72.5px;
+  padding: 0;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+@media (width >= 768px) {
+  main > .section.subnav-slot {
+    min-height: 94.75px;
+  }
 }
 
 main > .section > div {

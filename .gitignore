@@ -27,3 +27,4 @@ scratchpad/
 # Ensure these files are tracked
 !CLAUDE.md
 !AGENTS.md
+migration-work/footer-validation/
