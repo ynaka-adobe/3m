@@ -28,14 +28,13 @@ footer .footer-logo {
   margin-bottom: 16px;
 }
 
-/* light grey on the dark footer: at least 4.5:1 contrast */
 footer .footer-brand p {
-  color: #bdbdbd;
+  color: var(--muted);
   max-width: 26ch;
   margin: 0;
 }
 
-footer .footer-col h2 {
+footer .footer-col h4 {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -62,12 +61,12 @@ footer .footer-legal {
   flex-wrap: wrap;
   gap: 8px 26px;
   align-items: center;
-  color: #bdbdbd;
+  color: var(--muted);
   font-size: 13px;
 }
 
 footer .footer-legal a {
-  color: #bdbdbd;
+  color: var(--muted);
 }
 
 footer .footer-legal a:hover {

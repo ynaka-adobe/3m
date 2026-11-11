@@ -41,17 +41,16 @@ async function loadCarPersonalizationSubnav() {
   }
 
   const frag = await fetchFragment(subnavPath);
-  const main = document.querySelector('main');
-  // the slot reserved in scripts.js (reserveSubnavSlot), so nothing shifts
-  const slot = main?.querySelector(':scope > .subnav-slot');
 
-  if (frag && main) {
-    const subnavSection = slot || document.createElement('div');
-    subnavSection.className = 'section subnav';
-    subnavSection.innerHTML = `<div class="fragment">${frag.innerHTML}</div>`;
-    if (!slot) main.insertBefore(subnavSection, main.firstChild);
-  } else if (slot) {
-    slot.remove();
+  if (frag) {
+    // Find the main element and insert subnav as first section
+    const main = document.querySelector('main');
+    if (main) {
+      const subnavSection = document.createElement('div');
+      subnavSection.className = 'section';
+      subnavSection.innerHTML = `<div class="fragment">${frag.innerHTML}</div>`;
+      main.insertBefore(subnavSection, main.firstChild);
+    }
   }
 }
 

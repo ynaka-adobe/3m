@@ -340,17 +340,6 @@ function addFooterEntryPoint() {
   window.setTimeout(() => observer.disconnect(), 15000);
 }
 
-/**
- * Shows the banner early (lazy phase) on a first visit, so it is painted with
- * the page instead of seconds later. Decisions made before initConsent() runs
- * are stored, and initConsent() then hands them to analytics and Target.
- */
-export function showBannerIfUndecided() {
-  if (!load() || new URLSearchParams(window.location.search).has('consent-reset')) {
-    openConsent({ mode: 'banner' });
-  }
-}
-
 /** Boots consent: restores a stored decision or shows the banner on first visit. */
 export function initConsent() {
   state = load();
