@@ -18,9 +18,8 @@ const KM_PER_MILE = 1.609344;
 // width of the list floating over the map on desktop; keep in sync with locator.css
 const LIST_WIDTH = 400;
 const DESKTOP = '(width >= 900px)';
-// Pro Shop badge logo: the 3M logo until an official Pro Shop logo is set
-// with a `proshop-logo` row on the block
-const PRO_SHOP_LOGO = '/icons/3m-logo.svg';
+// official 3M Pro Shop logo (a `proshop-logo` row on the block can replace it)
+const PRO_SHOP_LOGO = '/img/3m/car-personalization/pro-shop-badge.webp';
 
 // per site language: units, address lookup country, the map centre used when the
 // browser's location is not available (centre of the country), and the sample data
@@ -62,9 +61,7 @@ const STRINGS = {
     myLocation: 'My location',
     products: 'Product type',
     partners: 'Partner type',
-    proShop: 'Pro Shop',
     proShopLabel: '3M™ Pro Shop Dealer',
-    certified: 'Certifications',
     showPhone: 'Show phone number',
     showWhatsApp: 'Show WhatsApp',
     whatsApp: 'Chat on WhatsApp',
@@ -83,7 +80,7 @@ const STRINGS = {
     locationUnknown: 'Location unknown. Please enter a location or enable location in your browser or device.',
     startHint: 'Showing installers around the center of the country. Enter a ZIP or city, or use your location.',
     defaultLocation: 'Your location is not available, so we are showing installers around the center of the country. Enter a ZIP or city to search near you.',
-    notFound: 'We could not find that location. Please check the ZIP or city.',
+    notFound: 'Enter a ZIP code or city to display installers near you.',
     empty: 'We are sorry, we haven\'t found any installer matching your search. Please search for another location or change the filters.',
     error: 'The service is currently not available. Please try again later.',
     sample: 'Sample data is shown, not real installers.',
@@ -100,9 +97,7 @@ const STRINGS = {
     myLocation: 'Mein Standort',
     products: 'Produkttyp',
     partners: 'Partnertyp',
-    proShop: 'Pro Shop',
     proShopLabel: '3M™ Pro Shop Dealer',
-    certified: 'Zertifizierungen',
     showPhone: 'Telefonnummer anzeigen',
     showWhatsApp: 'WhatsApp anzeigen',
     whatsApp: 'Auf WhatsApp chatten',
@@ -121,7 +116,7 @@ const STRINGS = {
     locationUnknown: 'Standort unbekannt. Bitte geben Sie einen Ort ein oder aktivieren Sie die Standortfreigabe.',
     startHint: 'Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein oder verwenden Sie Ihren Standort.',
     defaultLocation: 'Ihr Standort ist nicht verfügbar. Wir zeigen Fachbetriebe rund um die Landesmitte. Geben Sie PLZ oder Ort ein, um in Ihrer Nähe zu suchen.',
-    notFound: 'Wir konnten diesen Ort nicht finden. Bitte prüfen Sie PLZ oder Ort.',
+    notFound: 'Geben Sie eine PLZ oder einen Ort ein, um Installateure in Ihrer Nähe anzuzeigen.',
     empty: 'Leider haben wir keinen passenden Fachbetrieb gefunden. Bitte suchen Sie nach einem anderen Ort oder ändern Sie die Filter.',
     error: 'Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.',
     sample: 'Es werden Beispieldaten angezeigt, keine echten Fachbetriebe.',
@@ -138,9 +133,7 @@ const STRINGS = {
     myLocation: '現在地',
     products: '製品タイプ',
     partners: 'パートナータイプ',
-    proShop: 'Pro Shop',
     proShopLabel: '3M™ Pro Shop Dealer',
-    certified: '認定',
     showPhone: '電話番号を表示',
     showWhatsApp: 'WhatsAppを表示',
     whatsApp: 'WhatsAppでチャット',
@@ -159,7 +152,7 @@ const STRINGS = {
     locationUnknown: '現在地を特定できません。場所を入力するか、位置情報を有効にしてください。',
     startHint: '国の中心付近の施工店を表示しています。郵便番号または都市名を入力するか、現在地を使用してください。',
     defaultLocation: '現在地を取得できないため、国の中心付近の施工店を表示しています。お近くを検索するには郵便番号または都市名を入力してください。',
-    notFound: 'その場所が見つかりませんでした。郵便番号または都市名をご確認ください。',
+    notFound: '郵便番号または都市名を入力すると、お近くの施工業者が表示されます。',
     empty: '条件に合う施工店が見つかりませんでした。別の場所を検索するか、フィルターを変更してください。',
     error: '現在サービスをご利用いただけません。しばらくしてから再度お試しください。',
     sample: 'サンプルデータを表示しています（実際の施工店ではありません）。',
@@ -416,11 +409,11 @@ function createCard(d, {
     const badge = el('p', 'locator-card-badge');
     const logo = el('img');
     logo.src = proShopLogo;
-    logo.alt = '';
-    logo.width = 34;
-    logo.height = 18;
-    badge.append(logo, text('span', '', t.proShop));
-    badge.title = t.proShopLabel;
+    logo.alt = t.proShopLabel;
+    logo.width = 96;
+    logo.height = 24;
+    logo.loading = 'lazy';
+    badge.append(logo);
     main.append(badge);
   }
   const heading = el('h3', 'locator-card-name');
@@ -428,13 +421,6 @@ function createCard(d, {
   select.type = 'button';
   heading.append(select);
   main.append(heading);
-
-  if (d.certifications.length) {
-    const certs = el('ul', 'locator-card-certs');
-    certs.setAttribute('aria-label', t.certified);
-    d.certifications.forEach((c) => certs.append(text('li', '', c)));
-    main.append(certs);
-  }
 
   // the address opens directions in Google Maps
   const lines = addressLines(d);
@@ -627,7 +613,10 @@ async function buildLocator(root, opts) {
   // sample data only when an author picks it (api: sample), never as a silent fallback
   if (api.sample) note.textContent = t.sample;
   const row = el('div', 'locator-filter-row');
-  row.append(form, count);
+  // lookup errors ("location not found") show right next to the search field
+  const searchError = el('p', 'locator-search-error');
+  searchError.setAttribute('role', 'alert');
+  row.append(form, searchError, count);
 
   // two filter groups, both built from the data: product types and partner types
   const chipGroup = (label) => {
@@ -947,11 +936,11 @@ async function buildLocator(root, opts) {
   }
 
   async function pickSuggestion(item) {
-    status.textContent = '';
+    searchError.textContent = '';
     try {
       await searchFrom(await suggester.resolve(item));
     } catch (err) {
-      status.textContent = t.notFound;
+      searchError.textContent = t.notFound;
     }
   }
 
@@ -959,7 +948,7 @@ async function buildLocator(root, opts) {
     e.preventDefault();
     suggestions.close();
     const value = where.value.trim();
-    status.textContent = '';
+    searchError.textContent = '';
     if (!value || value === t.myLocation) {
       await useBrowserLocation();
       return;
@@ -967,22 +956,24 @@ async function buildLocator(root, opts) {
     // a search before the delayed phase loads the map service straight away
     // eslint-disable-next-line no-use-before-define
     if (!maps && !(await ensureMaps())) {
-      status.textContent = t.mapUnavailable;
+      searchError.textContent = t.mapUnavailable;
       return;
     }
     try {
       const origin = await lookup(value);
       if (!origin) {
-        status.textContent = t.notFound;
+        searchError.textContent = t.notFound;
         return;
       }
+      status.textContent = '';
       await searchFrom(origin);
     } catch (err) {
-      status.textContent = t.error;
+      searchError.textContent = t.error;
     }
   });
 
   nearMe.addEventListener('click', () => useBrowserLocation());
+  where.addEventListener('input', () => { searchError.textContent = ''; });
 
   clear.addEventListener('click', () => {
     state.products.clear();

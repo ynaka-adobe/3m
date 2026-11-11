@@ -221,13 +221,22 @@ async function searchProxy(url, query, { signal, filter, order }, memo) {
   } while (items.length < wanted && lastPageFull
     && (total === null || start + items.length < total));
 
+  // trust the upstream total; without one, a full last page may mean more
+  const hasMore = total !== null ? start + items.length < total : lastPageFull;
+  if (start === 0 && !hasMore) {
+    // everything fitted in what was asked for: that is the whole list too, so
+    // filters, order and the count work on it like on any complete list
+    memo.key = key;
+    memo.items = items.filter((d) => d && !d.deleted);
+    return fromList(memo.items);
+  }
+
   // a paged upstream: filters and order can only apply to the results loaded
   const dealers = toDealers(items, query.origin);
   return {
     dealers: order(dealers.filter(filter)),
     total,
-    // trust the upstream total; without one, a full last page may mean more
-    hasMore: total !== null ? start + items.length < total : lastPageFull,
+    hasMore,
     facets: facetsOf(dealers),
   };
 }
