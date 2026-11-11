@@ -26,7 +26,7 @@
 import { getMetadata } from './aem.js';
 import { getAnalyticsConfig } from './analytics-config.js';
 import createTransport from './analytics-transport/index.js';
-import { onConsentChange } from './consent.js';
+import { CONSENT_UI_SELECTOR, onConsentChange } from './consent.js';
 
 const CONSENT_CATEGORY = 'analytics';
 const SCROLL_MILESTONES = [25, 50, 75, 100];
@@ -268,8 +268,8 @@ function observeClicks() {
   document.addEventListener('click', (e) => {
     const el = e.target.closest('a[href], button');
     // Consent UI is privacy plumbing, not content — never track clicks on the
-    // banner itself or on the footer control that reopens it.
-    if (!el || el.closest('.consent') || el.closest('[data-consent-reopen]')) return;
+    // Securiti banner, its Preference Center or the footer control that opens it.
+    if (!el || el.closest(CONSENT_UI_SELECTOR)) return;
 
     const link = classifyLink(el);
     let region = 'main';
@@ -347,7 +347,7 @@ function observeForms() {
   document.addEventListener('focusin', (e) => {
     const field = e.target.closest('input, select, textarea');
     const form = field?.closest('form');
-    if (!form || startedForms.has(form) || form.closest('.consent')) return;
+    if (!form || startedForms.has(form) || form.closest(CONSENT_UI_SELECTOR)) return;
     startedForms.add(form);
     const block = form.closest('[data-block-name], .block');
     track('form-start', {
@@ -358,7 +358,7 @@ function observeForms() {
 
   document.addEventListener('submit', (e) => {
     const form = e.target;
-    if (!(form instanceof HTMLFormElement) || form.closest('.consent')) return;
+    if (!(form instanceof HTMLFormElement) || form.closest(CONSENT_UI_SELECTOR)) return;
     const block = form.closest('[data-block-name], .block');
     track('form-submit', {
       component: describeBlock(block),

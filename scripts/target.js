@@ -5,7 +5,8 @@ import { hasConsent, onConsentChange } from './consent.js';
 /**
  * Consent category that governs Adobe Target. at.js sets its own identity
  * cookies and calls the Target edge, so it is personalization/advertising —
- * not strictly necessary, and not analytics.
+ * not strictly necessary, and not analytics. Maps to Securiti's
+ * "Analytics & Customization" purpose (see scripts/consent.js).
  */
 const CONSENT_CATEGORY = 'personalization';
 

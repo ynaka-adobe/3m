@@ -7,7 +7,8 @@ import { initTarget } from './target.js';
 /**
  * Consent + analytics run in the delayed phase so they cannot affect LCP/CWV.
  * Order matters: analytics and Target both subscribe to consent first, then
- * consent boots and either restores a stored decision or shows the banner.
+ * consent boots, restores any stored decision and loads 3M's Securiti consent
+ * platform, which shows the banner.
  *
  * The insights panel is a consumer of the same data layer, and only mounts when
  * explicitly switched on with `?insights=1` — never for a normal visitor.
