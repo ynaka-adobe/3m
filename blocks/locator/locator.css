@@ -213,13 +213,6 @@
   display: none;
 }
 
-.locator .locator-status {
-  min-height: 1.25em; /* reserved even when empty: no layout shift */
-  margin: 0;
-  color: var(--accent);
-  font-size: 14px;
-}
-
 .locator .locator-note {
   margin: 0;
   padding: 8px 12px;

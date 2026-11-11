@@ -14,6 +14,9 @@ const DEFAULT_QUOTE = 'https://engage-ab.marketo.com/?munchkinId=860-YON-741#/ds
 const PAGE_SIZE = 10;
 // search radius in miles: "Show more" doubles it once all results are shown
 const RADIUS = { start: 50, max: 200 };
+// a new search widens its radius (x1.5 each step, up to RADIUS.max) until at
+// least this many installers are found
+const MIN_FOUND = 3;
 const KM_PER_MILE = 1.609344;
 // width of the list floating over the map on desktop; keep in sync with locator.css
 const LIST_WIDTH = 400;
@@ -620,13 +623,12 @@ async function buildLocator(root, opts) {
   const startRadius = Math.min(RADIUS.max, Math.max(1, num(opts.radius) ?? RADIUS.start));
 
   const count = el('p', 'locator-count');
-  const status = el('p', 'locator-status');
-  status.setAttribute('role', 'status');
   const note = el('p', 'locator-note');
   // sample data only when an author picks it (api: sample), never as a silent fallback
   if (api.sample) note.textContent = t.sample;
   const row = el('div', 'locator-filter-row');
-  // lookup errors ("location not found") show right next to the search field
+  // lookup and location messages ("location not found", "finding your
+  // location") show right next to the search field
   const searchError = el('p', 'locator-search-error');
   searchError.setAttribute('role', 'alert');
   row.append(form, searchError, count);
@@ -648,7 +650,7 @@ async function buildLocator(root, opts) {
   clear.type = 'button';
   clear.hidden = true;
   partnerGroup.row.append(clear);
-  filters.append(row, productGroup.row, partnerGroup.row, status, note);
+  filters.append(row, productGroup.row, partnerGroup.row, note);
 
   // ---- tabs + results ----
   const tabs = el('div', 'locator-tabs');
@@ -809,7 +811,8 @@ async function buildLocator(root, opts) {
    * installers, or more until `want` of them match the filters. "Show more"
    * asks for a larger `take`, so each response holds every result loaded, or,
    * once all are loaded, a doubled radius (`expand`); the radius only changes
-   * when that search succeeds. `refresh` reloads what is shown without a
+   * when that search succeeds. A new search with fewer than MIN_FOUND results
+   * widens the radius step by step. `refresh` reloads what is shown without a
    * loading state, for a filter change. A newer query aborts the one in
    * flight, and only the latest may render.
    */
@@ -821,16 +824,8 @@ async function buildLocator(root, opts) {
     const current = seq;
     if (controller) controller.abort();
     controller = new AbortController();
-    const search = {
-      origin: state.origin,
-      lat: state.origin.lat,
-      lon: state.origin.lon,
-      radius: Math.round(radius),
-      skip: 0,
-      take,
-      region: opts.region || region.country.toUpperCase(),
-    };
     const loadingMore = !refresh && take > PAGE_SIZE;
+    const newSearch = !loadingMore && !refresh;
     const before = list.querySelectorAll('.locator-card').length;
     moreError.textContent = '';
     if (!loadingMore && !refresh) {
@@ -843,22 +838,38 @@ async function buildLocator(root, opts) {
     let res = null;
     let matched = null;
     let failed = null;
+    let area = radius;
     try {
-      // with filters on, load more until `want` installers match (a few
-      // rounds at most); answers for the same search come from the loaded list
-      let size = take;
-      for (let round = 0; ; round += 1) {
-        // eslint-disable-next-line no-await-in-loop -- each round depends on the last
-        res = await api.search({ ...search, take: size }, { signal: controller.signal });
-        if (!res.hasMore || round >= 4 || res.dealers.filter(matches).length >= want) break;
-        size *= 2;
+      for (;;) {
+        const search = {
+          origin: state.origin,
+          lat: state.origin.lat,
+          lon: state.origin.lon,
+          radius: Math.round(area),
+          skip: 0,
+          take,
+          region: opts.region || region.country.toUpperCase(),
+        };
+        // with filters on, load more until `want` installers match (a few
+        // rounds at most); answers for the same search come from the loaded list
+        let size = take;
+        for (let round = 0; ; round += 1) {
+          // eslint-disable-next-line no-await-in-loop -- each round depends on the last
+          res = await api.search({ ...search, take: size }, { signal: controller.signal });
+          if (!res.hasMore || round >= 4 || res.dealers.filter(matches).length >= want) break;
+          size *= 2;
+        }
+        res = keepUntil(res, { take, want, matches });
+        // the count of matches in the whole search area: the same search,
+        // filtered (answered from the list already loaded)
+        matched = filtering()
+          // eslint-disable-next-line no-await-in-loop -- part of this radius step
+          ? (await api.search(search, { signal: controller.signal, filter: matches })).total
+          : null;
+        const found = filtering() ? matched : res.total ?? res.dealers.length;
+        if (!newSearch || found >= MIN_FOUND || area >= RADIUS.max) break;
+        area = Math.min(RADIUS.max, area * 1.5);
       }
-      res = keepUntil(res, { take, want, matches });
-      // the count of matches in the whole search area: the same search,
-      // filtered (answered from the list already loaded)
-      matched = filtering()
-        ? (await api.search(search, { signal: controller.signal, filter: matches })).total
-        : null;
     } catch (e) {
       if (e.name === 'AbortError') return;
       failed = e;
@@ -891,7 +902,7 @@ async function buildLocator(root, opts) {
     }
 
     state.take = res.dealers.length;
-    state.radius = radius;
+    state.radius = area;
     state.dealers = res.dealers;
     state.total = res.total;
     state.matched = matched;
@@ -899,7 +910,7 @@ async function buildLocator(root, opts) {
     state.facets = res.facets || { products: [], partners: [] };
     buildChips();
     // a wider radius zooms the map out to the whole search area
-    render({ area: expand });
+    render({ area: expand || area > radius });
     if (loadingMore) {
       // move keyboard focus to the first newly loaded installer
       const next = list.querySelectorAll('.locator-card')[before];
@@ -920,20 +931,18 @@ async function buildLocator(root, opts) {
   }
 
   async function useBrowserLocation({ initial = false } = {}) {
-    status.textContent = t.locating;
+    searchError.textContent = t.locating;
     try {
       const origin = await locate();
-      status.textContent = '';
+      searchError.textContent = '';
       where.value = t.myLocation;
       await searchFrom(origin);
     } catch (err) {
       if (initial) {
-        // keep the results around the centre of the country; the hint goes
-        // next to the search field
-        status.textContent = '';
+        // keep the results around the centre of the country
         searchError.textContent = t.defaultLocation;
       } else {
-        status.textContent = err.code === 1 ? t.locationDenied : t.locationUnknown;
+        searchError.textContent = err.code === 1 ? t.locationDenied : t.locationUnknown;
       }
     }
   }
@@ -1010,7 +1019,6 @@ async function buildLocator(root, opts) {
         searchError.textContent = t.notFound;
         return;
       }
-      status.textContent = '';
       await searchFrom(origin);
     } catch (err) {
       searchError.textContent = t.error;
