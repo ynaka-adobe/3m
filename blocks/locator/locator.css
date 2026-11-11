@@ -625,6 +625,52 @@ a.locator-card-addr {
   background: var(--accent-dark);
 }
 
+/* ---- full screen: the whole locator fills the screen ---- */
+.locator .locator-fullscreen {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  cursor: pointer;
+}
+
+.locator .locator-fullscreen svg {
+  width: 22px;
+  height: 22px;
+  fill: #666;
+}
+
+.locator .locator-fullscreen:hover svg {
+  fill: #000;
+}
+
+/* the modal locator already fills the screen */
+.locator.locator-modal .locator-fullscreen {
+  display: none;
+}
+
+.locator.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.locator.is-fullscreen .locator-map {
+  height: 60vh;
+}
+
 /* ---- map: "search this area" and the pin pop-up ---- */
 .locator .locator-area-search {
   height: 40px;
@@ -1011,5 +1057,23 @@ body.rs-quote-lock {
   .locator .locator-card-directions,
   .locator .locator-clear {
     min-height: 44px;
+  }
+}
+
+/* full screen on desktop: the map (with the floating list) takes the height
+   left below the filters */
+@media (width >= 900px) {
+  .locator.is-fullscreen .locator-results {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 420px;
+  }
+
+  .locator.is-fullscreen .locator-map {
+    height: 100%;
+  }
+
+  .locator.is-fullscreen .locator-results.is-list-view {
+    flex: none;
   }
 }

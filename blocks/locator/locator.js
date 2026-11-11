@@ -75,6 +75,8 @@ const STRINGS = {
     showMore: 'Show more',
     directions: 'Get Directions',
     searchArea: 'Search this area',
+    fullscreen: 'Full screen',
+    exitFullscreen: 'Exit full screen',
     quote: 'Get a quote',
     results: (n) => (n === 1 ? '1 installer found' : `${n} installers found`),
     shown: (n) => `${n} results returned.`,
@@ -111,6 +113,8 @@ const STRINGS = {
     showMore: 'Mehr anzeigen',
     directions: 'Route berechnen',
     searchArea: 'In diesem Gebiet suchen',
+    fullscreen: 'Vollbild',
+    exitFullscreen: 'Vollbild beenden',
     quote: 'Angebot anfordern',
     results: (n) => (n === 1 ? '1 Fachbetrieb gefunden' : `${n} Fachbetriebe gefunden`),
     shown: (n) => `${n} Ergebnisse angezeigt.`,
@@ -147,6 +151,8 @@ const STRINGS = {
     showMore: 'さらに表示',
     directions: '経路を表示',
     searchArea: 'このエリアで検索',
+    fullscreen: '全画面表示',
+    exitFullscreen: '全画面表示を終了',
     quote: '見積もりを依頼',
     results: (n) => `${n}件の施工店が見つかりました`,
     shown: (n) => `${n}件を表示しています。`,
@@ -172,6 +178,8 @@ const ICONS = {
   search: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"/></svg>',
   locate: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 3 3 10.5v1l7 2.5 2.5 7h1z"/></svg>',
   phone: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>',
+  expand: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg>',
+  collapse: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 4h2v6H4V8h4zm6 0h2v4h4v2h-6zM4 14h6v6H8v-4H4zm10 0h6v2h-4v4h-2z"/></svg>',
   route: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21.7 11.3 12.7 2.3a1 1 0 0 0-1.4 0l-9 9a1 1 0 0 0 0 1.4l9 9a1 1 0 0 0 1.4 0l9-9a1 1 0 0 0 0-1.4zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5z"/></svg>',
   globe: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.9a15.7 15.7 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8zM12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4zM4.3 14a8.2 8.2 0 0 1 0-4h3.4a16.5 16.5 0 0 0 0 4zm.8 2h2.9c.3 1.3.8 2.5 1.4 3.6A8 8 0 0 1 5.1 16zM8 8H5.1a8 8 0 0 1 4.3-3.6C8.8 5.5 8.3 6.7 8 8zm4 12c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4zm2.3-6H9.7a14.7 14.7 0 0 1 0-4h4.6a14.7 14.7 0 0 1 0 4zm.3 5.6c.6-1.1 1.1-2.3 1.4-3.6h2.9a8 8 0 0 1-4.3 3.6zm1.7-5.6a16.5 16.5 0 0 0 0-4h3.4a8.2 8.2 0 0 1 0 4z"/></svg>',
   whatsApp: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a.9.9 0 0 0-.7.3 2.8 2.8 0 0 0-.9 2.1 4.9 4.9 0 0 0 1 2.6 11.2 11.2 0 0 0 4.3 3.8c1.6.7 2.2.7 3 .6a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .1-1.2c0-.2-.2-.3-.4-.5z"/></svg>',
@@ -575,7 +583,8 @@ async function openQuote(d, { t, quote }) {
   mkto.textContent = quote || DEFAULT_QUOTE;
   dialog.append(closeBtn, heading, mkto);
   overlay.append(dialog);
-  document.body.append(overlay);
+  // in browser full screen only the full-screen element is visible
+  (document.fullscreenElement || document.body).append(overlay);
   document.body.classList.add('rs-quote-lock');
   closeBtn.focus();
 
@@ -991,6 +1000,50 @@ async function buildLocator(root, opts) {
     }
   }
 
+  // ---- full screen: the whole locator (filters, map, list), not just the map ----
+  // the browser's full screen where allowed; otherwise (e.g. iPhone) the
+  // locator fills the window
+  const fsButton = el('button', 'locator-fullscreen', ICONS.expand);
+  fsButton.type = 'button';
+  let filling = false;
+  let wasFull = false;
+  const isFull = () => document.fullscreenElement === root || filling;
+  function syncFullscreen() {
+    const on = isFull();
+    root.classList.toggle('is-fullscreen', on);
+    // the page behind stops scrolling (only on a change: the locator modal
+    // sets the same lock)
+    if (on !== wasFull) document.body.classList.toggle('rs-locator-lock', on);
+    wasFull = on;
+    fsButton.innerHTML = on ? ICONS.collapse : ICONS.expand;
+    fsButton.setAttribute('aria-label', on ? t.exitFullscreen : t.fullscreen);
+    fsButton.title = on ? t.exitFullscreen : t.fullscreen;
+    fsButton.setAttribute('aria-pressed', String(on));
+    // the map has a new size: frame the results again
+    requestAnimationFrame(() => mapApi?.resize());
+  }
+  function fill(on) {
+    filling = on;
+    syncFullscreen();
+  }
+  fsButton.addEventListener('click', () => {
+    if (isFull()) {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      else fill(false);
+    } else if (document.fullscreenEnabled && root.requestFullscreen) {
+      root.requestFullscreen().catch(() => fill(true));
+    } else {
+      fill(true);
+    }
+  });
+  document.addEventListener('fullscreenchange', syncFullscreen);
+  // Escape leaves the window-filling mode too (the browser's full screen
+  // handles Escape itself); an open quote form closes first
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && filling && !document.querySelector('.rs-quote-overlay')) fill(false);
+  });
+  syncFullscreen();
+
   function setView(view) {
     state.view = view;
     results.classList.toggle('is-list-view', view === 'list');
@@ -1152,6 +1205,7 @@ async function buildLocator(root, opts) {
             });
           },
           areaButton,
+          topRight: fsButton,
           onAreaChange: (area) => {
             viewArea = area;
             areaButton.hidden = false;

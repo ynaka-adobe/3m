@@ -187,10 +187,13 @@ function milesBetween(a, b) {
  *   onSelect(id, 'map') when a pin is clicked;
  *   popup(id) returns a pin's pop-up content as [header, body] elements, or null;
  *   areaButton: an element shown on the map once the user has moved it, and
- *   onAreaChange({ lat, lon, radius }) with the area now in view (radius in miles)
+ *   onAreaChange({ lat, lon, radius }) with the area now in view (radius in miles);
+ *   topRight: an element for the map's top-right corner (the locator's own
+ *   full-screen button, which takes the list and filters along)
  */
 export async function createMap(maps, container, {
   onSelect, mapId, listWidth = 0, onAuthError, unit = 'mi', popup, areaButton, onAreaChange,
+  topRight,
 }) {
   if (onAuthError) authListeners.add(onAuthError);
   const [{ Map: GoogleMap, Circle, InfoWindow }, core, markerLib] = await Promise.all([
@@ -210,8 +213,6 @@ export async function createMap(maps, container, {
     disableDefaultUI: true,
     zoomControl: true,
     zoomControlOptions: { position: ControlPosition.RIGHT_BOTTOM },
-    fullscreenControl: true,
-    fullscreenControlOptions: { position: ControlPosition.RIGHT_TOP },
     // inline on the page: zoom with ctrl/cmd + scroll, so the page still scrolls
     gestureHandling: 'cooperative',
     clickableIcons: false,
@@ -223,6 +224,7 @@ export async function createMap(maps, container, {
   // only the user's own drags and zooms offer "search this area"
   let auto = false;
   let moved = false;
+  if (topRight) map.controls[ControlPosition.RIGHT_TOP].push(topRight);
   if (areaButton) {
     areaButton.hidden = true;
     map.controls[ControlPosition.TOP_CENTER].push(areaButton);
