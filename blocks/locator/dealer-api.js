@@ -102,14 +102,16 @@ function facetsOf(dealers) {
   };
 }
 
-// keeps the dealers that pass `filter`, in display `order`, as one page
+// keeps the dealers that pass `filter`, in display `order`, as one page;
+// `matched` counts the dealers in the whole list that pass `count`
 function toPage(dealers, {
-  start, wanted, filter, order,
+  start, wanted, filter, order, count,
 }) {
   const matching = order(dealers.filter(filter));
   return {
     dealers: matching.slice(start, start + wanted),
     total: matching.length,
+    matched: count ? matching.filter(count).length : null,
     hasMore: start + wanted < matching.length,
     facets: facetsOf(dealers),
   };
@@ -184,13 +186,15 @@ function listKey(url, query) {
  * path below takes over.
  * @param {string} url proxy endpoint
  * @param {object} query { origin, lat, lon, radius, skip, take, region }
- * @param {object} options { signal, filter, order }: an AbortSignal, a dealer
- *   filter, and a sort for display
+ * @param {object} options { signal, filter, order, count }: an AbortSignal, a
+ *   dealer filter, a sort for display, and a dealer test to count matches of
  * @param {object} memo { key, items } complete list of the last such search
- * @returns {Promise<{ dealers: object[], total: number|null, hasMore: boolean,
- *   facets: { products: string[], partners: string[] } }>}
+ * @returns {Promise<{ dealers: object[], total: number|null, matched: number|null,
+ *   hasMore: boolean, facets: { products: string[], partners: string[] } }>}
  */
-async function searchProxy(url, query, { signal, filter, order }, memo) {
+async function searchProxy(url, query, {
+  signal, filter, order, count,
+}, memo) {
   const start = Math.max(0, toInt(query.skip, 0));
   const wanted = Math.max(0, toInt(query.take, MAX_TAKE));
   const key = listKey(url, query);
@@ -198,7 +202,7 @@ async function searchProxy(url, query, { signal, filter, order }, memo) {
   // paging: filters cover every result, and e.g. every Pro Shop in the radius
   // comes before the other installers
   const fromList = (list) => toPage(toDealers(list, query.origin), {
-    start, wanted, filter, order,
+    start, wanted, filter, order, count,
   });
   if (memo.key === key) return fromList(memo.items);
 
@@ -236,6 +240,8 @@ async function searchProxy(url, query, { signal, filter, order }, memo) {
   return {
     dealers: order(dealers.filter(filter)),
     total,
+    // only the results loaded are known
+    matched: null,
     hasMore,
     facets: facetsOf(dealers),
   };
@@ -253,7 +259,9 @@ const sampleCache = {};
  * Searches a static JSON file in the backend's record format, for development:
  * applies radius, sorting and paging in the browser.
  */
-export async function searchSample(source, query, { filter = () => true, order = (d) => d } = {}) {
+export async function searchSample(source, query, {
+  filter = () => true, order = (d) => d, count,
+} = {}) {
   if (!sampleCache[source]) {
     sampleCache[source] = fetch(source).then((res) => {
       if (!res.ok) throw new DealerApiError(`${res.status} ${source}`, { status: res.status });
@@ -275,6 +283,7 @@ export async function searchSample(source, query, { filter = () => true, order =
     wanted: Math.max(0, toInt(query.take, MAX_TAKE)),
     filter,
     order,
+    count,
   });
 }
 
@@ -283,13 +292,16 @@ export async function searchSample(source, query, { filter = () => true, order =
  *   sample data, or empty for the locator proxy
  * @param {object} [options] { sample, order } URL of the sample data, and a sort
  *   for display that is applied to complete result lists before paging
- * @returns {{ sample: boolean, search: Function }} search(query, { signal, filter })
- *   resolves to { dealers, total, hasMore, facets } or rejects with a
- *   DealerApiError (or an AbortError when cancelled); `filter` keeps dealers
+ * @returns {{ sample: boolean, search: Function }} search(query, { signal, filter, count })
+ *   resolves to { dealers, total, matched, hasMore, facets } or rejects with a
+ *   DealerApiError (or an AbortError when cancelled); `filter` keeps dealers,
+ *   `count` counts the matching ones in the whole list (`matched`)
  */
 export function createDealerApi(api, { sample, order = (dealers) => dealers } = {}) {
   const key = String(api || '').trim();
-  const options = ({ signal, filter = () => true } = {}) => ({ signal, filter, order });
+  const options = ({ signal, filter = () => true, count } = {}) => ({
+    signal, filter, order, count,
+  });
   if (key.toLowerCase() === 'sample') {
     return { sample: true, search: (query, opts) => searchSample(sample, query, options(opts)) };
   }

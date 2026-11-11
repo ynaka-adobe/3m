@@ -39,6 +39,22 @@ export function matchesFilters(d, { products, partners }) {
 }
 
 /** Splits a comma-separated field into trimmed, non-empty values. */
+/**
+ * Trims a search answer to the installers to keep loaded: at least `take`, and
+ * on until `want` of them pass `matches`. Anything beyond is left for "Show more".
+ */
+export function keepUntil(res, { take, want, matches }) {
+  let found = 0;
+  for (let i = 0; i < res.dealers.length; i += 1) {
+    if (matches(res.dealers[i])) found += 1;
+    if (i + 1 >= take && found >= want) {
+      if (i + 1 === res.dealers.length) return res;
+      return { ...res, dealers: res.dealers.slice(0, i + 1), hasMore: true };
+    }
+  }
+  return res;
+}
+
 export function splitList(value) {
   return String(value ?? '').split(',').map((v) => v.trim()).filter(Boolean);
 }

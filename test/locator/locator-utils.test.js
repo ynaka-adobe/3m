@@ -2,6 +2,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  keepUntil,
   COUNTRY_CENTERS, isProShop, sortDealers, matchesFilters, splitList, telHref, whatsAppHref,
   websiteHref, websiteLabel, directionsHref, countryCode,
 } from '../../blocks/locator/locator-utils.js';
@@ -117,5 +118,32 @@ describe('locator fallback location', () => {
     assert.equal(countryCode('United States'), 'us');
     assert.equal(countryCode('Switzerland'), 'ch');
     assert.equal(countryCode(''), '');
+  });
+});
+
+describe('locator loaded installers', () => {
+  const res = (n) => ({
+    dealers: Array.from({ length: n }, (_, i) => ({ id: String(i + 1), even: (i + 1) % 2 === 0 })),
+    hasMore: false,
+  });
+  const even = (d) => d.even;
+  const all = () => true;
+
+  it('keeps `take` installers when no filter needs more', () => {
+    const kept = keepUntil(res(40), { take: 19, want: 0, matches: even });
+    assert.equal(kept.dealers.length, 19);
+    assert.equal(kept.hasMore, true);
+  });
+
+  it('keeps loading until enough installers match', () => {
+    // 10 even ids are reached at id 20
+    const kept = keepUntil(res(40), { take: 10, want: 10, matches: even });
+    assert.equal(kept.dealers.length, 20);
+    assert.equal(kept.dealers.filter(even).length, 10);
+  });
+
+  it('keeps everything when the list runs out first', () => {
+    const answer = res(7);
+    assert.equal(keepUntil(answer, { take: 10, want: 10, matches: all }), answer);
   });
 });
