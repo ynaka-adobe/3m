@@ -257,26 +257,6 @@ describe('locator dealer API (proxy)', () => {
     assert.equal(calls.length, 1, 'filtering reuses the loaded list');
   });
 
-  it('counts matches in the whole list without filtering the page', async () => {
-    mockFetch(json({
-      items: Array.from({ length: 30 }, (_, i) => record({
-        companyID: `${i}`,
-        distanceInMiles: i,
-        partnerType: i % 3 === 0 ? '3M™ Pro Shop Dealer' : 'Authorized Dealer',
-      })),
-      skip: 0,
-      take: 10,
-      totalItemsCount: 30,
-    }));
-    const res = await createDealerApi().search(search({ take: 19 }), {
-      count: (d) => d.partnerType === '3M™ Pro Shop Dealer',
-    });
-    assert.equal(res.dealers.length, 19);
-    assert.equal(res.total, 30);
-    assert.equal(res.matched, 10);
-    assert.equal(res.hasMore, true);
-  });
-
   it('turns an error envelope into a DealerApiError with its details', async () => {
     mockFetch(json({
       error: 'Upstream returned an unsuccessful status.', stage: 'token', upstreamStatus: 500,

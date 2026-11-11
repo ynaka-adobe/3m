@@ -4,7 +4,7 @@ import {
   loadGoogleMaps, createMap, createSuggester, geocodeAddress,
 } from './google-map.js';
 import {
-  COUNTRY_CENTERS, isProShop, sortDealers, matchesFilters, keepUntil, telHref, whatsAppHref,
+  COUNTRY_CENTERS, isProShop, sortDealers, matchesFilters, telHref, whatsAppHref,
   websiteHref, websiteLabel, directionsHref, countryCode,
 } from './locator-utils.js';
 
@@ -670,11 +670,8 @@ async function buildLocator(root, opts) {
   root.append(filters, tabs, results);
 
   const state = {
-    // the installers loaded, unfiltered: "Show more" adds to them, the filters
-    // pick from them
     dealers: [],
     total: null,
-    matched: null,
     hasMore: false,
     origin: null,
     take: PAGE_SIZE,
@@ -733,8 +730,10 @@ async function buildLocator(root, opts) {
         if (selected.has(v)) selected.delete(v);
         else selected.add(v);
         chip.setAttribute('aria-pressed', String(selected.has(v)));
+        // filters apply to the whole result list, so search it again (no new
+        // request when the list is already loaded)
         // eslint-disable-next-line no-use-before-define
-        refilter();
+        query();
       };
       chips.append(chip);
     });
@@ -749,21 +748,17 @@ async function buildLocator(root, opts) {
   // more within the radius, or a wider radius still to search
   const canShowMore = () => state.hasMore || state.radius < RADIUS.max;
 
-  const filtering = () => state.products.size > 0 || state.partners.size > 0;
-
   function render({ fit = true, area = false } = {}) {
-    // in order (Pro Shops first, then by distance) from the dealer API; the
-    // numbers follow this order
-    shown = state.dealers.filter(matches);
+    const filtering = state.products.size > 0 || state.partners.size > 0;
+    // already filtered and in order (Pro Shops first, then by distance) by the
+    // dealer API; the numbers follow this order
+    shown = state.dealers;
     state.selectedId = null;
 
-    // the count covers the whole search area, not just the installers loaded
-    count.textContent = t.results(filtering()
-      ? state.matched ?? shown.length
-      : state.total ?? shown.length);
+    count.textContent = t.results(state.total ?? shown.length);
     live.textContent = t.shown(shown.length);
     more.hidden = !canShowMore();
-    clear.hidden = !filtering();
+    clear.hidden = !filtering;
 
     list.textContent = '';
     if (!shown.length) message(t.empty);
@@ -792,17 +787,13 @@ async function buildLocator(root, opts) {
   }
 
   /**
-   * Queries the dealer API for the current location and radius, loading `take`
-   * installers, or more until `want` of them match the filters. "Show more"
-   * asks for a larger `take`, so each response holds every result loaded, or,
-   * once all are loaded, a doubled radius (`expand`); the radius only changes
-   * when that search succeeds. `refresh` reloads what is shown without a
-   * loading state, for a filter change. A newer query aborts the one in
-   * flight, and only the latest may render.
+   * Queries the dealer API for the current location and radius. "Show more"
+   * asks for a larger `take`, so each response holds every result shown, or,
+   * once all are shown, a doubled radius (`expand`); the radius only changes
+   * when that search succeeds. A newer query aborts the one in flight, and
+   * only the latest may render.
    */
-  async function query({
-    take = PAGE_SIZE, want = PAGE_SIZE, radius = state.radius, expand = false, refresh = false,
-  } = {}) {
+  async function query({ take = PAGE_SIZE, radius = state.radius, expand = false } = {}) {
     if (!state.origin) return;
     seq += 1;
     const current = seq;
@@ -817,10 +808,10 @@ async function buildLocator(root, opts) {
       take,
       region: opts.region || region.country.toUpperCase(),
     };
-    const loadingMore = !refresh && take > PAGE_SIZE;
+    const loadingMore = take > PAGE_SIZE;
     const before = list.querySelectorAll('.locator-card').length;
     moreError.textContent = '';
-    if (!loadingMore && !refresh) {
+    if (!loadingMore) {
       message(t.loading);
       count.textContent = '';
     }
@@ -830,18 +821,7 @@ async function buildLocator(root, opts) {
     let res = null;
     let failed = null;
     try {
-      // with filters on, load more until `want` installers match (a few
-      // rounds at most); answers for the same search come from the loaded list
-      let size = take;
-      for (let round = 0; ; round += 1) {
-        // eslint-disable-next-line no-await-in-loop -- each round depends on the last
-        res = await api.search({ ...search, take: size }, {
-          signal: controller.signal, count: matches,
-        });
-        if (!res.hasMore || round >= 4 || res.dealers.filter(matches).length >= want) break;
-        size *= 2;
-      }
-      res = keepUntil(res, { take, want, matches });
+      res = await api.search(search, { signal: controller.signal, filter: matches });
     } catch (e) {
       if (e.name === 'AbortError') return;
       failed = e;
@@ -873,27 +853,21 @@ async function buildLocator(root, opts) {
       return;
     }
 
-    state.take = res.dealers.length;
+    state.take = take;
     state.radius = radius;
     state.dealers = res.dealers;
     state.total = res.total;
-    state.matched = res.matched;
     state.hasMore = res.hasMore;
     state.facets = res.facets || { products: [], partners: [] };
     buildChips();
     // a wider radius zooms the map out to the whole search area
     render({ area: expand });
-    if (loadingMore) {
+    if (take > PAGE_SIZE) {
       // move keyboard focus to the first newly loaded installer
       const next = list.querySelectorAll('.locator-card')[before];
       next?.querySelector('.locator-card-select')?.focus({ preventScroll: true });
     }
   }
-
-  // a filter change keeps every installer loaded and filters them again
-  const refilter = () => query({
-    take: Math.max(PAGE_SIZE, state.dealers.length), want: 0, refresh: true,
-  });
 
   function searchFrom(origin, { radius = startRadius } = {}) {
     state.origin = origin;
@@ -1005,17 +979,14 @@ async function buildLocator(root, opts) {
     state.products.clear();
     state.partners.clear();
     filters.querySelectorAll('.locator-chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
-    refilter();
+    query();
   });
 
   more.addEventListener('click', () => {
     const take = state.dealers.length + PAGE_SIZE;
-    const want = shown.length + PAGE_SIZE;
-    if (state.hasMore) query({ take, want });
+    if (state.hasMore) query({ take });
     else if (state.radius < RADIUS.max) {
-      query({
-        take, want, radius: Math.min(RADIUS.max, state.radius * 2), expand: true,
-      });
+      query({ take, radius: Math.min(RADIUS.max, state.radius * 2), expand: true });
     }
   });
 
