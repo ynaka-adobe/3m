@@ -134,8 +134,48 @@ function svgUrl(svg) {
  * @param {object} options { onSelect(id), mapId, listWidth, onAuthError }; listWidth is
  *   the width the list covers on the left of the map, or a function returning it
  */
+/**
+ * A distance scale in the site's unit (Google's own scale picks km or miles
+ * from where the visitor is). Updates whenever the map moves or zooms.
+ */
+function addScale(map, { position, event, unit }) {
+  const el = document.createElement('div');
+  el.className = 'locator-scale';
+  const bar = document.createElement('span');
+  bar.className = 'locator-scale-bar';
+  const label = document.createElement('span');
+  label.className = 'locator-scale-label';
+  el.append(label, bar);
+  const MAX_PX = 100;
+  // large unit, small unit (below 1 large unit), metres per unit
+  const units = unit === 'km'
+    ? { big: ['km', 1000], small: ['m', 1] }
+    : { big: ['mi', 1609.344], small: ['ft', 0.3048] };
+  const nice = (n) => {
+    const p = 10 ** Math.floor(Math.log10(n));
+    return [5, 2, 1].map((f) => f * p).find((v) => v <= n) || p;
+  };
+  const update = () => {
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    if (!center || zoom === undefined) return;
+    // Web Mercator: metres per pixel at the map centre
+    const metresPerPx = (156543.03392 * Math.cos((center.lat() * Math.PI) / 180)) / 2 ** zoom;
+    const maxMetres = metresPerPx * MAX_PX;
+    const [name, size] = maxMetres >= units.big[1] ? units.big : units.small;
+    const value = nice(maxMetres / size);
+    bar.style.width = `${Math.round((value * size) / metresPerPx)}px`;
+    label.textContent = `${value} ${name}`;
+  };
+  // before the built-in controls: closest to the corner
+  el.index = -1;
+  map.controls[position].push(el);
+  event.addListener(map, 'idle', update);
+  event.addListener(map, 'zoom_changed', update);
+}
+
 export async function createMap(maps, container, {
-  onSelect, mapId, listWidth = 0, onAuthError,
+  onSelect, mapId, listWidth = 0, onAuthError, unit = 'mi',
 }) {
   if (onAuthError) authListeners.add(onAuthError);
   const [{ Map: GoogleMap, Circle }, core, markerLib] = await Promise.all([
@@ -159,6 +199,8 @@ export async function createMap(maps, container, {
     gestureHandling: 'cooperative',
     clickableIcons: false,
   });
+  // in the corner column, under the zoom buttons
+  addScale(map, { position: ControlPosition.RIGHT_BOTTOM, event, unit });
 
   // 3M red pins, clusters and search radius (set in locator.css)
   const accent = getComputedStyle(container).getPropertyValue('--locator-pin').trim() || '#f00';

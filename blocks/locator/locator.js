@@ -1085,6 +1085,7 @@ async function buildLocator(root, opts) {
         mapApi = await createMap(maps, mapEl, {
           onSelect: selectDealer,
           mapId: opts.mapId,
+          unit: region.unit,
           // the list only floats over the map on desktop
           listWidth: () => (window.matchMedia(DESKTOP).matches ? LIST_WIDTH : 0),
           onAuthError: () => {
