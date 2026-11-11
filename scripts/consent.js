@@ -1,18 +1,23 @@
 /**
  * consent.js — bridges 3M's Securiti.ai consent platform into the site.
  *
- * The consent banner and Cookie Preference Center are 3M's own, served by
+ * The consent banner and "3M Cookie Preference Center" are 3M's own, served by
  * Securiti with the same tenant/domain configuration as www.3m.com. This site
  * renders no consent UI of its own. This module only:
  *   1. loads the Securiti tags (from the delayed phase, so they never affect LCP)
  *   2. reads the visitor's choice from Securiti's consent cookie
- *   3. exposes it to analytics.js, target.js and identity.js
+ *   3. exposes it to analytics.js, target.js, identity.js and the insights panel
  *
- * Securiti purpose → site category:
- *   15  Essential                   → necessary        (always on)
- *   16  Performance & Functionality → analytics        (Adobe Analytics / Web SDK)
- *   14  Analytics & Customization   → personalization  (Adobe Target)
- *   13  Advertising, 7554 Business Insights → not used by site code
+ * Category ids follow 3M's Securiti purposes:
+ *   essential          15  Essential (always on)
+ *   advertising        13  Advertising
+ *   analytics          14  Analytics & Customization — 3M files Adobe Analytics
+ *                          (AMCV, s_ecid, s_pers…) and Target personalization here
+ *   business-insights 7554 Business Insights (6sense)
+ *   performance        16  Performance & Functionality
+ *
+ * Earlier code asked for `necessary` and `personalization`; both are still
+ * answered (see ALIASES) so subscribers do not need to know about the new ids.
  *
  * Until the visitor decides there is no consent cookie, so nothing optional
  * runs. Revoking in the Preference Center stops collection immediately.
@@ -33,15 +38,25 @@ const SECURITI_COOKIES = [
   '__privaci_latest_published_version',
 ];
 
-/** Site category → Securiti purpose id. */
+/** Category id → Securiti purpose id. */
 const PURPOSES = {
-  necessary: 15,
-  analytics: 16,
-  personalization: 14,
+  essential: 15,
+  advertising: 13,
+  analytics: 14,
+  'business-insights': 7554,
+  performance: 16,
+};
+
+const OPTIONAL = Object.keys(PURPOSES).filter((id) => id !== 'essential');
+
+/** Legacy category names, answered from the category that now covers them. */
+const ALIASES = {
+  necessary: 'essential',
+  personalization: 'analytics',
 };
 
 /**
- * Matches Securiti's banner, Preference Center and our footer entry point, so
+ * Matches Securiti's banner, Preference Center and the footer entry point, so
  * analytics never tracks interactions with privacy plumbing.
  */
 export const CONSENT_UI_SELECTOR = '.cc-window, #cookiePreferencesDialog, .securitiCookieWall, [data-consent-reopen]';
@@ -60,16 +75,16 @@ function expireCookie(name) {
   document.cookie = `${name}=; Path=/; Max-Age=0`;
 }
 
-/** @returns {{necessary: boolean, analytics: boolean, personalization: boolean}|null} */
+/** @returns {object|null} granted state per category id */
 function read() {
   const raw = readCookie(CONSENT_COOKIE);
   if (!raw) return null;
   try {
     const { consents } = JSON.parse(raw);
     if (!consents || typeof consents !== 'object') return null;
-    return Object.fromEntries(Object.entries(PURPOSES).map(([category, purpose]) => [
-      category,
-      category === 'necessary' || Number(consents[purpose]) === 1,
+    return Object.fromEntries(Object.entries(PURPOSES).map(([id, purpose]) => [
+      id,
+      id === 'essential' || Number(consents[purpose]) === 1,
     ]));
   } catch (e) {
     return null;
@@ -78,14 +93,17 @@ function read() {
 
 /* ────────────────────────────── public API ─────────────────────────────── */
 
-/** @returns {{necessary: boolean, analytics: boolean, personalization: boolean}|null} */
+/** @returns {object|null} granted state per category id (and legacy alias) */
 export function getConsent() {
-  return state ? { ...state } : null;
+  if (!state) return null;
+  const aliases = Object.fromEntries(Object.entries(ALIASES)
+    .map(([alias, id]) => [alias, state[id]]));
+  return { ...state, ...aliases };
 }
 
 /** @param {string} category @returns {boolean} */
 export function hasConsent(category) {
-  return state?.[category] === true;
+  return getConsent()?.[category] === true;
 }
 
 /**
@@ -100,8 +118,12 @@ export function onConsentChange(fn) {
   return () => listeners.delete(fn);
 }
 
-/** Opens 3M's Securiti Cookie Preference Center, once the SDK has loaded. */
-export function openPreferences() {
+/**
+ * Opens 3M's Securiti Cookie Preference Center (the banner itself is shown by
+ * Securiti on its own). Does nothing until the SDK has loaded. Existing callers
+ * still pass `{ mode }`; it no longer changes anything.
+ */
+export function openConsent() {
   window.showConsentPreferencesPopup?.();
 }
 
@@ -111,8 +133,8 @@ function sync() {
   if (JSON.stringify(next) === JSON.stringify(state)) return;
   state = next;
   if (state) {
-    document.documentElement.dataset.consent = ['analytics', 'personalization']
-      .filter((id) => state[id]).join(' ') || 'necessary';
+    document.documentElement.dataset.consent = OPTIONAL
+      .filter((id) => state[id]).join(' ') || 'essential';
   } else {
     delete document.documentElement.dataset.consent;
   }
@@ -159,22 +181,30 @@ function subscribeToSecuriti() {
 }
 
 /**
- * Adds a "Cookie Preferences" entry point to the footer legal row, as on
- * www.3m.com, so visitors can revisit their choice.
+ * Wires the footer's "Cookie Preferences" legal link (authored per locale) to
+ * the Preference Center, adding one if the footer does not have it.
  */
 function addFooterEntryPoint() {
   const attach = () => {
     const legal = document.querySelector('footer .footer-legal');
-    if (!legal || legal.querySelector('[data-consent-reopen]')) return false;
-    const link = document.createElement('a');
+    if (!legal) return false;
+    if (legal.querySelector('[data-consent-reopen]')) return true;
+    let link = [...legal.querySelectorAll('a')].find((a) => /cookie/i.test(a.textContent)
+      || a.hash === '#cookie-preferences');
+    if (!link) {
+      link = document.createElement('a');
+      link.textContent = 'Cookie Preferences';
+      legal.append(link);
+    }
     link.href = '#cookie-preferences';
-    link.textContent = 'Cookie Preferences';
+    link.removeAttribute('target');
+    link.removeAttribute('rel');
+    link.setAttribute('aria-haspopup', 'dialog');
     link.dataset.consentReopen = '';
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      openPreferences();
+      openConsent({ mode: 'preferences' });
     });
-    legal.append(link);
     return true;
   };
   if (attach()) return;
@@ -183,10 +213,11 @@ function addFooterEntryPoint() {
   window.setTimeout(() => observer.disconnect(), 15000);
 }
 
-/** Removes the choice stored by the site's previous, self-built banner. */
+/** Removes choices stored by the site's earlier, self-built banners. */
 function clearLegacyConsent() {
   try {
     window.localStorage.removeItem('threem-consent');
+    window.sessionStorage.removeItem('threem-consent-dismissed');
   } catch (e) { /* noop */ }
   if (readCookie('threem_consent') !== null) expireCookie('threem_consent');
 }

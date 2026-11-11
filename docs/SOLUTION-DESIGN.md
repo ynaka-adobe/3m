@@ -80,8 +80,8 @@ Authoring happens in **DA** (`https://da.live/#/ynaka-adobe/3m`), a Google-Docs-
 In the browser, visitor interaction triggers:
 
 ```
-Page load → consent.js (banner) → analytics.js (queued events) → analytics-transport/*
-                                 → target.js (gated on "personalization" consent)
+Page load → consent.js (Securiti) → analytics.js (queued events) → analytics-transport/*
+                                 → target.js (gated on "Analytics & Customization" consent)
 Block render → locator.js ("Get a quote") → marketo.js (lazy-loaded form) → identity.js (demo-only, in-memory)
 ```
 
@@ -153,14 +153,18 @@ An inventory pass (see §9) compared every block + CSS variant in `/blocks` agai
 
 ### 8.1 Consent (`scripts/consent.js`)
 
-- Presents a cookie-consent banner on first visit with three categories, intentionally mirroring TCF/IAB-style grouping:
-  - `necessary` — always on
-  - `analytics` — gates the data layer / collection
-  - `personalization` — gates Adobe Target
-- Choice persists to **both** `localStorage` and a first-party cookie (`threem_consent`), so either a client script or a server/tag-manager consumer can read it.
-- A "Cookie preferences" link is injected into the footer so visitors/auditors can reopen and change their choice at any time.
-- Supports **named experience variants** (`?consent-variant=nudge`) for demonstrating consent-UX optimization guidance — copy/placement only changes; the underlying consent machinery and guarantees (reject-all always available, necessary always on) are identical across variants.
-- `?consent-reset=1` clears the stored decision (demo/testing convenience only).
+- Uses 3M's own consent platform, **Securiti.ai**, with the same tenant/domain configuration as www.3m.com (confirmed by 3M: the banner and "3M Cookie Preference Center" content come from this third party). The site renders no consent UI of its own.
+- `consent.js` loads the same two tags www.3m.com carries (the Securiti auto-blocking script, then `cookie-consent-sdk-loader.js`) from the **delayed phase**, so they never affect LCP. The banner therefore appears a few seconds after load; 3M's privacy team should sign off on this versus 3M.com's load-first placement.
+- The visitor's choice is read from Securiti's `__privaci_cookie_consents` cookie, on load and whenever Securiti fires `onConsentGiven` / `onImplicitConsent`. Securiti also records each choice server-side in 3M's tenant — including choices made on preview/test domains.
+- Category ids map to 3M's Securiti purposes:
+  - `essential` (15) — always on
+  - `advertising` (13)
+  - `analytics` (14, "Analytics & Customization") — gates the data layer / collection and Adobe Target. 3M's own Securiti inventory files Adobe Analytics (AMCV, s_ecid, s_pers, s_sess…) here.
+  - `business-insights` (7554)
+  - `performance` (16, "Performance & Functionality")
+- The legacy names `necessary` and `personalization` are still answered by `getConsent()` / `hasConsent()` (aliases of `essential` and `analytics`).
+- The footer's authored "Cookie Preferences" legal link (per locale) opens Securiti's preference center; one is added if the footer lacks it.
+- `?consent-reset=1` clears Securiti's cookies so the banner shows again (demo/testing convenience only).
 
 ### 8.2 Analytics (`scripts/analytics.js`, `scripts/analytics-config.js`, `scripts/analytics-transport/*`)
 

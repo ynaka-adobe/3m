@@ -1,0 +1,175 @@
+/*
+ * Visualizer UI strings per content language (en, de, jp). Wording follows the
+ * original 3M Restyling Studio translations where it has one.
+ */
+
+export const I18N = {
+  en: {
+    all: 'All', coverage: 'Coverage', platinum: 'Full Car', gold: 'Full Front', silver: 'Partial Front', drag: 'Drag to rotate · scroll to zoom', dragTouch: 'Drag to rotate · pinch to zoom', loading: 'Welcome to the 3M™ Restyling Studio!', notLoaded: 'Unable to load the Restyling Studio. Either your browser is not fast enough or this is not supported on your device.', findInstaller: 'Find an installer',
+  },
+  de: {
+    all: 'Alle', coverage: 'Abdeckung', platinum: 'Komplettes Fahrzeug', gold: 'Volle Front', silver: 'Partielle Front', drag: 'Ziehen zum Drehen · Scrollen zum Zoomen', dragTouch: 'Ziehen zum Drehen · Finger spreizen zum Zoomen', loading: 'Willkommen im 3M™ Restyling Studio!', notLoaded: 'Das Restyling Studio kann nicht geladen werden. Entweder ist Ihr Browser nicht schnell genug oder Ihr Gerät unterstützt diese Anwendung nicht.', findInstaller: 'Installateur finden',
+  },
+  jp: {
+    all: 'すべて', coverage: 'カバー範囲', platinum: 'フルボディ', gold: 'フロントフル', silver: 'フロントの一部', drag: 'ドラッグで回転・スクロールでズーム', dragTouch: 'ドラッグで回転・ピンチでズーム', loading: '3M™ Restyling Studioへようこそ！', notLoaded: 'Restyling Studioを読み込むことができません。お使いのブラウザ環境またはデバイスについて、ウェブサイトとの互換性に問題がある可能性があります。', findInstaller: '施工店を探す',
+  },
+};
+
+// design editor: vehicle parts, "Your Design", confirmation and finale
+export const STUDIO_I18N = {
+  en: {
+    changeVehicle: 'Change Vehicle',
+    vehicles: {
+      luxury: 'Luxury', tuner: 'Tuner', 'sports-car': 'Super', 'muscle-car': 'Muscle', truck: 'Off-Road',
+    },
+    entire: 'Entire Vehicle',
+    parts: {
+      front: 'Front Bumper', hood: 'Hood', left: 'Left Side', top: 'Top', right: 'Right Side', rear: 'Rear Bumper', accents: 'Accents',
+    },
+    yourDesign: 'Your Design',
+    clearAll: 'Clear All',
+    noSelection: 'No Selection',
+    preview: 'Click to preview',
+    noSelections: 'No selections',
+    remove: 'Remove',
+    confirmTitle: 'Confirm',
+    confirmText: 'The wrap you selected will replace the previously selected wrap.',
+    confirm: 'Confirm',
+    cancel: 'Cancel',
+    done: 'Done',
+    finaleTitle: 'Let’s turn that dream into reality',
+    restart: 'Start a new design',
+    moreInfo: 'Product info:',
+  },
+  de: {
+    changeVehicle: 'Fahrzeug wechseln',
+    vehicles: {
+      luxury: 'Oberklasse', tuner: 'Tuner Auto', 'sports-car': 'Sportwagen', 'muscle-car': 'Mittelklasse', truck: 'Geländewagen',
+    },
+    entire: 'Komplettes Fahrzeug',
+    parts: {
+      front: 'Stoßstange vorne', hood: 'Motorhaube', left: 'Linke Fahrzeugseite', top: 'Dach', right: 'Rechte Fahrzeugseite', rear: 'Stoßstange hinten', accents: 'Akzente',
+    },
+    yourDesign: 'Ihr Design',
+    clearAll: 'Auswahl aufheben',
+    noSelection: 'Keine Auswahl',
+    preview: 'Vorschau anzeigen',
+    noSelections: 'Keine Auswahl',
+    remove: 'Entfernen',
+    confirmTitle: 'Bestätigen',
+    confirmText: 'Die gewählte Folie ersetzt die zuvor gewählte Folie.',
+    confirm: 'Bestätigen',
+    cancel: 'Abbrechen',
+    done: 'Fertig!',
+    finaleTitle: 'Lassen Sie Ihren Traum wahr werden',
+    restart: 'Starten Sie ein neues Design',
+    moreInfo: 'Produktinfos:',
+  },
+  jp: {
+    changeVehicle: '車種を変える',
+    vehicles: {
+      luxury: 'Luxury', tuner: 'Tuner', 'sports-car': 'Super', 'muscle-car': 'Muscle', truck: 'Off-Road',
+    },
+    entire: '車全体',
+    parts: {
+      front: 'フロントバンパー', hood: 'ボンネット', left: '左サイド', top: 'ルーフ', right: '右サイド', rear: 'リアバンパー', accents: 'アクセント',
+    },
+    yourDesign: 'あなたのデザイン',
+    clearAll: '全て取り消す',
+    noSelection: '選択されていません',
+    preview: 'プレビューを表示',
+    noSelections: '選択されていません',
+    remove: '削除',
+    confirmTitle: '確認する',
+    confirmText: '選択された色に上書きされます',
+    confirm: '確認する',
+    cancel: '取り消す',
+    done: '完了する',
+    finaleTitle: '夢のデザインを現実に！',
+    restart: 'デザインを始める',
+    moreInfo: '製品情報：',
+  },
+};
+
+// product information pages linked from the studio, per product key
+export const INFO_LINKS = {
+  en: [
+    ['Protection Wrap', 'https://www.3m.com/protectionwrapfilm'],
+    ['Wrap', 'https://www.3m.com/wrapfilm'],
+    ['Window Film', 'https://www.3m.com/windowtint'],
+    ['Paint Protection', 'https://www.3m.com/3M/en_US/p/c/films-sheeting/surface-protection-materials/i/automotive/post-factory-installations/'],
+  ],
+  de: [
+    ['Galerie', 'https://www.3mdeutschland.de/3M/de_DE/werbetechnik/2080-restylers/auto-wrap-inspiration-gallery/'],
+    ['Informationen Car Wrap', 'https://www.3mdeutschland.de/3M/de_DE/autofolie/'],
+    ['Informationen Sonnenschutz', 'https://www.3mdeutschland.de/3M/de_DE/autofolie/autoscheiben-toenen/'],
+    ['Informationen Lackschutz', 'https://www.3mdeutschland.de/3M/de_DE/autofolie/lackschutzfolie-steinschlagschutzfolie/'],
+  ],
+  jp: [
+    ['プロテクションラップフィルム', 'https://www.3mcompany.jp/3M/ja_JP/car-personalization-jp/products/protection-wrap-film/'],
+    ['ラッピング', 'https://www.3mcompany.jp/3M/ja_JP/car-personalization-jp/products/wrap-film/'],
+    ['ウィンドウフィルム', 'https://www.3mcompany.jp/3M/ja_JP/car-personalization-jp/products/automotive-window-tint/'],
+    ['ペイントプロテクション', 'https://www.3mcompany.jp/3M/ja_JP/car-personalization-jp/products/paint-protection-film/'],
+  ],
+};
+
+// share dialog, from the original Restyling Studio's share texts
+export const SHARE_I18N = {
+  en: {
+    button: 'Share',
+    title: 'Share your design',
+    copy: 'Copy Link',
+    copied: 'Copied!',
+    download: 'Download',
+    blocked: 'Your browser blocked the share window. Copy the link instead.',
+    noMail: 'No email app opened? Send it with:',
+    copyMessage: 'Copy message',
+    email: 'Email',
+    subject: '3m.com/RestylingStudio',
+    hashtags: '#3MFilms #3MTint',
+    single: 'Check out my design! Wrapped with [wrap1]',
+    two: 'Check out my design! Wrapped with [wrap1] and [wrap2]',
+    many: 'Check out my design! Wrapped with [wrap1], [wrap2], and others',
+    tintSuffix: 'and tinted with [tint]',
+    tintOnly: 'Check out my design! Tinted with [tint]',
+    none: 'Check out the 3M Restyling Studio!',
+  },
+  de: {
+    button: 'Teilen',
+    title: 'Teilen Sie Ihr Design',
+    copy: 'Link kopieren',
+    copied: 'Kopiert!',
+    download: 'Herunterladen',
+    blocked: 'Ihr Browser hat das Fenster blockiert. Kopieren Sie stattdessen den Link.',
+    noMail: 'Kein E-Mail-Programm geöffnet? Senden mit:',
+    copyMessage: 'Nachricht kopieren',
+    email: 'E-Mail',
+    subject: '3m.de/RestylingStudio',
+    hashtags: '#3MFolie #3MAutofilm #3MTint',
+    single: 'Schau dir mein Design an! Foliert mit [wrap1]',
+    two: 'Schau dir mein Design an! Foliert mit [wrap1] und [wrap2]',
+    many: 'Schau dir mein Design an! Foliert mit [wrap1], [wrap2], und anderen',
+    tintSuffix: 'und getönt mit [tint]',
+    tintOnly: 'Schau dir mein Design an! Getönt mit [tint]',
+    none: 'Schau Dir das 3M Restyling Studio an!',
+  },
+  jp: {
+    button: 'シェア',
+    title: 'デザインをシェアする',
+    copy: 'リンクをコピー',
+    copied: 'コピーされました！',
+    download: 'ダウンロード',
+    blocked: 'ブラウザがウィンドウをブロックしました。代わりにリンクをコピーしてください。',
+    noMail: 'メールアプリが開きませんか？こちらから送信：',
+    copyMessage: 'メッセージをコピー',
+    email: 'E-mail',
+    subject: '3mcompany.jp/RestylingStudio',
+    hashtags: '#3MFilms #3Mオートウィンドウフィルム',
+    single: 'MYデザインをチェック！[wrap1]',
+    two: 'MYデザインをチェック！ [wrap1], と [wrap2]',
+    many: 'MYデザインをチェック！[wrap1], [wrap2], と その他',
+    tintSuffix: '[tint]をウィンドウに使用',
+    tintOnly: 'MYデザインをチェック！[tint]をウィンドウに使用',
+    none: '3M Restyling Studioをチェック！',
+  },
+};
